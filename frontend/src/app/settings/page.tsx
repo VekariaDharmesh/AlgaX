@@ -219,10 +219,10 @@ export default function SettingsPage() {
         {/* ========================================================================= */}
         {/* CARD 1: Facility / Farm */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 border-b border-slate-100 p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                 <Home className="w-5 h-5" />
               </div>
               <div>
@@ -240,16 +240,16 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div className="divide-y divide-slate-100 text-xs">
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="p-5 sm:p-6 divide-y divide-slate-100 text-xs">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 first:pt-0">
               <span className="text-slate-500 font-medium">Farm Name</span>
               <span className="font-bold text-slate-900 text-right">{facilityConfig.farmName}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-slate-500 font-medium">Location</span>
               <span className="font-bold text-slate-900 text-right">{facilityConfig.location}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 last:pb-0">
               <span className="text-slate-500 font-medium">Pond Configuration</span>
               <span className="font-bold text-slate-900 text-right">{facilityConfig.pondConfiguration}</span>
             </div>
@@ -259,10 +259,10 @@ export default function SettingsPage() {
         {/* ========================================================================= */}
         {/* CARD 2: Sensors */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 border-b border-slate-100 p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                 <Radio className="w-5 h-5" />
               </div>
               <div>
@@ -280,20 +280,20 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div className="divide-y divide-slate-100 text-xs">
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="p-5 sm:p-6 divide-y divide-slate-100 text-xs">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 first:pt-0">
               <span className="text-slate-500 font-medium">Sensor IDs</span>
               <span className="font-mono font-bold text-slate-900 text-right">{sensorConfig.sensorIds}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-slate-500 font-medium">Parameters</span>
               <span className="font-bold text-slate-900 text-right">{sensorConfig.parameters}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-slate-500 font-medium">Sampling Interval</span>
               <span className="font-bold text-slate-900 text-right">{sensorConfig.samplingInterval}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 last:pb-0">
               <span className="text-slate-500 font-medium">Status</span>
               <span className="font-bold text-emerald-600 flex items-center gap-1.5 self-start sm:self-auto">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -306,10 +306,10 @@ export default function SettingsPage() {
         {/* ========================================================================= */}
         {/* CARD 3: Model */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 border-b border-slate-100 p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                 <Box className="w-5 h-5" />
               </div>
               <div>
@@ -327,16 +327,16 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div className="divide-y divide-slate-100 text-xs">
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="p-5 sm:p-6 divide-y divide-slate-100 text-xs">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 first:pt-0">
               <span className="text-slate-500 font-medium">Model Version</span>
               <span className="font-mono font-bold text-slate-900 text-right">{modelConfig.modelVersion}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-slate-500 font-medium">Growth Parameters</span>
               <span className="font-bold text-slate-900 text-right">{modelConfig.growthParameters}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 last:pb-0">
               <span className="text-slate-500 font-medium">Carbon Assumptions</span>
               <span className="font-bold text-slate-900 text-right">{modelConfig.carbonAssumptions}</span>
             </div>
@@ -346,10 +346,10 @@ export default function SettingsPage() {
         {/* ========================================================================= */}
         {/* CARD 4: Accounting */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 border-b border-slate-100 p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
@@ -367,16 +367,16 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div className="divide-y divide-slate-100 text-xs">
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="p-5 sm:p-6 divide-y divide-slate-100 text-xs">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 first:pt-0">
               <span className="text-slate-500 font-medium">Electricity Emission Factor</span>
               <span className="font-bold text-slate-900 text-right">{accountingConfig.electricityEmissionFactor}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <span className="text-slate-500 font-medium">End-use Assumption</span>
               <span className="font-bold text-slate-900 text-right">{accountingConfig.endUseAssumption}</span>
             </div>
-            <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 last:pb-0">
               <span className="text-slate-500 font-medium">Carbon Fraction</span>
               <span className="font-bold text-slate-900 text-right">{accountingConfig.carbonFraction}</span>
             </div>
@@ -389,9 +389,9 @@ export default function SettingsPage() {
       {/* CARD 5 (Bottom Full Width): Users (Matching Screenshot) */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-2xs">
-        <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-slate-50/80 border-b border-slate-100 p-5 sm:p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-800 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-800 shrink-0 shadow-2xs">
               <Users className="w-5 h-5" />
             </div>
             <div>
