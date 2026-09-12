@@ -207,56 +207,56 @@ export default function DashboardOverview() {
             </select>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-3.5">
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs mb-1">
                 <span className="font-semibold text-gray-900">Gross CO₂ Fixed</span>
                 <span className="font-bold text-gray-900">{carbon.grossFixedKg.toLocaleString()} kg</span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Total carbon captured by algae growth</p>
-              <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
+              <p className="text-[11px] text-gray-500 mb-1.5">Total carbon captured by algae growth</p>
+              <div className="h-4 w-full bg-gray-100 rounded overflow-hidden">
                 <div className="h-full bg-green-600" style={{ width: '100%' }}></div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs mb-1">
                 <span className="font-semibold text-gray-900">End-use Retained</span>
                 <span className="font-bold text-gray-900">{carbon.endUseRetainedKg.toLocaleString()} kg</span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Carbon retained after processing</p>
-              <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
+              <p className="text-[11px] text-gray-500 mb-1.5">Carbon retained after processing</p>
+              <div className="h-4 w-full bg-gray-100 rounded overflow-hidden">
                 <div className="h-full bg-green-400" style={{ width: carbon.grossFixedKg ? `${(carbon.endUseRetainedKg / carbon.grossFixedKg) * 100}%` : '0%' }}></div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="flex justify-between text-xs mb-1">
                 <span className="font-semibold text-gray-900">Operational Footprint</span>
                 <span className="font-bold text-gray-900">{carbon.operationalFootprintKg.toLocaleString()} kg</span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Emissions from energy, fertilizer, etc.</p>
-              <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
+              <p className="text-[11px] text-gray-500 mb-1.5">Emissions from energy, fertilizer, etc.</p>
+              <div className="h-4 w-full bg-gray-100 rounded overflow-hidden">
                 <div className="h-full bg-gray-400" style={{ width: carbon.grossFixedKg ? `${(carbon.operationalFootprintKg / carbon.grossFixedKg) * 100}%` : '0%' }}></div>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 pt-4 border-t border-gray-100">
-            <div className="flex justify-between text-sm mb-2">
+          <div className="mt-5 pt-3 border-t border-gray-100">
+            <div className="flex justify-between text-xs mb-1.5">
               <span className="font-bold text-green-800 uppercase tracking-wide">Net Carbon Removed</span>
               <span className="font-bold text-gray-900">{carbon.netRemovedKg.toLocaleString()} kg</span>
             </div>
-            <p className="text-xs text-gray-500 mb-3">Total modeled carbon removal</p>
-            <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
+            <p className="text-[11px] text-gray-500 mb-2">Total modeled carbon removal</p>
+            <div className="h-4 w-full bg-gray-100 rounded overflow-hidden">
               <div className="h-full bg-green-800" style={{ width: `${(carbon.netRemovedKg / carbon.grossFixedKg) * 100}%` }}></div>
             </div>
           </div>
         </div>
 
         {/* Pond Status */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 col-span-1 lg:col-span-2 shadow-2xs">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 col-span-1 lg:col-span-2 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-black text-gray-900">Active Cultivation Ponds</h2>
               <p className="text-xs text-gray-400">Live kinetics and biometrics across 6 registered Indian cultivation units.</p>
@@ -266,48 +266,50 @@ export default function DashboardOverview() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
             {DEMO_PONDS.slice(0, 3).map(pond => (
-              <Link href={`/ponds/${pond.id}`} key={pond.id} className="border border-gray-200/90 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-md transition-all block group bg-white">
-                <div className="h-28 bg-gray-900 relative overflow-hidden">
-                  <img src={pond.imageUrl} alt={pond.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                  <div className="absolute top-2 left-2">
-                    <span className="bg-slate-900/80 backdrop-blur-md text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-md border border-slate-700">
-                      {pond.farmName.split(' ')[0]}
-                    </span>
+              <Link href={`/ponds/${pond.id}`} key={pond.id} className="border border-gray-200/90 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between group bg-white">
+                <div>
+                  <div className="h-36 bg-gray-900 relative overflow-hidden">
+                    <img src={pond.imageUrl} alt={pond.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="bg-slate-900/80 backdrop-blur-md text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-md border border-slate-700">
+                        {pond.farmName.split(' ')[0]}
+                      </span>
+                    </div>
+                    <div className="absolute top-2.5 right-2.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow ${
+                        pond.status === 'Healthy' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full bg-white animate-pulse`}></span>
+                        {pond.status}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white">
+                      <div className="font-bold text-base drop-shadow">{pond.name}</div>
+                    </div>
                   </div>
-                  <div className="absolute top-2 right-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow ${
-                      pond.status === 'Healthy' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full bg-white animate-pulse`}></span>
-                      {pond.status}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-2 left-2 right-2 text-white">
-                    <div className="font-bold text-sm drop-shadow">{pond.name}</div>
-                  </div>
-                </div>
-                <div className="p-3.5 space-y-2">
-                  <p className="text-[11px] text-gray-500 italic truncate">{pond.species}</p>
-                  
-                  <div className="grid grid-cols-2 gap-y-1.5 text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium text-[11px]">
-                      <span className="text-gray-400">🌡</span> {pond.temperature.toFixed(1)} °C
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium text-[11px]">
-                      <span className="text-gray-400 text-[10px] font-serif">pH</span> {pond.ph.toFixed(1)}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium text-[11px]">
-                      <span className="text-gray-400">💧</span> {pond.dissolvedOxygen.toFixed(1)} mg/L
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium text-[11px]">
-                      <span className="text-gray-400">✨</span> {pond.turbidity} NTU
-                    </div>
-                    <div className="flex items-center justify-between col-span-2 pt-1 border-t border-slate-200/60 text-[11px]">
-                      <span className="text-gray-500">Biomass:</span>
-                      <span className="font-black text-emerald-700 font-mono">{pond.biomass.toFixed(2)} g/L</span>
+                  <div className="p-3.5 space-y-2.5">
+                    <p className="text-xs text-gray-500 italic truncate font-medium">{pond.species}</p>
+                    
+                    <div className="grid grid-cols-2 gap-y-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 text-gray-700 font-medium text-xs">
+                        <span className="text-gray-400">🌡</span> {pond.temperature.toFixed(1)} °C
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-700 font-medium text-xs">
+                        <span className="text-gray-400 text-xs font-serif font-bold">pH</span> {pond.ph.toFixed(1)}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-700 font-medium text-xs">
+                        <span className="text-gray-400">💧</span> {pond.dissolvedOxygen.toFixed(1)} mg/L
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-700 font-medium text-xs">
+                        <span className="text-gray-400">✨</span> {pond.turbidity} NTU
+                      </div>
+                      <div className="flex items-center justify-between col-span-2 pt-1.5 border-t border-slate-200/70 text-xs">
+                        <span className="text-gray-500 font-medium">Biomass:</span>
+                        <span className="font-black text-emerald-700 font-mono text-xs">{pond.biomass.toFixed(2)} g/L</span>
+                      </div>
                     </div>
                   </div>
                 </div>

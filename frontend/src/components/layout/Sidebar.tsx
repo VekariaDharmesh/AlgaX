@@ -86,16 +86,16 @@ export function Sidebar() {
   return (
     <aside 
       className={`${
-        isOpen ? 'w-64' : 'w-20'
+        isOpen ? 'w-72' : 'w-24'
       } bg-[#141d21] rounded-2xl border border-[#223138] shadow-xl flex flex-col h-full shrink-0 select-none overflow-hidden transition-all duration-300 ease-in-out`}
     >
       {/* Brand Header */}
       <div className={`border-b border-[#1f2b31] flex items-center transition-all ${
-        isOpen ? 'px-4 py-4 justify-between' : 'px-3 py-4 flex-col gap-3 justify-center'
+        isOpen ? 'px-5 py-4 justify-between' : 'px-3 py-4 flex-col gap-3 justify-center'
       }`}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3.5 min-w-0">
           <div className="relative shrink-0">
-            <svg className="w-8 h-8" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-9 h-9" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="algax-g1" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stopColor="#059669" />
@@ -127,14 +127,14 @@ export function Sidebar() {
           {isOpen && (
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-white leading-none">
+                <span className="font-black text-xl tracking-tight text-white leading-none">
                   Alga<span className="text-[#34d399]">X</span>
                 </span>
-                <span className="text-[9px] font-semibold tracking-wider text-[#8ea6b0] bg-[#1e2a30] px-1.5 py-0.5 rounded border border-[#2d3e47] leading-none">
+                <span className="text-[10px] font-bold tracking-wider text-[#9db1bb] bg-[#1e2a30] px-2 py-0.5 rounded border border-[#2d3e47] leading-none">
                   MRV
                 </span>
               </div>
-              <span className="text-[11px] text-[#6d848f] font-medium tracking-tight mt-1 leading-none truncate">
+              <span className="text-xs text-[#7e99a6] font-medium tracking-tight mt-1 leading-none truncate">
                 Carbon Intelligence
               </span>
             </div>
@@ -144,31 +144,31 @@ export function Sidebar() {
         {/* Toggle Collapse/Expand Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 text-[#6d848f] hover:text-[#9db1bb] hover:bg-[#1e2a30] rounded-lg transition-colors shrink-0"
+          className="p-2 text-[#7e99a6] hover:text-white hover:bg-[#1e2a30] rounded-lg transition-colors shrink-0"
           title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isOpen ? (
-            <PanelLeftClose className="w-4 h-4" />
+            <PanelLeftClose className="w-5 h-5" />
           ) : (
-            <PanelLeftOpen className="w-4 h-4 text-[#34d399]" />
+            <PanelLeftOpen className="w-5 h-5 text-[#34d399]" />
           )}
         </button>
       </div>
 
       {/* Navigation Scrollable Area */}
-      <div className={`flex-1 overflow-y-auto ${isOpen ? 'px-3 py-3 space-y-4' : 'px-2 py-3 space-y-3'}`}>
+      <div className={`flex-1 overflow-y-auto ${isOpen ? 'px-4 py-3.5 space-y-5' : 'px-2.5 py-3.5 space-y-4'}`}>
         {filteredNavSections.map((section, i) => (
-          <div key={i} className="space-y-1">
+          <div key={i} className="space-y-1.5">
             {isOpen ? (
-              <div className="px-3 text-[10px] font-bold text-[#647c87] uppercase tracking-wider mb-1 mt-2">
+              <div className="px-3 text-xs font-bold text-[#718a96] uppercase tracking-wider mb-1.5 mt-2">
                 {section.title}
               </div>
             ) : (
               <div className="my-2 border-t border-[#1f2b31] w-8 mx-auto" />
             )}
             
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {section.items.map((item, j) => {
                 const isActive = item.href === '/' 
                   ? pathname === '/' 
@@ -179,34 +179,34 @@ export function Sidebar() {
                     key={j}
                     href={item.href}
                     title={item.name}
-                    className={`group relative flex items-center rounded-xl text-xs font-medium transition-all duration-200 ${
-                      isOpen ? 'justify-between px-3 py-2' : 'justify-center p-2.5'
+                    className={`group relative flex items-center rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      isOpen ? 'justify-between px-3.5 py-2.5' : 'justify-center p-3'
                     } ${
                       isActive 
-                        ? 'bg-[#1f2f34] text-[#34d399] font-semibold border border-[#2a454a]/80 shadow-xs' 
-                        : 'text-[#8fa3ad] hover:bg-[#1a262b] hover:text-white'
+                        ? 'bg-[#1f2f34] text-[#34d399] font-bold border border-[#2a454a] shadow-xs' 
+                        : 'text-[#9ab0ba] hover:bg-[#1a262b] hover:text-white'
                     }`}
                   >
-                    <div className={`flex items-center min-w-0 ${isOpen ? 'gap-2.5' : ''}`}>
-                      <item.icon className={`w-4 h-4 shrink-0 transition-colors ${
-                        isActive ? 'text-[#34d399]' : 'text-[#647c87] group-hover:text-[#9db1bb]'
+                    <div className={`flex items-center min-w-0 ${isOpen ? 'gap-3' : ''}`}>
+                      <item.icon className={`w-5 h-5 shrink-0 transition-colors ${
+                        isActive ? 'text-[#34d399]' : 'text-[#718a96] group-hover:text-white'
                       }`} />
                       {isOpen && <span className="truncate">{item.name}</span>}
                     </div>
 
                     {item.badge !== undefined && (
                       isOpen ? (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                           item.isCritical 
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
                             : isActive
                               ? 'bg-[#16413a] text-[#34d399] border-[#20584f]'
-                              : 'bg-[#1e2a30] text-[#8fa3ad] border-[#2c3d46]'
+                              : 'bg-[#1e2a30] text-[#9ab0ba] border-[#2c3d46]'
                         }`}>
                           {item.badge}
                         </span>
                       ) : (
-                        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${
+                        <span className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full ${
                           item.isCritical ? 'bg-rose-500' : 'bg-[#34d399]'
                         }`}></span>
                       )
@@ -221,36 +221,36 @@ export function Sidebar() {
 
       {/* Bottom Status & User Profile */}
       <div className={`border-t border-[#1f2b31] mt-auto transition-all ${
-        isOpen ? 'p-3.5 space-y-3' : 'p-2.5 flex flex-col items-center gap-3'
+        isOpen ? 'p-4 space-y-3.5' : 'p-3 flex flex-col items-center gap-3'
       }`}>
         {/* Operational Status */}
         {isOpen ? (
-          <div className="flex items-center justify-between px-1 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22c55e]"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22c55e]"></span>
               </span>
-              <span className="font-medium text-[#8fa3ad] text-[11px]">System Operational</span>
+              <span className="font-semibold text-[#9ab0ba] text-xs">System Operational</span>
             </div>
-            <span className="text-[10px] text-[#556972] font-mono">v6.1.0</span>
+            <span className="text-xs text-[#677e8a] font-mono">v6.1.0</span>
           </div>
         ) : (
-          <div className="relative flex h-2.5 w-2.5 my-1" title="System Operational (v6.1.0)">
+          <div className="relative flex h-3 w-3 my-1" title="System Operational (v6.1.0)">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22c55e]"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22c55e]"></span>
           </div>
         )}
 
         {/* User Info */}
-        <div className={`flex items-center ${isOpen ? 'gap-2.5 px-1 pt-1' : 'justify-center'}`} title={`Dharmesh (${currentConfig.label})`}>
-          <div className="w-8 h-8 rounded-full bg-[#1b3b33] text-[#34d399] border border-[#23584c] flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+        <div className={`flex items-center ${isOpen ? 'gap-3 px-1 pt-1' : 'justify-center'}`} title={`Dharmesh (${currentConfig.label})`}>
+          <div className="w-9 h-9 rounded-full bg-[#1b3b33] text-[#34d399] border border-[#23584c] flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
             DS
           </div>
           {isOpen && (
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-white truncate leading-tight">Dharmesh</span>
-              <span className="text-[11px] text-[#647c87] truncate leading-tight mt-0.5">{currentConfig.label}</span>
+              <span className="text-sm font-bold text-white truncate leading-tight">Dharmesh</span>
+              <span className="text-xs text-[#718a96] font-medium truncate leading-tight mt-0.5">{currentConfig.label}</span>
             </div>
           )}
         </div>
