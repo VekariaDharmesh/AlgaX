@@ -1,9 +1,48 @@
 'use client';
 
-import React from 'react';
-import { Activity, FlaskConical, Image as ImageIcon, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, FlaskConical, Database, Layers, CheckCircle, AlertTriangle, HelpCircle } from 'lucide-react';
+
+interface CrossValidationRun {
+  id: string;
+  comparison_window_start: string | null;
+  comparison_window_end: string | null;
+  model_trend: string | null;
+  imagery_trend: string | null;
+  model_change: number | null;
+  imagery_change: number | null;
+  temporal_alignment_status: string;
+  result_status: string;
+  confidence: string;
+  evidence_summary: string;
+  created_at: string;
+  engine_version: string;
+}
 
 export default function EvidencePage() {
+  const [cvRuns, setCvRuns] = useState<CrossValidationRun[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch a pond first, then its CV runs
+    const fetchCV = async () => {
+      try {
+        const pRes = await fetch('http://localhost:8000/api/ponds');
+        const ponds = await pRes.json();
+        if (ponds && ponds.length > 0) {
+          const cvRes = await fetch(`http://localhost:8000/api/ponds/${ponds[0].id}/cross-validation`);
+          const data = await cvRes.json();
+          setCvRuns(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCV();
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       <div>
@@ -63,6 +102,64 @@ export default function EvidencePage() {
             <div><span className="block text-gray-500 text-xs mb-1">Carbon Method</span><span className="font-medium text-gray-900">Dynamic C-frac</span></div>
           </div>
         </div>
+        
+        {/* Cross Validation Alignment */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-2">
+          <div className="border-b border-gray-200 p-4 bg-indigo-50 flex items-center gap-3">
+            <Layers className="w-5 h-5 text-indigo-600" />
+            <h2 className="font-bold text-gray-900">Phase 4.4: Evidence Alignment (Cross-Validation)</h2>
+          </div>
+          <div className="p-6">
+            {loading ? (
+              <p className="text-gray-500 text-sm">Loading alignment evidence...</p>
+            ) : cvRuns.length > 0 ? (
+              <div className="space-y-4">
+                {cvRuns.map((run) => (
+                  <div key={run.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          {run.result_status === 'CONSISTENT' && <CheckCircle className="w-5 h-5 text-green-500" />}
+                          {run.result_status === 'INCONSISTENT' && <AlertTriangle className="w-5 h-5 text-red-500" />}
+                          {run.result_status === 'PARTIALLY_CONSISTENT' && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+                          {run.result_status === 'INSUFFICIENT_EVIDENCE' && <HelpCircle className="w-5 h-5 text-gray-500" />}
+                          <span className="font-bold text-gray-900">Result: {run.result_status.replace(/_/g, ' ')}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{run.evidence_summary}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-gray-500 block mb-1">Confidence</span>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded-full ${
+                          run.confidence === 'HIGH' ? 'bg-green-100 text-green-700' :
+                          run.confidence === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {run.confidence}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded border border-gray-100">
+                      <div>
+                        <span className="block text-gray-500 text-xs mb-1">Model Trend</span>
+                        <span className="font-medium">{run.model_trend || 'N/A'} {run.model_change !== null ? `(${(run.model_change * 100).toFixed(1)}%)` : ''}</span>
+                      </div>
+                      <div>
+                        <span className="block text-gray-500 text-xs mb-1">Imagery Trend</span>
+                        <span className="font-medium">{run.imagery_trend || 'N/A'} {run.imagery_change !== null ? `(${(run.imagery_change * 100).toFixed(1)} pp)` : ''}</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs text-gray-400 font-mono">
+                      Run ID: {run.id} | Engine: {run.engine_version}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No cross-validation runs available for this pond.</p>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

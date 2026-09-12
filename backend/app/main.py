@@ -9,7 +9,9 @@ import uuid
 from . import models, schemas
 from .database import get_db, engine
 
-app = FastAPI(title="AlgaeMRV API")
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="AlgaeMRV API", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,8 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .api import imagery
+from .api import imagery, cross_validation
+
 app.include_router(imagery.router, prefix="/api", tags=["imagery"])
+app.include_router(cross_validation.router, prefix="/api", tags=["cross-validation"])
 
 @app.get("/health")
 def health_check():

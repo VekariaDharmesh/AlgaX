@@ -321,3 +321,110 @@ def perform_visual_analysis(db: Session, processing_id: UUID) -> ImageryAnalysis
     db.refresh(analysis)
     
     return analysis
+
+def perform_cross_validation(db: Session, pond_id: uuid.UUID, imagery_analysis_id: uuid.UUID) -> models.CrossValidationRun:
+    from sqlalchemy import desc
+    analysis = db.query(models.ImageryAnalysis).filter(models.ImageryAnalysis.id == imagery_analysis_id).first()
+    if not analysis:
+        raise ValueError("Imagery analysis not found")
+    
+    # 1. Temporal Alignment
+    imagery_record = db.query(models.ImageryRecord).filter(models.ImageryRecord.id == analysis.imagery_id).first()
+    end_time = imagery_record.capture_timestamp if imagery_record.capture_timestamp else analysis.created_at
+    
+    start_time = None
+    if analysis.baseline_analysis_id:
+        baseline_record = db.query(models.ImageryRecord).join(models.ImageryAnalysis, models.ImageryRecord.id == models.ImageryAnalysis.imagery_id).filter(models.ImageryAnalysis.id == analysis.baseline_analysis_id).first()
+        if baseline_record:
+            start_time = baseline_record.capture_timestamp if baseline_record.capture_timestamp else baseline_record.created_at
+        else:
+            baseline_analysis = db.query(models.ImageryAnalysis).filter(models.ImageryAnalysis.id == analysis.baseline_analysis_id).first()
+            if baseline_analysis:
+                start_time = baseline_analysis.created_at
+        
+    temporal_alignment = models.TemporalAlignmentStatus.GOOD
+    if not start_time:
+        temporal_alignment = models.TemporalAlignmentStatus.INSUFFICIENT_EVIDENCE
+        start_time = end_time  # fallback just for queries
+    
+    # 2. Extract Model Evidence
+    model_run = db.query(models.ModelRun).filter(
+        models.ModelRun.pond_id == pond_id,
+        models.ModelRun.period_start <= end_time,
+        models.ModelRun.period_end >= start_time
+    ).order_by(desc(models.ModelRun.execution_timestamp)).first()
+    
+    model_trend = None
+    model_change_rel = None
+    if model_run and temporal_alignment != models.TemporalAlignmentStatus.INSUFFICIENT_EVIDENCE:
+        start_biomass = db.query(models.BiomassEstimate).filter(
+            models.BiomassEstimate.model_run_id == model_run.id,
+            models.BiomassEstimate.timestamp >= start_time
+        ).order_by(models.BiomassEstimate.timestamp.asc()).first()
+        
+        end_biomass = db.query(models.BiomassEstimate).filter(
+            models.BiomassEstimate.model_run_id == model_run.id,
+            models.BiomassEstimate.timestamp <= end_time
+        ).order_by(models.BiomassEstimate.timestamp.desc()).first()
+        
+        if start_biomass and end_biomass and start_biomass.biomass_g_per_l > 0:
+            model_change_rel = (end_biomass.biomass_g_per_l - start_biomass.biomass_g_per_l) / start_biomass.biomass_g_per_l
+            if model_change_rel > 0.05:
+                model_trend = models.TemporalChangeClassification.INCREASE
+            elif model_change_rel < -0.05:
+                model_trend = models.TemporalChangeClassification.DECREASE
+            else:
+                model_trend = models.TemporalChangeClassification.STABLE
+        else:
+            model_trend = models.TemporalChangeClassification.INSUFFICIENT_EVIDENCE
+    else:
+        model_trend = models.TemporalChangeClassification.INSUFFICIENT_EVIDENCE
+        
+    imagery_trend = analysis.change_classification
+    
+    # 3. Consistency Engine
+    result_status = models.ValidationResultStatus.INSUFFICIENT_EVIDENCE
+    confidence = models.ValidationConfidence.LOW
+    summary = "Insufficient evidence to perform cross-validation."
+    
+    if temporal_alignment == models.TemporalAlignmentStatus.GOOD and model_trend != models.TemporalChangeClassification.INSUFFICIENT_EVIDENCE and imagery_trend and imagery_trend != models.TemporalChangeClassification.INSUFFICIENT_EVIDENCE:
+        if model_trend == imagery_trend:
+            result_status = models.ValidationResultStatus.CONSISTENT
+            confidence = models.ValidationConfidence.HIGH
+            summary = "Available sensor, model and imagery evidence show directionally consistent change during the selected window."
+        elif model_trend == models.TemporalChangeClassification.STABLE or imagery_trend == models.TemporalChangeClassification.STABLE:
+            result_status = models.ValidationResultStatus.PARTIALLY_CONSISTENT
+            confidence = models.ValidationConfidence.MEDIUM
+            summary = "Evidence is partially consistent; one source indicates stability while the other indicates change."
+        else:
+            result_status = models.ValidationResultStatus.INCONSISTENT
+            confidence = models.ValidationConfidence.HIGH
+            summary = "Modelled biomass and imagery-derived green coverage show contradictory directional trends during the comparison window."
+    
+    cv_run = models.CrossValidationRun(
+        farm_id=analysis.farm_id,
+        pond_id=pond_id,
+        model_run_id=model_run.id if model_run else None,
+        imagery_analysis_id=analysis.id,
+        comparison_window_start=start_time,
+        comparison_window_end=end_time,
+        model_trend=model_trend,
+        imagery_trend=imagery_trend,
+        model_change=model_change_rel,
+        imagery_change=analysis.absolute_change,
+        temporal_alignment_status=temporal_alignment,
+        result_status=result_status,
+        confidence=confidence,
+        evidence_summary=summary,
+        provenance_json={
+            "imagery_source": "Phase 4.3 Visual Analysis",
+            "model_source": "Phase 2 Biological Model",
+            "thresholds": {"model_change_significant": 0.05}
+        },
+        engine_version="4.4.0"
+    )
+    
+    db.add(cv_run)
+    db.commit()
+    db.refresh(cv_run)
+    return cv_run
