@@ -7,6 +7,7 @@ import {
   Home, 
   Map, 
   Droplets, 
+  Layers,
   Activity, 
   AlertCircle, 
   Image as ImageIcon,
@@ -24,10 +25,9 @@ import {
 
 const navItems = [
   {
-    group: 'FARM',
+    group: 'FACILITIES',
     items: [
-      { name: 'Farms', href: '/farms', icon: Map },
-      { name: 'Ponds', href: '/ponds', icon: Droplets },
+      { name: 'Farms & Ponds', href: '/farms', icon: Layers },
     ]
   },
   {

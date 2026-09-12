@@ -41,12 +41,18 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
     <div className="max-w-6xl mx-auto space-y-8 pb-16 p-6">
       
       {/* Back link */}
-      <div>
+      <div className="flex items-center justify-between">
         <Link 
-          href="/ponds" 
-          className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm transition-all"
+          href="/farms?tab=ponds" 
+          className="inline-flex items-center text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-2xs transition-all"
         >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to All Ponds
+          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to Farms & Ponds
+        </Link>
+        <Link
+          href={`/farms?farm=${pond.farmId}`}
+          className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200"
+        >
+          📍 {pond.farmName}
         </Link>
       </div>
 

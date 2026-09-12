@@ -1,6 +1,8 @@
 export interface Pond {
   id: string;
   name: string;
+  farmId: string;
+  farmName: string;
   species: string;
   speciesCommon: string;
   status: 'Healthy' | 'Attention' | 'Critical' | 'Offline';
@@ -25,6 +27,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-1',
     name: 'Pond Narmada',
+    farmId: 'farm-1',
+    farmName: 'Kutch Bio-Raceway Facility',
     species: 'Chlorella vulgaris',
     speciesCommon: 'Green Microalgae',
     status: 'Healthy',
@@ -47,6 +51,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-2',
     name: 'Pond Sabarmati',
+    farmId: 'farm-1',
+    farmName: 'Kutch Bio-Raceway Facility',
     species: 'Spirulina platensis',
     speciesCommon: 'Blue-Green Spirulina',
     status: 'Attention',
@@ -69,6 +75,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-3',
     name: 'Pond Tapi',
+    farmId: 'farm-6',
+    farmName: 'Bhavnagar Marine Algae Centre',
     species: 'Scenedesmus obliquus',
     speciesCommon: 'Green Scenedesmus',
     status: 'Healthy',
@@ -91,6 +99,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-4',
     name: 'Pond Mahi',
+    farmId: 'farm-3',
+    farmName: 'Sambhar Salt Lake Bio-Culture Site',
     species: 'Dunaliella salina',
     speciesCommon: 'Beta-Carotene Halotolerant Algae',
     status: 'Healthy',
@@ -113,6 +123,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-5',
     name: 'Pond Kaveri',
+    farmId: 'farm-2',
+    farmName: 'Rameswaram Coastal Algae Hub',
     species: 'Chlorella vulgaris',
     speciesCommon: 'High-Yield Lipid Strain',
     status: 'Healthy',
@@ -135,6 +147,8 @@ export const DEMO_PONDS: Pond[] = [
   {
     id: 'p-6',
     name: 'Pond Godavari',
+    farmId: 'farm-4',
+    farmName: 'Kochi Blue-Carbon Marine Facility',
     species: 'Haematococcus pluvialis',
     speciesCommon: 'High-Value Astaxanthin Strain',
     status: 'Healthy',
