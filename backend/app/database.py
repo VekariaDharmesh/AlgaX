@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # Default to the same URL used in .env, but check environment
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/algaemrv"
+    "postgresql://postgres:postgres@localhost:5432/algax"
 )
 
 # Use standard sync engine

@@ -1,4 +1,4 @@
-# architecture.md — AlgaeMRV Technical Architecture
+# architecture.md — AlgaX Technical Architecture
 ### Companion to `plan.md` · Implementation-Level System Design
 
 This document is the detailed technical architecture for the platform described in `plan.md`. Where `plan.md` explains *what* and *why*, this document specifies *how*: components, data contracts, schemas, APIs, and deployment topology, at a level another developer or coding agent can build directly from.
@@ -111,7 +111,7 @@ flowchart TB
 ## 4. Repository / Folder Structure
 
 ```
-algaemrv/
+algax/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py                 # FastAPI app entrypoint, router mounting
