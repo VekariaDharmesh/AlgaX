@@ -41,8 +41,18 @@ import {
 } from 'recharts';
 
 import { CarbonWaterfall, CarbonWaterfallStage } from '@/components/carbon/CarbonWaterfall';
+import { DEMO_FARMS } from '@/lib/demo/ponds';
+import { FACILITY_CARBON_LCA_PROFILES, FarmCarbonLCAProfile } from '@/lib/demo/facilityData';
 
 export default function CarbonAccountingPage() {
+  // Facility / Farm selector state
+  const [activeFarmId, setActiveFarmId] = useState<string>('farm-1');
+  const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+
+  const activeFarmProfile: FarmCarbonLCAProfile = useMemo(() => {
+    return FACILITY_CARBON_LCA_PROFILES[activeFarmId] || FACILITY_CARBON_LCA_PROFILES['farm-1'];
+  }, [activeFarmId]);
+
   // Unit toggle state: 't' (tonnes CO2e) or 'kg' (kg CO2e)
   const [unit, setUnit] = useState<'t' | 'kg'>('t');
   
@@ -63,22 +73,36 @@ export default function CarbonAccountingPage() {
 
   // Dynamic Assumptions State
   const [assumptions, setAssumptions] = useState({
-    carbonFraction: 0.51, // kg C / kg dry biomass
-    operationalElectricity: 120, // kWh
-    gridEmissionFactor: 0.71, // kg CO2e / kWh
-    endUseFate: 'Bioplastic (Durable)',
-    retentionRate: 0.60, // 60% durable
+    carbonFraction: FACILITY_CARBON_LCA_PROFILES['farm-1'].carbonFraction,
+    operationalElectricity: FACILITY_CARBON_LCA_PROFILES['farm-1'].operationalElectricityKwh,
+    gridEmissionFactor: FACILITY_CARBON_LCA_PROFILES['farm-1'].gridEmissionFactor,
+    endUseFate: FACILITY_CARBON_LCA_PROFILES['farm-1'].endUseFate,
+    retentionRate: FACILITY_CARBON_LCA_PROFILES['farm-1'].retentionRate,
   });
+
+  // Handle farm switch
+  const handleSelectFarm = (farmId: string) => {
+    setActiveFarmId(farmId);
+    const profile = FACILITY_CARBON_LCA_PROFILES[farmId] || FACILITY_CARBON_LCA_PROFILES['farm-1'];
+    setAssumptions({
+      carbonFraction: profile.carbonFraction,
+      operationalElectricity: profile.operationalElectricityKwh,
+      gridEmissionFactor: profile.gridEmissionFactor,
+      endUseFate: profile.endUseFate,
+      retentionRate: profile.retentionRate,
+    });
+    setShowFarmDropdown(false);
+  };
 
   // Edit Assumptions Form Temp State
   const [tempAssumptions, setTempAssumptions] = useState({ ...assumptions });
 
-  // Base raw calculations in kg
-  const grossFixedKg = 2140;
-  const processingConversionDeductionKg = 860;
-  const endUseRetainedKg = grossFixedKg - processingConversionDeductionKg; // 1280 kg
-  const operationalFootprintKg = assumptions.operationalElectricity * assumptions.gridEmissionFactor + 10.8; // ~96.0 kg
-  const netRemovedKg = endUseRetainedKg - operationalFootprintKg; // ~1184 kg = 1.184 ~ 1.19 t
+  // Base raw calculations in kg for the active facility
+  const grossFixedKg = activeFarmProfile.grossFixedKg;
+  const processingConversionDeductionKg = activeFarmProfile.processingConversionDeductionKg;
+  const endUseRetainedKg = grossFixedKg - processingConversionDeductionKg;
+  const operationalFootprintKg = assumptions.operationalElectricity * assumptions.gridEmissionFactor + 10.8;
+  const netRemovedKg = endUseRetainedKg - operationalFootprintKg;
 
   // Conversion helper
   const scale = unit === 't' ? 0.001 : 1.0;
@@ -98,8 +122,8 @@ export default function CarbonAccountingPage() {
       label: ['Gross CO₂', 'Fixed'],
       type: 'positive',
       valueKgCO2e: grossFixedKg,
-      source: 'Multi-spectral biomass growth model & Monod kinetics',
-      description: 'Total atmospheric CO₂ biologically fixed via photosynthesis across raceways.',
+      source: `${activeFarmProfile.farmName} • Multi-spectral biomass growth model & Monod kinetics`,
+      description: `Total atmospheric CO₂ biologically fixed via photosynthesis across ${activeFarmProfile.location}.`,
     },
     {
       id: 'processing_conversion',
@@ -114,7 +138,7 @@ export default function CarbonAccountingPage() {
       label: ['End-Use', 'Retained'],
       type: 'subtotal',
       valueKgCO2e: endUseRetainedKg,
-      source: 'Durable bioplastic product fate analysis (ISO 14064-2)',
+      source: `${assumptions.endUseFate} fate analysis (ISO 14064-2)`,
       description: 'Long-term sequestered carbon fraction locked into durable structural biopolymer.',
     },
     {
@@ -122,7 +146,7 @@ export default function CarbonAccountingPage() {
       label: ['Operational', 'Footprint'],
       type: 'negative',
       valueKgCO2e: -Math.round(operationalFootprintKg),
-      source: 'Scope 1 & Scope 2 energy telemetry (paddle wheels + grid factor)',
+      source: `Scope 1 & Scope 2 energy telemetry (${activeFarmProfile.energySource})`,
       description: 'Parasitic energy footprint deductions from electricity and water pumping.',
     },
     {
@@ -133,56 +157,17 @@ export default function CarbonAccountingPage() {
       source: 'Net verified carbon removal (Registry standard compliant)',
       description: 'Final audited net atmospheric carbon removal eligible for carbon credits.',
     },
-  ], [grossFixedKg, processingConversionDeductionKg, endUseRetainedKg, operationalFootprintKg, netRemovedKg]);
+  ], [grossFixedKg, processingConversionDeductionKg, endUseRetainedKg, operationalFootprintKg, netRemovedKg, activeFarmProfile, assumptions]);
 
-  // Trend Data for Removal Trend Chart
-  const trendDataMap: Record<string, { date: string; value: number }[]> = {
-    '7D': [
-      { date: 'Sep 06', value: 0.85 },
-      { date: 'Sep 07', value: 0.90 },
-      { date: 'Sep 08', value: 1.05 },
-      { date: 'Sep 09', value: 1.12 },
-      { date: 'Sep 10', value: 1.15 },
-      { date: 'Sep 11', value: 1.48 },
-      { date: 'Sep 12', value: 1.19 },
-    ],
-    '30D': [
-      { date: 'Sep 01', value: 0.45 },
-      { date: 'Sep 02', value: 0.58 },
-      { date: 'Sep 03', value: 0.55 },
-      { date: 'Sep 04', value: 0.62 },
-      { date: 'Sep 05', value: 0.78 },
-      { date: 'Sep 06', value: 0.80 },
-      { date: 'Sep 07', value: 0.90 },
-      { date: 'Sep 08', value: 1.05 },
-      { date: 'Sep 09', value: 1.15 },
-      { date: 'Sep 10', value: 1.15 },
-      { date: 'Sep 11', value: 1.48 },
-      { date: 'Sep 12', value: 1.19 },
-    ],
-    '90D': [
-      { date: 'Jul 15', value: 0.35 },
-      { date: 'Aug 01', value: 0.65 },
-      { date: 'Aug 15', value: 0.92 },
-      { date: 'Sep 01', value: 0.45 },
-      { date: 'Sep 12', value: 1.19 },
-    ],
-    '1Y': [
-      { date: 'Q4 2025', value: 0.30 },
-      { date: 'Q1 2026', value: 0.68 },
-      { date: 'Q2 2026', value: 0.95 },
-      { date: 'Q3 2026', value: 1.19 },
-    ],
-  };
-
-  const trendData = (trendDataMap[timeRange] || trendDataMap['30D']).map(item => ({
+  // Trend Data for Removal Trend Chart based on selected farm
+  const trendData = (activeFarmProfile.trendData[timeRange] || activeFarmProfile.trendData['30D']).map(item => ({
     ...item,
     val: unit === 't' ? item.value : Math.round(item.value * 1000),
   }));
 
   // Sparkline data for Net Carbon KPI card
   const sparklineData = [
-    { v: 0.8 }, { v: 0.85 }, { v: 0.95 }, { v: 1.05 }, { v: 1.15 }, { v: 1.19 }
+    { v: 0.8 }, { v: 0.85 }, { v: 0.95 }, { v: 1.05 }, { v: 1.15 }, { v: Number(netRemovedVal) || 1.19 }
   ];
 
   // Handle assumptions save
@@ -200,12 +185,12 @@ export default function CarbonAccountingPage() {
       setShowExportModal(false);
       // Create instant simulated download trigger
       const blob = new Blob([
-        `AlgaX Carbon MRV Audit Report\nFacility: Kutch Bio-Raceway Facility (Gujarat, India)\nPeriod: ${dateRange}\nNet Carbon Removed: ${netRemovedVal} ${unitLabel}\nGross Fixed: ${grossFixedVal} ${unitLabel}\nEnd-Use Retained: ${endUseRetainedVal} ${unitLabel}\nOperational Footprint: -${operationalFootprintVal} ${unit === 't' ? 't CO2e' : 'kg CO2e'}\nCarbon Fraction: ${assumptions.carbonFraction}\nGrid Factor: ${assumptions.gridEmissionFactor} kg CO2e/kWh\nGenerated: ${new Date().toISOString()}\n`
+        `AlgaX Carbon MRV Audit Report\nFacility: ${activeFarmProfile.farmName} (${activeFarmProfile.location})\nManager: ${activeFarmProfile.manager}\nCoordinates: ${activeFarmProfile.coordinates.lat}°N, ${activeFarmProfile.coordinates.lng}°E\nEnergy Source: ${activeFarmProfile.energySource}\nAnnual Capacity: ${activeFarmProfile.annualCapacity}\nPeriod: ${dateRange}\nNet Carbon Removed: ${netRemovedVal} ${unitLabel}\nGross Fixed: ${grossFixedVal} ${unitLabel}\nEnd-Use Retained: ${endUseRetainedVal} ${unitLabel}\nOperational Footprint: -${operationalFootprintVal} ${unit === 't' ? 't CO2e' : 'kg CO2e'}\nCarbon Fraction: ${assumptions.carbonFraction}\nGrid Factor: ${assumptions.gridEmissionFactor} kg CO2e/kWh\nGenerated: ${new Date().toISOString()}\n`
       ], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `AlgaX-Carbon-Report-${dateRange.replace(/\s+/g, '_')}.${format.toLowerCase()}`;
+      a.download = `AlgaX-Carbon-Report-${activeFarmProfile.farmId}-${dateRange.replace(/\s+/g, '_')}.${format.toLowerCase()}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -223,21 +208,57 @@ export default function CarbonAccountingPage() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Carbon Accounting
+              Carbon Accounting & LCA
             </h1>
             <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
-              Track carbon removal performance across your algae operations.
+              MRV lifecycle carbon removal verification across Indian facilities.
             </p>
           </div>
         </div>
 
         {/* Header Action Controls */}
-        <div className="flex items-center gap-3 self-start md:self-auto relative">
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto relative">
+          
+          {/* Farm Facility Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowFarmDropdown(!showFarmDropdown);
+                setShowDateDropdown(false);
+              }}
+              className="flex items-center gap-2 bg-white border border-slate-200/90 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
+            >
+              <span>{activeFarmProfile.farmName}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {showFarmDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="font-bold text-slate-400 px-3 py-1.5 uppercase text-[10px]">Select Indian Facility</div>
+                {DEMO_FARMS.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleSelectFarm(f.id)}
+                    className={`w-full text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center justify-between ${
+                      activeFarmId === f.id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{f.name}</span>
+                    {activeFarmId === f.id && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Date Range Picker Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setShowDateDropdown(!showDateDropdown)}
-              className="flex items-center gap-2 bg-white border border-slate-200/90 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all"
+              onClick={() => {
+                setShowDateDropdown(!showDateDropdown);
+                setShowFarmDropdown(false);
+              }}
+              className="flex items-center gap-2 bg-white border border-slate-200/90 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
             >
               <Calendar className="w-4 h-4 text-slate-400" />
               <span>{dateRange}</span>
@@ -589,54 +610,43 @@ export default function CarbonAccountingPage() {
             {/* Aerial Site Image with Interactive Pond Badges */}
             <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-900 mt-4 group">
               <img 
-                src="/farm_aerial.jpg" 
-                alt="Kutch Bio-Raceway Facility Satellite" 
+                src={activeFarmProfile.imageUrl} 
+                alt={activeFarmProfile.farmName} 
                 className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
 
-              {/* Pond Narmada Overlay */}
-              <div className="absolute top-4 left-6">
-                <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond Narmada • 0.42 t CO₂e
-                </span>
-              </div>
-
-              {/* Pond Sabarmati Overlay */}
-              <div className="absolute bottom-4 left-4">
-                <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond Sabarmati • 0.51 t CO₂e
-                </span>
-              </div>
-
-              {/* Pond Tapi Overlay */}
-              <div className="absolute bottom-4 right-4">
-                <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond Tapi • 0.26 t CO₂e
-                </span>
-              </div>
+              {/* Dynamic Pond Overlays */}
+              {activeFarmProfile.pondAllocations.slice(0, 3).map((alloc, idx) => (
+                <div 
+                  key={alloc.pondName} 
+                  className={`absolute ${idx === 0 ? 'top-3 left-4' : idx === 1 ? 'bottom-3 left-3' : 'bottom-3 right-3'}`}
+                >
+                  <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    {alloc.pondName} • {alloc.removalTonnes.toFixed(2)} t CO₂e
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Bottom 3 Facility Indicators */}
           <div className="grid grid-cols-3 divide-x divide-slate-100 text-center pt-2 border-t border-slate-100 text-xs">
             <div className="px-1">
-              <div className="font-black text-slate-900">3</div>
+              <div className="font-black text-slate-900 font-mono">{activeFarmProfile.activePondCount}</div>
               <div className="text-[10px] text-slate-400 font-semibold">Active Ponds</div>
             </div>
             <div className="px-1">
-              <div className="font-black text-slate-900">12.5 ha</div>
+              <div className="font-black text-slate-900 font-mono">{activeFarmProfile.totalAreaHa} ha</div>
               <div className="text-[10px] text-slate-400 font-semibold">Total Area</div>
             </div>
             <div className="px-1">
               <div className="font-bold text-emerald-600 flex items-center justify-center gap-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Healthy
+                Active MRV
               </div>
-              <div className="text-[10px] text-slate-400 font-semibold">System Status</div>
+              <div className="text-[10px] text-slate-400 font-semibold">Verified Sink</div>
             </div>
           </div>
         </div>
@@ -918,11 +928,11 @@ export default function CarbonAccountingPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Map className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">Kutch Bio-Raceway Facility Satellite Topography</h3>
+                <h3 className="text-base font-bold text-slate-900">{activeFarmProfile.farmName} Satellite Topography</h3>
               </div>
               <button 
                 onClick={() => setShowMapModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -930,34 +940,29 @@ export default function CarbonAccountingPage() {
 
             <div className="relative h-80 w-full rounded-2xl overflow-hidden bg-slate-900">
               <img 
-                src="/farm_aerial.jpg" 
-                alt="Kutch Aerial Map" 
+                src={activeFarmProfile.imageUrl} 
+                alt={activeFarmProfile.farmName} 
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
               
-              <div className="absolute top-6 left-6">
-                <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Pond Narmada (0.42 t CO₂e)
-                </span>
-              </div>
-              <div className="absolute top-28 left-16">
-                <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Pond Sabarmati (0.51 t CO₂e)
-                </span>
-              </div>
-              <div className="absolute bottom-8 right-8">
-                <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Pond Tapi (0.26 t CO₂e)
-                </span>
-              </div>
+              {activeFarmProfile.pondAllocations.slice(0, 3).map((alloc, idx) => (
+                <div 
+                  key={alloc.pondName} 
+                  className={`absolute ${idx === 0 ? 'top-6 left-6' : idx === 1 ? 'top-28 left-16' : 'bottom-8 right-8'}`}
+                >
+                  <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
+                    ● {alloc.pondName} ({alloc.removalTonnes.toFixed(2)} t CO₂e)
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div className="flex justify-between items-center text-xs text-slate-500 pt-2">
-              <span>Coordinates: 23.733°N, 69.859°E • Kutch, Gujarat, India</span>
+              <span>Coordinates: {activeFarmProfile.coordinates.lat}°N, {activeFarmProfile.coordinates.lng}°E • {activeFarmProfile.location}</span>
               <button
                 onClick={() => setShowMapModal(false)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold shadow-xs"
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold shadow-xs cursor-pointer hover:bg-slate-800"
               >
                 Close Topography
               </button>

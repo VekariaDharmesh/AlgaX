@@ -58,8 +58,10 @@ import {
   SensorCalibrationRecord,
   CalibrationCalculationResponse
 } from '@/lib/api';
+import { DEMO_FARMS } from '@/lib/demo/ponds';
+import { FACILITY_CALIBRATION_PROFILES, FarmCalibrationProfile } from '@/lib/demo/facilityData';
 
-interface SensorNode {
+export interface SensorNode {
   id: string;
   code: string;
   name: string;
@@ -79,133 +81,46 @@ interface SensorNode {
   referenceStandard: string;
   mapX: number; // percentage coordinate on map
   mapY: number;
-  icon: any;
 }
 
-const DEFAULT_SENSOR_NODES: SensorNode[] = [
-  {
-    id: 'TEMP-001',
-    code: 'T-01',
-    name: 'Temperature Sensor',
-    type: 'temperature',
-    unit: '°C',
-    pond: 'Pond A',
-    currentValue: 24.8,
-    formattedValue: '24.8 °C',
-    range: '0 – 50 °C',
-    status: 'Active',
-    isOnline: true,
-    lastCalibrated: 'Sep 01, 2026',
-    nextDue: 'Sep 10, 2026',
-    dueInDays: 8,
-    offset: 0.12,
-    gain: 0.998,
-    referenceStandard: 'NIST Calibrated Thermal Bath 25.0°C',
-    mapX: 47,
-    mapY: 52,
-    icon: Thermometer
-  },
-  {
-    id: 'PH-002',
-    code: 'PH-02',
-    name: 'pH Sensor',
-    type: 'ph',
-    unit: 'pH',
-    pond: 'Pond A',
-    currentValue: 7.12,
-    formattedValue: '7.12',
-    range: '4 – 10 pH',
-    status: 'Active',
-    isOnline: true,
-    lastCalibrated: 'Aug 28, 2026',
-    nextDue: 'Sep 10, 2026',
-    dueInDays: 8,
-    offset: -0.08,
-    gain: 1.005,
-    referenceStandard: 'NIST Buffer Solution pH 7.00 & 10.01',
-    mapX: 28,
-    mapY: 50,
-    icon: Droplets
-  },
-  {
-    id: 'DO-003',
-    code: 'DO-03',
-    name: 'Dissolved Oxygen Sensor',
-    type: 'dissolved_oxygen',
-    unit: 'mg/L',
-    pond: 'Pond A',
-    currentValue: 5.6,
-    formattedValue: '5.6 mg/L',
-    range: '0 – 20 mg/L',
-    status: 'Active',
-    isOnline: true,
-    lastCalibrated: 'Aug 30, 2026',
-    nextDue: 'Sep 12, 2026',
-    dueInDays: 10,
-    offset: 0.05,
-    gain: 1.012,
-    referenceStandard: 'Air-Saturated Water Bath (100% DO Reference)',
-    mapX: 74,
-    mapY: 42,
-    icon: Wind
-  },
-  {
-    id: 'TURB-004',
-    code: 'TURB-04',
-    name: 'Turbidity Sensor',
-    type: 'turbidity',
-    unit: 'NTU',
-    pond: 'Pond A',
-    currentValue: 12.4,
-    formattedValue: '12.4 NTU',
-    range: '0 – 100 NTU',
-    status: 'Active',
-    isOnline: true,
-    lastCalibrated: 'Aug 25, 2026',
-    nextDue: 'Sep 10, 2026',
-    dueInDays: 8,
-    offset: -0.30,
-    gain: 0.995,
-    referenceStandard: 'Formazin Turbidity Standard 40.0 NTU',
-    mapX: 68,
-    mapY: 68,
-    icon: Eye
-  },
-  {
-    id: 'LIGHT-005',
-    code: 'L-05',
-    name: 'Light (PAR) Sensor',
-    type: 'light',
-    unit: 'μmol/m²/s',
-    pond: 'Pond A',
-    currentValue: 320,
-    formattedValue: '320 μmol/m²/s',
-    range: '0 – 2500 μmol/m²/s',
-    status: 'Active',
-    isOnline: true,
-    lastCalibrated: 'Aug 27, 2026',
-    nextDue: 'Sep 10, 2026',
-    dueInDays: 8,
-    offset: 0.0,
-    gain: 1.000,
-    referenceStandard: 'Calibrated Quantum Flux Radiometer',
-    mapX: 52,
-    mapY: 33,
-    icon: Sun
+const getSensorIcon = (type: string) => {
+  switch (type) {
+    case 'temperature': return Thermometer;
+    case 'ph': return Droplets;
+    case 'dissolved_oxygen': return Wind;
+    case 'turbidity': return Eye;
+    case 'light': return Sun;
+    default: return Activity;
   }
-];
+};
 
 export default function CalibrationPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [selectedFarm, setSelectedFarm] = useState('Genesis Algae Farm');
-  const [selectedPond, setSelectedPond] = useState('Pond A');
+  const [activeFarmId, setActiveFarmId] = useState<string>('farm-1');
+  const [selectedFarm, setSelectedFarm] = useState(FACILITY_CALIBRATION_PROFILES['farm-1'].farmName);
+  const [selectedPond, setSelectedPond] = useState(FACILITY_CALIBRATION_PROFILES['farm-1'].defaultPond);
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
   const [showPondDropdown, setShowPondDropdown] = useState(false);
 
+  const activeFarmProfile: FarmCalibrationProfile = useMemo(() => {
+    return FACILITY_CALIBRATION_PROFILES[activeFarmId] || FACILITY_CALIBRATION_PROFILES['farm-1'];
+  }, [activeFarmId]);
+
   // Selected sensor node in map & inspector
-  const [selectedSensorId, setSelectedSensorId] = useState<string>('TEMP-001');
+  const [selectedSensorId, setSelectedSensorId] = useState<string>(FACILITY_CALIBRATION_PROFILES['farm-1'].sensors[0].id);
   const [activeInspectorTab, setActiveInspectorTab] = useState<'Overview' | 'Calibration' | 'Verification' | 'History'>('Overview');
+
+  const handleSelectFarm = (farmId: string) => {
+    setActiveFarmId(farmId);
+    const profile = FACILITY_CALIBRATION_PROFILES[farmId] || FACILITY_CALIBRATION_PROFILES['farm-1'];
+    setSelectedFarm(profile.farmName);
+    setSelectedPond(profile.defaultPond);
+    if (profile.sensors.length > 0) {
+      setSelectedSensorId(profile.sensors[0].id);
+    }
+    setShowFarmDropdown(false);
+  };
 
   // Bottom Table Filter & Search
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Pending' | 'Overdue' | 'Alerts'>('All');
@@ -239,12 +154,16 @@ export default function CalibrationPage() {
   const [manualGain, setManualGain] = useState(0.998);
 
   const selectedSensor = useMemo(() => {
-    return DEFAULT_SENSOR_NODES.find(s => s.id === selectedSensorId) || DEFAULT_SENSOR_NODES[0];
-  }, [selectedSensorId]);
+    return activeFarmProfile.sensors.find(s => s.id === selectedSensorId) || activeFarmProfile.sensors[0];
+  }, [activeFarmProfile, selectedSensorId]);
+
+  const SensorIcon = useMemo(() => {
+    return getSensorIcon(selectedSensor.type);
+  }, [selectedSensor.type]);
 
   // Filtered sensor nodes for table
   const filteredSensors = useMemo(() => {
-    return DEFAULT_SENSOR_NODES.filter(s => {
+    return activeFarmProfile.sensors.filter(s => {
       if (statusFilter === 'Active' && s.status !== 'Active') return false;
       if (statusFilter === 'Pending' && s.status !== 'Pending') return false;
       if (statusFilter === 'Overdue' && s.status !== 'Overdue') return false;
@@ -260,7 +179,7 @@ export default function CalibrationPage() {
       }
       return true;
     });
-  }, [statusFilter, searchQuery]);
+  }, [activeFarmProfile, statusFilter, searchQuery]);
 
   // Toggle selection
   const toggleSelectAll = () => {
@@ -330,7 +249,7 @@ export default function CalibrationPage() {
                   setShowFarmDropdown(!showFarmDropdown);
                   setShowPondDropdown(false);
                 }}
-                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
               >
                 <span>{selectedFarm}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -338,27 +257,16 @@ export default function CalibrationPage() {
 
               {showFarmDropdown && (
                 <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                  {[
-                    'Genesis Algae Farm',
-                    'Kutch Bio-Raceway Facility',
-                    'Rameswaram Coastal Algae Hub',
-                    'Sambhar Salt Lake Bio-Culture Site',
-                    'Kochi Blue-Carbon Marine Facility',
-                    'Chilika Lagoon Bio-Sequestration Hub',
-                    'Bhavnagar Marine Algae Centre'
-                  ].map(f => (
+                  {DEMO_FARMS.map(f => (
                     <button
-                      key={f}
-                      onClick={() => {
-                        setSelectedFarm(f);
-                        setShowFarmDropdown(false);
-                      }}
+                      key={f.id}
+                      onClick={() => handleSelectFarm(f.id)}
                       className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
-                        selectedFarm === f ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                        activeFarmId === f.id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      <span>{f}</span>
-                      {selectedFarm === f && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                      <span>{f.name}</span>
+                      {activeFarmId === f.id && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
                     </button>
                   ))}
                 </div>
@@ -375,15 +283,15 @@ export default function CalibrationPage() {
                   setShowPondDropdown(!showPondDropdown);
                   setShowFarmDropdown(false);
                 }}
-                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
               >
                 <span>{selectedPond}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {showPondDropdown && (
-                <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                  {['Pond A', 'Pond B', 'Pond C', 'Pond Narmada', 'Pond Sabarmati', 'Pond Tapi'].map(p => (
+                <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {activeFarmProfile.ponds.map(p => (
                     <button
                       key={p}
                       onClick={() => {
@@ -411,14 +319,14 @@ export default function CalibrationPage() {
         
         {/* Left: Interactive Pond Map with Sensor Nodes (6 cols) */}
         <div className="lg:col-span-6 bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 shadow-xs relative min-h-[340px] flex flex-col justify-between p-4 group select-none">
-          {/* Background Aerial Pond Image */}
+          {/* Background Aerial Pond Image of Selected Farm */}
           <div 
             className="absolute inset-0 transition-transform duration-500"
             style={{ transform: `scale(${mapZoom})` }}
           >
             <Image 
-              src="/farm_aerial.jpg" 
-              alt="Pond Aerial Map" 
+              src={activeFarmProfile.imageUrl} 
+              alt={activeFarmProfile.farmName} 
               fill
               className="object-cover brightness-[0.88] contrast-[1.05]"
               priority
@@ -434,10 +342,10 @@ export default function CalibrationPage() {
                 <Maximize2 className="w-3 h-3 text-slate-400" />
               </h3>
             </div>
-            <p className="text-[11px] text-slate-300 font-medium">5 sensors</p>
+            <p className="text-[11px] text-slate-300 font-medium">{activeFarmProfile.sensors.length} sensors online • {activeFarmProfile.location.split(',')[0]}</p>
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 pt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>All online</span>
+              <span>All Calibrated & Active</span>
             </div>
             <button
               onClick={() => setShowPondDetailModal(true)}
@@ -452,21 +360,21 @@ export default function CalibrationPage() {
           <div className="relative z-10 self-end flex flex-col items-center gap-1 bg-slate-900/80 backdrop-blur-md border border-white/15 p-1 rounded-xl shadow-md text-white">
             <button 
               onClick={() => setMapZoom(1)} 
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors cursor-pointer" 
               title="Reset View"
             >
               <Crosshair className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setMapZoom(Math.min(mapZoom + 0.2, 1.8))} 
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors cursor-pointer" 
               title="Zoom In"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setMapZoom(Math.max(mapZoom - 0.2, 0.8))} 
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors cursor-pointer" 
               title="Zoom Out"
             >
               <Minus className="w-3.5 h-3.5" />
@@ -474,7 +382,7 @@ export default function CalibrationPage() {
           </div>
 
           {/* Interactive Sensor Nodes positioned on the pond */}
-          {DEFAULT_SENSOR_NODES.map((node) => {
+          {activeFarmProfile.sensors.map((node) => {
             const isSelected = selectedSensorId === node.id;
             return (
               <button
@@ -501,7 +409,7 @@ export default function CalibrationPage() {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shrink-0">
-                <selectedSensor.icon className="w-5 h-5" />
+                <SensorIcon className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -521,7 +429,7 @@ export default function CalibrationPage() {
 
             <button 
               onClick={() => setShowHistoryModal(true)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -533,7 +441,7 @@ export default function CalibrationPage() {
               <button
                 key={tab}
                 onClick={() => setActiveInspectorTab(tab)}
-                className={`pb-2.5 transition-all relative ${
+                className={`pb-2.5 transition-all relative cursor-pointer ${
                   activeInspectorTab === tab
                     ? 'text-slate-900 font-black'
                     : 'text-slate-400 hover:text-slate-600'
@@ -556,7 +464,7 @@ export default function CalibrationPage() {
               {/* Current Value Display */}
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                  <selectedSensor.icon className="w-5 h-5" />
+                  <SensorIcon className="w-5 h-5" />
                 </div>
                 <div>
                   <span className="text-[11px] font-bold text-slate-400 block">Current Value</span>
@@ -655,7 +563,9 @@ export default function CalibrationPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               {(['All', 'Active', 'Pending', 'Overdue', 'Alerts'] as const).map(tab => {
                 const isSelected = statusFilter === tab;
-                const count = tab === 'All' ? DEFAULT_SENSOR_NODES.length : tab === 'Active' ? 5 : 0;
+                const count = tab === 'All' 
+                  ? activeFarmProfile.sensors.length 
+                  : activeFarmProfile.sensors.filter(s => s.status === tab).length;
                 return (
                   <button
                     key={tab}

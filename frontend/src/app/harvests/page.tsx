@@ -58,8 +58,10 @@ import {
   HarvestMethod, 
   EndUseCategory 
 } from '@/lib/api';
+import { DEMO_FARMS } from '@/lib/demo/ponds';
+import { FACILITY_HARVEST_PROFILES, FarmHarvestProfile } from '@/lib/demo/facilityData';
 
-interface HarvestItem {
+export interface HarvestItem {
   id: string;
   date: string;
   rawDate: string;
@@ -80,96 +82,20 @@ interface HarvestItem {
   }[];
 }
 
-const DEFAULT_HARVEST_RECORDS: HarvestItem[] = [
-  {
-    id: 'HV-2026-013',
-    date: 'Sep 10, 2026',
-    rawDate: '2026-09-10T10:24:00Z',
-    pond: 'Pond Sabarmati',
-    pondId: 'pond-sabarmati',
-    biomassKg: 980,
-    method: 'Centrifuge',
-    status: 'Completed',
-    carbonLink: 'Verified',
-    operator: 'Dharmesh V.',
-    batchCode: 'ALGX-26-0910-SAB',
-    notes: 'Optimal density achieved. Continuous centrifuge extraction with 96.2% dewatering yield.',
-    fates: [
-      { category: 'BIOPLASTICS', kg: 588, pct: 60, destination: 'Gujarat BioPolymers Ltd.' },
-      { category: 'BIOCHAR', kg: 392, pct: 40, destination: 'Kutch Soil Carbon Sinks' }
-    ]
-  },
-  {
-    id: 'HV-2026-012',
-    date: 'Sep 05, 2026',
-    rawDate: '2026-09-05T08:15:00Z',
-    pond: 'Pond Narmada',
-    pondId: 'pond-narmada',
-    biomassKg: 750,
-    method: 'Filtration',
-    status: 'Pending',
-    carbonLink: 'Pending',
-    operator: 'Elena Rostova',
-    batchCode: 'ALGX-26-0905-NAR',
-    notes: 'Fine mesh membrane filtration batch. Awaiting laboratory moisture & ash verification.'
-  },
-  {
-    id: 'HV-2026-011',
-    date: 'Aug 28, 2026',
-    rawDate: '2026-08-28T14:40:00Z',
-    pond: 'Pond Narmada',
-    pondId: 'pond-narmada',
-    biomassKg: 1200,
-    method: 'Dewatering',
-    status: 'Completed',
-    carbonLink: 'Verified',
-    operator: 'Dharmesh V.',
-    batchCode: 'ALGX-26-0828-NAR',
-    notes: 'Large volume raceway skim. Full moisture removal verified with calibrated gravimetric scale.',
-    fates: [
-      { category: 'BIOCHAR', kg: 1200, pct: 100, destination: 'CarbonLock Pyrolysis Hub' }
-    ]
-  },
-  {
-    id: 'HV-2026-010',
-    date: 'Aug 20, 2026',
-    rawDate: '2026-08-20T11:05:00Z',
-    pond: 'Pond Tapi',
-    pondId: 'pond-tapi',
-    biomassKg: 640,
-    method: 'Centrifuge',
-    status: 'Completed',
-    carbonLink: 'Verified',
-    operator: 'Sarah Chen',
-    batchCode: 'ALGX-26-0820-TAP',
-    notes: 'Raceway C cycle flush. High lipid content fraction isolated for durable biopolymer synthesis.',
-    fates: [
-      { category: 'BIOPLASTICS', kg: 640, pct: 100, destination: 'BioStructural Materials India' }
-    ]
-  },
-  {
-    id: 'HV-2026-009',
-    date: 'Aug 12, 2026',
-    rawDate: '2026-08-12T09:30:00Z',
-    pond: 'Pond Narmada',
-    pondId: 'pond-narmada',
-    biomassKg: 980,
-    method: 'Filtration',
-    status: 'Cancelled',
-    carbonLink: 'Not Linked',
-    operator: 'David Kim',
-    batchCode: 'ALGX-26-0812-NAR',
-    notes: 'Aborted due to unexpected temperature anomaly & paddle wheel maintenance cycle.'
-  }
-];
+const DEFAULT_HARVEST_RECORDS: HarvestItem[] = FACILITY_HARVEST_PROFILES['farm-1'].records as HarvestItem[];
 
 export default function HarvestsPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [selectedFarm, setSelectedFarm] = useState('Kutch Bio-Raceway Facility');
-  const [selectedPond, setSelectedPond] = useState('Pond Narmada');
+  const [activeFarmId, setActiveFarmId] = useState<string>('farm-1');
+  const [selectedFarm, setSelectedFarm] = useState(FACILITY_HARVEST_PROFILES['farm-1'].farmName);
+  const [selectedPond, setSelectedPond] = useState(FACILITY_HARVEST_PROFILES['farm-1'].defaultPond);
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
   const [showPondDropdown, setShowPondDropdown] = useState(false);
+
+  const activeFarmProfile: FarmHarvestProfile = useMemo(() => {
+    return FACILITY_HARVEST_PROFILES[activeFarmId] || FACILITY_HARVEST_PROFILES['farm-1'];
+  }, [activeFarmId]);
 
   // Table filter tabs
   const [filterTab, setFilterTab] = useState<'All' | 'Planned' | 'Completed' | 'Cancelled'>('All');
@@ -178,6 +104,18 @@ export default function HarvestsPage() {
 
   // Selected item for stepper display & details
   const [activeHarvestForStepper, setActiveHarvestForStepper] = useState<HarvestItem>(DEFAULT_HARVEST_RECORDS[0]);
+
+  const handleSelectFarm = (farmId: string) => {
+    setActiveFarmId(farmId);
+    const profile = FACILITY_HARVEST_PROFILES[farmId] || FACILITY_HARVEST_PROFILES['farm-1'];
+    setSelectedFarm(profile.farmName);
+    setSelectedPond(profile.defaultPond);
+    setHarvestRecords(profile.records as HarvestItem[]);
+    if (profile.records.length > 0) {
+      setActiveHarvestForStepper(profile.records[0] as HarvestItem);
+    }
+    setShowFarmDropdown(false);
+  };
 
   // Modals
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -319,7 +257,7 @@ export default function HarvestsPage() {
                 setShowFarmDropdown(!showFarmDropdown);
                 setShowPondDropdown(false);
               }}
-              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
             >
               <span>{selectedFarm}</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -327,26 +265,16 @@ export default function HarvestsPage() {
 
             {showFarmDropdown && (
               <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                {[
-                  'Kutch Bio-Raceway Facility',
-                  'Rameswaram Coastal Algae Hub',
-                  'Sambhar Salt Lake Bio-Culture Site',
-                  'Kochi Blue-Carbon Marine Facility',
-                  'Chilika Lagoon Bio-Sequestration Hub',
-                  'Bhavnagar Marine Algae Centre'
-                ].map(f => (
+                {DEMO_FARMS.map(f => (
                   <button
-                    key={f}
-                    onClick={() => {
-                      setSelectedFarm(f);
-                      setShowFarmDropdown(false);
-                    }}
+                    key={f.id}
+                    onClick={() => handleSelectFarm(f.id)}
                     className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
-                      selectedFarm === f ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                      activeFarmId === f.id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <span>{f}</span>
-                    {selectedFarm === f && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                    <span>{f.name}</span>
+                    {activeFarmId === f.id && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
                   </button>
                 ))}
               </div>
@@ -360,22 +288,15 @@ export default function HarvestsPage() {
                 setShowPondDropdown(!showPondDropdown);
                 setShowFarmDropdown(false);
               }}
-              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
             >
               <span>{selectedPond}</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
 
             {showPondDropdown && (
-              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                {[
-                  'Pond Narmada',
-                  'Pond Sabarmati',
-                  'Pond Tapi',
-                  'Pond Mahi',
-                  'Pond Kaveri',
-                  'Pond Mahanadi'
-                ].map(p => (
+              <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {activeFarmProfile.ponds.map(p => (
                   <button
                     key={p}
                     onClick={() => {
@@ -402,11 +323,11 @@ export default function HarvestsPage() {
         
         {/* Card 1: Pond Photo Aerial Visual Card */}
         <div className="relative rounded-2xl overflow-hidden shadow-xs border border-slate-200/90 min-h-[260px] flex flex-col justify-between p-5 group bg-slate-900">
-          {/* Background Aerial Photo */}
+          {/* Background Aerial Photo of Selected Farm */}
           <div className="absolute inset-0 z-0">
             <Image 
-              src="/farm_aerial.jpg" 
-              alt="Pond Aerial Overview" 
+              src={activeFarmProfile.imageUrl} 
+              alt={activeFarmProfile.farmName} 
               fill
               className="object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-[0.82]"
               priority
@@ -420,6 +341,9 @@ export default function HarvestsPage() {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Operational</span>
             </div>
+            <span className="text-[10px] font-mono text-slate-300 bg-slate-950/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">
+              {activeFarmProfile.location.split(',')[0]}
+            </span>
           </div>
 
           {/* Bottom Pond Information & View on Map CTA */}
@@ -432,15 +356,15 @@ export default function HarvestsPage() {
               <div className="space-y-1 text-[11px] font-medium text-slate-200 drop-shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Open Raceway</span>
+                  <span>Open Raceway • {activeFarmProfile.farmName}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-emerald-400 font-bold">⊞</span>
-                  <span>Surface Area <strong className="text-white font-mono">12.5 ha</strong></span>
+                  <span>Footprint <strong className="text-white font-mono">{activeFarmProfile.areaHa} ha</strong></span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Location <span className="font-mono text-slate-100">23.022° N, 72.571° E</span></span>
+                  <span>Location <span className="font-mono text-slate-100">{activeFarmProfile.coordinates.lat.toFixed(3)}° N, {activeFarmProfile.coordinates.lng.toFixed(3)}° E</span></span>
                 </div>
               </div>
             </div>
@@ -480,13 +404,16 @@ export default function HarvestsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-slate-700">Harvestable Biomass</span>
-                  <span className="font-mono font-bold text-slate-900">72%</span>
+                  <span className="font-mono font-bold text-slate-900">{activeFarmProfile.harvestablePct}%</span>
                 </div>
                 {/* Progress bar matching reference */}
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="bg-emerald-500 h-2 rounded-full w-[72%] transition-all duration-500" />
+                  <div 
+                    className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+                    style={{ width: `${activeFarmProfile.harvestablePct}%` }}
+                  />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">72% of estimated yield</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">{activeFarmProfile.harvestablePct}% of estimated batch yield</span>
               </div>
             </div>
 
@@ -498,7 +425,7 @@ export default function HarvestsPage() {
               <div className="flex-1 flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold text-slate-500 block">Current Biomass (Density)</span>
-                  <span className="text-lg font-black text-slate-900 font-mono tracking-tight">52.88 g/L</span>
+                  <span className="text-lg font-black text-slate-900 font-mono tracking-tight">{activeFarmProfile.biomassDensity.toFixed(2)} g/L</span>
                 </div>
 
                 {/* Mini SVG Sparkline & Trend Badge */}
@@ -513,7 +440,7 @@ export default function HarvestsPage() {
                     />
                   </svg>
                   <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
-                    ↑ +2.3% <span className="font-normal text-slate-400">vs last week</span>
+                    ↑ {activeFarmProfile.densityTrend} <span className="font-normal text-slate-400">vs last week</span>
                   </span>
                 </div>
               </div>
@@ -526,7 +453,7 @@ export default function HarvestsPage() {
               </div>
               <div>
                 <span className="text-[11px] font-bold text-slate-500 block">Last Harvest</span>
-                <span className="text-xs font-black text-slate-900 font-mono">Sep 10, 2026</span>
+                <span className="text-xs font-black text-slate-900 font-mono">{activeFarmProfile.lastHarvestDate}</span>
               </div>
             </div>
 
@@ -1240,8 +1167,8 @@ export default function HarvestsPage() {
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-emerald-600" />
                 <div>
-                  <h3 className="text-base font-black text-slate-900">{selectedPond} — Geospatial Location</h3>
-                  <p className="text-xs text-slate-500 font-mono">23.022° N, 72.571° E • Surface: 12.5 ha</p>
+                  <h3 className="text-base font-black text-slate-900">{selectedPond} — {activeFarmProfile.farmName}</h3>
+                  <p className="text-xs text-slate-500 font-mono">{activeFarmProfile.coordinates.lat.toFixed(3)}° N, {activeFarmProfile.coordinates.lng.toFixed(3)}° E • Footprint: {activeFarmProfile.areaHa} ha</p>
                 </div>
               </div>
               <button onClick={() => setShowMapModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
@@ -1252,8 +1179,8 @@ export default function HarvestsPage() {
             {/* Satellite Map Visual with overlays */}
             <div className="relative rounded-2xl overflow-hidden h-72 border border-slate-200 bg-slate-950">
               <Image 
-                src="/farm_aerial.jpg" 
-                alt="Satellite raceway map" 
+                src={activeFarmProfile.imageUrl} 
+                alt={activeFarmProfile.farmName} 
                 fill
                 className="object-cover brightness-90"
               />
@@ -1262,20 +1189,20 @@ export default function HarvestsPage() {
               {/* Raceway Marker 1 */}
               <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-500/90 text-slate-950 font-bold px-3 py-1.5 rounded-full border-2 border-white text-xs shadow-lg flex items-center gap-1.5 animate-bounce">
                 <span className="w-2 h-2 rounded-full bg-white"></span>
-                <span>{selectedPond} (Active Centrifuge Station)</span>
+                <span>{selectedPond} (Active Cultivation Unit)</span>
               </div>
 
               {/* Coordinates Badge */}
               <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-[11px] font-mono border border-white/10">
-                Lat: 23.02241 • Lon: 72.57144 • Elevation: 54m AMSL
+                Lat: {activeFarmProfile.coordinates.lat.toFixed(4)} • Lon: {activeFarmProfile.coordinates.lng.toFixed(4)} • {activeFarmProfile.location}
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-2 text-xs">
-              <span className="text-slate-500">Telemetry Feed: Connected • 8 Dissolved O₂ & Optical Probes</span>
+              <span className="text-slate-500">Facility Capacity: {activeFarmProfile.annualCapacity} • MRV Verified</span>
               <button 
                 onClick={() => setShowMapModal(false)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800"
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 cursor-pointer"
               >
                 Close Map
               </button>
