@@ -195,3 +195,51 @@ def resolve_environmental_anomalies(db: Session, pond_id: str, timestamp: dateti
             
     if open_anomalies:
         db.commit()
+
+def persist_biological_anomaly(db: Session, pond_id: str, timestamp: datetime, result: dict):
+    # Check if similar OPEN anomaly exists
+    existing = db.query(models.Anomaly).filter(
+        models.Anomaly.pond_id == pond_id,
+        models.Anomaly.anomaly_type == result["type"],
+        models.Anomaly.status == models.AnomalyStatus.OPEN,
+        models.Anomaly.source_provenance == "biological_engine"
+    ).first()
+    
+    if existing:
+        existing.observed_value = result["observed"]
+        existing.timestamp = timestamp
+        existing.description = result["description"]
+        existing.explanation = result.get("evidence", {}) # Store evidence in JSON explanation field for now
+    else:
+        anomaly = models.Anomaly(
+            pond_id=pond_id,
+            sensor_id=None,
+            sensor_type=None,
+            timestamp=timestamp,
+            anomaly_type=result["type"],
+            severity=result["severity"],
+            confidence_score=result["confidence"],
+            observed_value=result["observed"],
+            expected_value=result["expected"],
+            deviation=result["observed"] - result["expected"],
+            description=result["description"],
+            source_provenance="biological_engine",
+            explanation=result.get("evidence", {})
+        )
+        db.add(anomaly)
+    db.commit()
+
+def resolve_biological_anomalies(db: Session, pond_id: str, timestamp: datetime, active_types: set):
+    open_anomalies = db.query(models.Anomaly).filter(
+        models.Anomaly.pond_id == pond_id,
+        models.Anomaly.status == models.AnomalyStatus.OPEN,
+        models.Anomaly.source_provenance == "biological_engine"
+    ).all()
+    
+    for a in open_anomalies:
+        if a.anomaly_type.value not in active_types:
+            a.status = models.AnomalyStatus.RESOLVED
+            a.resolved_at = timestamp
+            
+    if open_anomalies:
+        db.commit()

@@ -141,6 +141,10 @@ async def model_loop():
                     # Phase 3.2: Check Environmental Anomalies
                     from .anomaly.env_detectors.engine import check_environmental_anomalies
                     check_environmental_anomalies(db, p.id, end_time)
+                    
+                    # Phase 3.3: Check Biological Anomalies
+                    from .anomaly.bio_detectors.engine import check_biological_anomalies
+                    check_biological_anomalies(db, p.id, end_time)
             
             # Phase 3.1: Check for sensor dropouts
             from .anomaly.service import check_for_dropouts
