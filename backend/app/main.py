@@ -137,6 +137,10 @@ async def model_loop():
                 start_time = end_time - timedelta(hours=1)
                 for p in ponds:
                     execute_model_run(db, p.id, start_time, end_time)
+                    
+                    # Phase 3.2: Check Environmental Anomalies
+                    from .anomaly.env_detectors.engine import check_environmental_anomalies
+                    check_environmental_anomalies(db, p.id, end_time)
             
             # Phase 3.1: Check for sensor dropouts
             from .anomaly.service import check_for_dropouts
