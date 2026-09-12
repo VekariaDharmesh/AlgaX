@@ -111,7 +111,7 @@ export default function ReviewWorkspacePage() {
             </div>
             
             <p className="text-xs text-gray-400 mt-4 italic">
-              Note: AlgaeMRV prepares evidence for downstream review; it does not issue carbon credits directly.
+              Note: AlgaX prepares evidence for downstream review; it does not issue carbon credits directly.
             </p>
           </div>
         </div>

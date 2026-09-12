@@ -83,7 +83,7 @@ def test_add_review_action_changes_state(test_package: EvidencePackage):
     data = response.json()
     assert data["action"] == "START_REVIEW"
     assert data["note"] == "Starting the review for this package."
-    assert data["actor"] == "reviewer@algaemrv.com"
+    assert data["actor"] == "reviewer@algax.com"
     
     # Check that the package state was mutated
     pkg_response = client.get(f"/api/evidence-packages/{test_package.id}")

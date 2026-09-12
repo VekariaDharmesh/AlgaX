@@ -25,6 +25,9 @@ def upgrade() -> None:
     review_state_enum = ENUM('NOT_STARTED', 'IN_REVIEW', 'NEEDS_ATTENTION', 'READY_FOR_EXTERNAL_REVIEW', 'CLOSED', name='reviewstate', create_type=False)
     review_action_type_enum = ENUM('START_REVIEW', 'FLAG_FOR_ATTENTION', 'MARK_REVIEWED', 'REQUEST_MORE_EVIDENCE', 'CLOSE_REVIEW', name='reviewactiontype', create_type=False)
     
+    review_state_enum.create(op.get_bind())
+    review_action_type_enum.create(op.get_bind())
+    
     op.add_column('evidence_package', sa.Column('review_state', review_state_enum, nullable=False, server_default='NOT_STARTED'))
     
     op.create_table(

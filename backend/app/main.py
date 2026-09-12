@@ -11,7 +11,7 @@ from .database import get_db, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AlgaeMRV API", version="0.4.0")
+app = FastAPI(title="AlgaX API", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,

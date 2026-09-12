@@ -55,7 +55,7 @@ def upgrade() -> None:
                type_=sa.JSON(),
                postgresql_using='uncertainty_notes::json',
                nullable=False)
-    op.drop_index(op.f('ix_anomaly_explanation_anomaly_id'), table_name='anomaly_explanation')
+    op.execute('DROP INDEX IF EXISTS ix_anomaly_explanation_anomaly_id')
     op.create_unique_constraint('uq_anomaly_explanation_anomaly_id', 'anomaly_explanation', ['anomaly_id'])
     # ### end Alembic commands ###
 
