@@ -40,6 +40,8 @@ import {
   Line
 } from 'recharts';
 
+import { CarbonWaterfall, CarbonWaterfallStage } from '@/components/carbon/CarbonWaterfall';
+
 export default function CarbonAccountingPage() {
   // Unit toggle state: 't' (tonnes CO2e) or 'kg' (kg CO2e)
   const [unit, setUnit] = useState<'t' | 'kg'>('t');
@@ -88,6 +90,50 @@ export default function CarbonAccountingPage() {
   const endUseRetainedVal = (endUseRetainedKg * scale).toFixed(unit === 't' ? 2 : 0);
   const operationalFootprintVal = (operationalFootprintKg * (unit === 't' ? 0.001 : 1)).toFixed(unit === 't' ? 2 : 1);
   const netRemovedVal = (netRemovedKg * scale).toFixed(unit === 't' ? 2 : 0);
+
+  // Programmatic waterfall stages
+  const waterfallStages: CarbonWaterfallStage[] = useMemo(() => [
+    {
+      id: 'gross_fixed',
+      label: ['Gross CO₂', 'Fixed'],
+      type: 'positive',
+      valueKgCO2e: grossFixedKg,
+      source: 'Multi-spectral biomass growth model & Monod kinetics',
+      description: 'Total atmospheric CO₂ biologically fixed via photosynthesis across raceways.',
+    },
+    {
+      id: 'processing_conversion',
+      label: ['Processing', '& Conversion'],
+      type: 'negative',
+      valueKgCO2e: -processingConversionDeductionKg,
+      source: 'Downstream centrifugation, drying & biopolymer extraction',
+      description: 'Volatile off-gas and non-durable organic fraction loss during cell lysis.',
+    },
+    {
+      id: 'end_use_retained',
+      label: ['End-Use', 'Retained'],
+      type: 'subtotal',
+      valueKgCO2e: endUseRetainedKg,
+      source: 'Durable bioplastic product fate analysis (ISO 14064-2)',
+      description: 'Long-term sequestered carbon fraction locked into durable structural biopolymer.',
+    },
+    {
+      id: 'operational_footprint',
+      label: ['Operational', 'Footprint'],
+      type: 'negative',
+      valueKgCO2e: -Math.round(operationalFootprintKg),
+      source: 'Scope 1 & Scope 2 energy telemetry (paddle wheels + grid factor)',
+      description: 'Parasitic energy footprint deductions from electricity and water pumping.',
+    },
+    {
+      id: 'net_removed',
+      label: ['Net Removed'],
+      type: 'total',
+      valueKgCO2e: Math.round(netRemovedKg),
+      source: 'Net verified carbon removal (Registry standard compliant)',
+      description: 'Final audited net atmospheric carbon removal eligible for carbon credits.',
+    },
+  ], [grossFixedKg, processingConversionDeductionKg, endUseRetainedKg, operationalFootprintKg, netRemovedKg]);
 
   // Trend Data for Removal Trend Chart
   const trendDataMap: Record<string, { date: string; value: number }[]> = {
@@ -330,132 +376,13 @@ export default function CarbonAccountingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left: Carbon Waterfall Chart */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-base font-black text-slate-900 tracking-tight">Carbon Waterfall</h2>
-              <p className="text-xs font-medium text-slate-500 mt-0.5">From CO₂ fixation to net removal</p>
-            </div>
-            
-            {/* Unit Dropdown Switcher */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setUnit('t')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                  unit === 't' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                t CO₂e
-              </button>
-              <button
-                onClick={() => setUnit('kg')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                  unit === 'kg' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                kg CO₂e
-              </button>
-            </div>
-          </div>
-
-          {/* Pixel-Perfect Waterfall Diagram matching reference photo */}
-          <div className="h-64 w-full relative pt-6 pb-2">
-            
-            {/* Horizontal Grid Lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-12 pt-4">
-              {[2.5, 2.0, 1.5, 1.0, 0.5, 0.0].map((val) => (
-                <div key={val} className="flex items-center w-full border-b border-slate-100 text-[10px] text-slate-400 font-mono">
-                  <span className="w-8 shrink-0">{val.toFixed(1)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Bars Container */}
-            <div className="relative h-full pl-10 pr-2 flex items-end justify-between gap-3 pb-8">
-              
-              {/* 1. Gross CO2 Fixed (Dark Green Solid) */}
-              <div className="flex-1 flex flex-col items-center h-full justify-end group">
-                <span className="text-xs font-black text-slate-900 mb-1.5">{grossFixedVal}</span>
-                <div 
-                  className="w-full bg-[#164e32] hover:bg-[#123e28] rounded-t-sm transition-all duration-300 shadow-xs"
-                  style={{ height: `${(grossFixedKg / 2500) * 100}%` }}
-                />
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">
-                  Gross CO₂<br />Fixed
-                </span>
-              </div>
-
-              {/* 2. Processing & Conversion Deduction (Light Steel Blue Floating) */}
-              <div className="flex-1 flex flex-col items-center h-full justify-end group">
-                {/* Floating deduction bar positioned from 2.14 down to 1.28 */}
-                <div 
-                  className="w-full flex flex-col justify-end"
-                  style={{ height: `${(grossFixedKg / 2500) * 100}%` }}
-                >
-                  <div 
-                    className="w-full bg-[#b8c9db] hover:bg-[#a6bbd0] rounded-sm transition-all duration-300 relative flex items-center justify-center"
-                    style={{ height: `${(processingConversionDeductionKg / 2500) * 100}%` }}
-                  >
-                    <span className="text-[11px] font-black text-slate-800 absolute -bottom-5">-{processingLossVal}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">
-                  Processing<br />& Conversion
-                </span>
-              </div>
-
-              {/* 3. End-Use Retained (Soft Green Solid) */}
-              <div className="flex-1 flex flex-col items-center h-full justify-end group">
-                <span className="text-xs font-black text-slate-900 mb-1.5">{endUseRetainedVal}</span>
-                <div 
-                  className="w-full bg-[#86efac] hover:bg-[#6ee7b7] rounded-t-sm transition-all duration-300 shadow-xs"
-                  style={{ height: `${(endUseRetainedKg / 2500) * 100}%` }}
-                />
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">
-                  End-Use<br />Retained
-                </span>
-              </div>
-
-              {/* 4. Operational Footprint Deduction (Light Steel Blue Floating) */}
-              <div className="flex-1 flex flex-col items-center h-full justify-end group">
-                {/* Floating deduction bar positioned from 1.28 down to 1.19 */}
-                <div 
-                  className="w-full flex flex-col justify-end"
-                  style={{ height: `${(endUseRetainedKg / 2500) * 100}%` }}
-                >
-                  <div 
-                    className="w-full bg-[#b8c9db] hover:bg-[#a6bbd0] rounded-sm transition-all duration-300 relative flex items-center justify-center"
-                    style={{ height: `${(operationalFootprintKg / 2500) * 100}%` }}
-                  >
-                    <span className="text-[11px] font-black text-slate-800 absolute -bottom-5">-{operationalFootprintVal}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">
-                  Operational<br />Footprint
-                </span>
-              </div>
-
-              {/* 5. Net Removed (Dark Green Solid Final) */}
-              <div className="flex-1 flex flex-col items-center h-full justify-end group">
-                <span className="text-xs font-black text-slate-900 mb-1.5">{netRemovedVal}</span>
-                <div 
-                  className="w-full bg-[#164e32] hover:bg-[#123e28] rounded-t-sm transition-all duration-300 shadow-xs"
-                  style={{ height: `${(netRemovedKg / 2500) * 100}%` }}
-                />
-                <span className="text-[10px] sm:text-[11px] font-black text-slate-900 text-center mt-2 leading-tight">
-                  Net Removed
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium pt-2 border-t border-slate-100">
-            <span>Y-axis: {unitLabel}</span>
-            <span className="text-emerald-700 font-bold">✓ Net Removal: {netRemovedVal} {unitLabel} (55.3% efficiency)</span>
-          </div>
-        </div>
+        <CarbonWaterfall 
+          stages={waterfallStages}
+          defaultUnit={unit === 't' ? 't CO₂e' : 'kg CO₂e'}
+          onSelectStage={() => {
+            setShowTraceableDetails(true);
+          }}
+        />
 
         {/* Right: Removal Trend Chart */}
         <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
