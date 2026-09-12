@@ -169,6 +169,7 @@ def seed_database(force: bool = False):
                 val = 20.0
             
             reading = SensorReading(
+                id=uuid.uuid4(),
                 sensor_id=s.id,
                 pond_id=s.pond_id,
                 timestamp=ts,

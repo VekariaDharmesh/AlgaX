@@ -3,6 +3,7 @@ import './globals.css';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { RoleProvider } from '@/context/RoleContext';
+import { AnomalyProvider } from '@/context/AnomalyContext';
 import { RoleGuard } from '@/components/layout/RoleGuard';
 
 export const metadata: Metadata = {
@@ -19,13 +20,15 @@ export default function RootLayout({
     <html lang="en">
       <body className="flex h-screen bg-slate-100/80 text-gray-900 font-sans antialiased overflow-hidden p-3 gap-3">
         <RoleProvider>
-          <Sidebar />
-          <div className="flex flex-col flex-1 overflow-hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm">
-            <Header />
-            <main className="flex-1 overflow-y-auto p-6 bg-gray-50/40">
-              <RoleGuard>{children}</RoleGuard>
-            </main>
-          </div>
+          <AnomalyProvider>
+            <Sidebar />
+            <div className="flex flex-col flex-1 overflow-hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm relative">
+              <Header />
+              <main className="flex-1 overflow-y-auto p-6 bg-gray-50/40">
+                <RoleGuard>{children}</RoleGuard>
+              </main>
+            </div>
+          </AnomalyProvider>
         </RoleProvider>
       </body>
     </html>

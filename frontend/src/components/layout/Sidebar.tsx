@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { useRole, ROLE_CONFIGS } from '@/context/RoleContext';
+import { useAnomalyNotification } from '@/context/AnomalyContext';
 
 interface NavItem {
   name: string;
@@ -41,7 +42,7 @@ const navSections: NavSection[] = [
   {
     title: 'DASHBOARD',
     items: [
-      { name: 'Overview', href: '/', icon: Home, badge: 2 },
+      { name: 'Overview', href: '/', icon: Home },
       { name: 'Ponds', href: '/ponds', icon: Droplets },
       { name: 'Algae Species & Farms', href: '/farms', icon: Sprout },
     ]
@@ -51,7 +52,7 @@ const navSections: NavSection[] = [
     items: [
       { name: 'Data Stream', href: '/monitoring', icon: Activity },
       { name: 'Analytics & Carbon', href: '/carbon', icon: BarChart3 },
-      { name: 'Anomalies', href: '/anomalies', icon: AlertCircle, badge: 2, isCritical: true },
+      { name: 'Anomalies', href: '/anomalies', icon: AlertCircle, isCritical: true },
       { name: 'Spectral Imagery', href: '/imagery', icon: ImageIcon },
       { name: 'Simulation Engine', href: '/simulation', icon: Play },
       { name: 'Sensor Calibration', href: '/calibration', icon: Sliders },
@@ -72,14 +73,26 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
   const { role, canAccessRoute } = useRole();
+  const { openCount, criticalCount } = useAnomalyNotification();
 
   const currentConfig = ROLE_CONFIGS[role];
 
-  // Filter navigation items by active role permissions
+  // Filter navigation items by active role permissions & inject live badges
   const filteredNavSections = navSections
     .map(section => ({
       ...section,
-      items: section.items.filter(item => canAccessRoute(item.href))
+      items: section.items
+        .filter(item => canAccessRoute(item.href))
+        .map(item => {
+          if (item.href === '/anomalies' && openCount > 0) {
+            return {
+              ...item,
+              badge: openCount,
+              isCritical: criticalCount > 0
+            };
+          }
+          return item;
+        })
     }))
     .filter(section => section.items.length > 0);
 
