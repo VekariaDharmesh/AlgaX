@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Leaf, FlaskConical, Droplets, Shield, Info, ArrowRight, AlertCircle, Image as ImageIcon, FileText, Sun } from 'lucide-react';
 import { DEMO_PONDS } from '@/lib/demo/ponds';
 import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
-import { DEMO_ANOMALIES } from '@/lib/demo/anomalies';
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
 import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
@@ -22,6 +22,7 @@ export default function DashboardOverview() {
   const [telemetryData, setTelemetryData] = useState<{time: string, value: number}[]>([]);
   const [biomassAvg, setBiomassAvg] = useState<number | null>(null);
   const [grossCo2, setGrossCo2] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [anomalies, setAnomalies] = useState<any[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [activePondId, setActivePondId] = useState<string | null>(null);
@@ -55,13 +56,17 @@ export default function DashboardOverview() {
             
             const anomaliesData = await fetchAnomalies();
             if (mounted) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const anomaliesWithExp = await Promise.all(anomaliesData.map(async (a: any) => {
-                 try {
-                   const exp = await fetchAnomalyExplanation(a.id);
-                   return { ...a, explanation_record: exp };
-                 } catch (e) {
-                   return a;
+                 if (a.source_provenance === 'biological_engine') {
+                   try {
+                     const exp = await fetchAnomalyExplanation(a.id);
+                     return { ...a, explanation_record: exp };
+                   } catch (err) {
+                     return a;
+                   }
                  }
+                 return a;
               }));
               setAnomalies(anomaliesWithExp);
             }
@@ -392,6 +397,7 @@ export default function DashboardOverview() {
             {anomalies.length === 0 ? (
               <p className="text-sm text-gray-500">No active sensor anomalies.</p>
             ) : (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               anomalies.map((anomaly: any, index: number) => (
                 <div key={anomaly.id} className={`flex gap-3 pb-4 ${index !== anomalies.length - 1 ? 'border-b border-gray-100' : ''}`}>
                   <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${

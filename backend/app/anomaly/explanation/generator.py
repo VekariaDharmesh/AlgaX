@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 
-def calculate_overall_confidence(factor_scores: Dict[str, float], data_quality_notes: List[str]) -> float:
+def calculate_overall_confidence(factor_scores: Dict[str, float], data_quality_notes: List[str], contradicting_evidence: List[Dict[str, Any]] = None) -> float:
     if not factor_scores:
         return 0.0
     
@@ -11,6 +11,11 @@ def calculate_overall_confidence(factor_scores: Dict[str, float], data_quality_n
     # Penalize for widespread data quality issues
     if data_quality_notes:
         penalty = min(len(data_quality_notes) * 0.1, 0.4)
+        confidence -= penalty
+
+    # Penalize for contradictory evidence
+    if contradicting_evidence:
+        penalty = min(len(contradicting_evidence) * 0.1, 0.4)
         confidence -= penalty
         
     return round(max(confidence, 0.1), 2)
@@ -25,7 +30,25 @@ def map_evidence_strength(confidence: float) -> str:
     return "INSUFFICIENT"
 
 def generate_explanation(correlated_data: Dict[str, Any], factor_scores: Dict[str, float], data_quality_notes: List[str]) -> Dict[str, Any]:
-    confidence = calculate_overall_confidence(factor_scores, data_quality_notes)
+    # Collate raw supporting evidence for API
+    supporting_evidence = []
+    contradicting_evidence = []
+    
+    for family, data in correlated_data["evidence_families"].items():
+        score = factor_scores.get(family, 0)
+        if score >= 0.2:
+            supporting_evidence.append({
+                "family": family,
+                "model_factor": data["model_factor"],
+                "environmental_anomalies": data["env_anomalies"]
+            })
+        elif score < 0.2 and data["model_factor"] is not None and data["model_factor"] < 0.8:
+             contradicting_evidence.append({
+                "family": family,
+                "reason": "Limitation factor indicates stress, but lacks environmental support or aligns poorly."
+             })
+             
+    confidence = calculate_overall_confidence(factor_scores, data_quality_notes, contradicting_evidence)
     evidence_strength = map_evidence_strength(confidence)
     
     # Categorize factors
@@ -70,29 +93,11 @@ def generate_explanation(correlated_data: Dict[str, Any], factor_scores: Dict[st
             details_parts.append(detail)
             
         details = "\n".join(details_parts)
-        
-    # Collate raw supporting evidence for API
-    supporting_evidence = []
-    contradicting_evidence = []
-    
-    for family, data in correlated_data["evidence_families"].items():
-        score = factor_scores.get(family, 0)
-        if score >= 0.2:
-            supporting_evidence.append({
-                "family": family,
-                "model_factor": data["model_factor"],
-                "environmental_anomalies": data["env_anomalies"]
-            })
-        elif score < 0.2 and data["model_factor"] is not None and data["model_factor"] < 0.8:
-             contradicting_evidence.append({
-                "family": family,
-                "reason": "Limitation factor indicates stress, but lacks environmental support or aligns poorly."
-             })
              
     # Uncertainty
     uncertainty_notes = []
     if not contributing_factors and bio_type in ["GROWTH_SUPPRESSION", "BIOMASS_DECLINE"]:
-        uncertainty_notes.append("Biological suppression detected without clear environmental cause. Consider external factors (e.g. disease, contamination) or unmonitored parameters.")
+        uncertainty_notes.append("Biological suppression detected without clear environmental contributing factor. Consider external factors (e.g. disease, contamination) or unmonitored parameters.")
         
     return {
         "summary": summary,
