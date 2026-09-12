@@ -14,13 +14,13 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 cursor-pointer hover:bg-gray-50">
+        <div className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-150">
           <DropletsIcon className="w-4 h-4 text-green-600" />
           <span className="text-sm font-medium text-gray-700">GreenRiver Farm</span>
           <ChevronDown className="w-4 h-4 text-gray-500" />
         </div>
 
-        <div className="flex items-center gap-2 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+        <div className="flex items-center gap-2 bg-green-50 px-2.5 py-1 rounded-full border border-green-200 hover:shadow-xs transition-all">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
           <span className="text-xs font-semibold text-green-700 tracking-wide">LIVE</span>
         </div>
@@ -29,9 +29,9 @@ export function Header() {
           {currentDate} &nbsp; {currentTime}
         </div>
 
-        <button className="relative p-1 text-gray-400 hover:text-gray-600 transition-colors">
+        <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 hover:shadow-sm rounded-lg transition-all duration-150">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
         </button>
       </div>
     </header>

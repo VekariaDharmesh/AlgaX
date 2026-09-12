@@ -146,12 +146,12 @@ export function Sidebar() {
         <Link 
           href="/" 
           title="Overview"
-          className={`flex items-center rounded-lg text-sm font-medium transition-colors ${
+          className={`flex items-center rounded-lg text-sm font-medium transition-all duration-200 ${
             isOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'
           } ${
             pathname === '/' 
-              ? 'bg-emerald-50 text-emerald-700 font-semibold' 
-              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              ? 'bg-emerald-50 text-emerald-700 font-semibold shadow-xs' 
+              : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-md hover:shadow-gray-200/60'
           }`}
         >
           <Home className={`w-5 h-5 shrink-0 ${pathname === '/' ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -177,12 +177,12 @@ export function Sidebar() {
                     key={j}
                     href={item.href}
                     title={item.name}
-                    className={`relative flex items-center rounded-lg text-sm font-medium transition-colors ${
+                    className={`relative flex items-center rounded-lg text-sm font-medium transition-all duration-200 ${
                       isOpen ? 'justify-between px-3 py-2' : 'justify-center p-2.5'
                     } ${
                       isActive 
-                        ? 'bg-emerald-50 text-emerald-700 font-semibold' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-emerald-50 text-emerald-700 font-semibold shadow-xs' 
+                        : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-md hover:shadow-gray-200/60'
                     }`}
                   >
                     <div className={`flex items-center ${isOpen ? 'gap-3' : ''}`}>
