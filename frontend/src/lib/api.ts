@@ -1,0 +1,23 @@
+export const API_BASE_URL = 'http://localhost:8000/api';
+
+export async function fetchPonds() {
+  const res = await fetch(`${API_BASE_URL}/ponds`);
+  if (!res.ok) throw new Error('Failed to fetch ponds');
+  return res.json();
+}
+
+export async function fetchTelemetry(pondId: string, limit: number = 50) {
+  const res = await fetch(`${API_BASE_URL}/telemetry?pond_id=${pondId}&limit=${limit}`);
+  if (!res.ok) throw new Error('Failed to fetch telemetry');
+  return res.json();
+}
+
+export async function injectScenario(pondId: string, scenario: string) {
+  const res = await fetch(`${API_BASE_URL}/demo/inject-scenario`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pond_id: pondId, scenario })
+  });
+  if (!res.ok) throw new Error('Failed to inject scenario');
+  return res.json();
+}
