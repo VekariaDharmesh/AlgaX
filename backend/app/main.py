@@ -425,7 +425,8 @@ async def model_loop():
             def sync_job():
                 db = SessionLocal()
                 try:
-                    ponds = get_ponds(db=db)
+                    # Query ponds directly — get_ponds requires auth context
+                    ponds = db.query(models.Pond).all()
                     if ponds:
                         end_time = datetime.now(timezone.utc)
                         start_time = end_time - timedelta(hours=1)
