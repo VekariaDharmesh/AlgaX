@@ -438,7 +438,7 @@ export default function ImageryPage() {
                       <li>Sharpness: {processingData.quality_metrics?.sharpness?.toFixed(2) || "N/A"}</li>
                       <li>Brightness: {processingData.quality_metrics?.brightness?.toFixed(2) || "N/A"}</li>
                       <li>Contrast: {processingData.quality_metrics?.contrast?.toFixed(2) || "N/A"}</li>
-                      <li>Exposure (Over/Under): {(processingData.quality_metrics?.overexposed_fraction * 100)?.toFixed(1)}% / {(processingData.quality_metrics?.underexposed_fraction * 100)?.toFixed(1)}%</li>
+                      <li>Exposure (Over/Under): {(processingData.quality_metrics?.overexposed_fraction! * 100).toFixed(1)}% / {(processingData.quality_metrics?.underexposed_fraction! * 100).toFixed(1)}%</li>
                     </ul>
                   </div>
                   <div>

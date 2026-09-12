@@ -265,3 +265,73 @@ class ImageryAnalysisResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CrossValidationRunResponse(BaseModel):
+    id: UUID
+    farm_id: UUID
+    pond_id: UUID
+    model_run_id: Optional[UUID] = None
+    imagery_analysis_id: Optional[UUID] = None
+    comparison_window_start: Optional[datetime] = None
+    comparison_window_end: Optional[datetime] = None
+    model_trend: Optional[str] = None
+    imagery_trend: Optional[str] = None
+    model_change: Optional[float] = None
+    imagery_change: Optional[float] = None
+    temporal_alignment_status: str
+    result_status: str
+    confidence: str
+    evidence_summary: str
+    provenance_json: dict
+    engine_version: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class EvidencePackageBase(BaseModel):
+    reporting_period_start: datetime
+    reporting_period_end: datetime
+    
+class EvidencePackageCreate(EvidencePackageBase):
+    pass
+
+class EvidencePackageResponse(EvidencePackageBase):
+    id: UUID
+    farm_id: UUID
+    pond_id: UUID
+    package_version: str
+    status: str
+    completeness: str
+    review_state: str
+    
+    sensor_evidence_json: list
+    model_evidence_json: list
+    carbon_evidence_json: list
+    anomaly_evidence_json: list
+    imagery_evidence_json: list
+    cross_validation_evidence_json: list
+    limitations_json: list
+    
+    canonical_hash: Optional[str] = None
+    contains_simulated_data: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ReviewActionCreate(BaseModel):
+    action: str
+    note: Optional[str] = None
+
+class ReviewActionResponse(BaseModel):
+    id: UUID
+    package_id: UUID
+    actor: str
+    action: str
+    note: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

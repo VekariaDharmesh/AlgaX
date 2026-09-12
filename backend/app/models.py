@@ -383,3 +383,113 @@ class ImageryAnalysis(Base):
     imagery_record = relationship("ImageryRecord", backref=backref("analyses", cascade="all, delete-orphan"))
     processing_record = relationship("ImageryProcessing", backref=backref("analyses", cascade="all, delete-orphan"))
     baseline_analysis = relationship("ImageryAnalysis", remote_side=[id], backref=backref("comparisons", cascade="all, delete-orphan"))
+
+
+class TemporalAlignmentStatus(str, enum.Enum):
+    GOOD = "GOOD"
+    REVIEW = "REVIEW"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+class ValidationResultStatus(str, enum.Enum):
+    CONSISTENT = "CONSISTENT"
+    PARTIALLY_CONSISTENT = "PARTIALLY_CONSISTENT"
+    INCONSISTENT = "INCONSISTENT"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+class ValidationConfidence(str, enum.Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+class CrossValidationRun(Base):
+    __tablename__ = "cross_validation_run"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    model_run_id = Column(UUID(as_uuid=True), ForeignKey("model_run.id"), nullable=True)
+    imagery_analysis_id = Column(UUID(as_uuid=True), ForeignKey("imagery_analysis.id"), nullable=True)
+    
+    comparison_window_start = Column(DateTime(timezone=True), nullable=True)
+    comparison_window_end = Column(DateTime(timezone=True), nullable=True)
+    
+    model_trend = Column(Enum(TemporalChangeClassification), nullable=True)
+    imagery_trend = Column(Enum(TemporalChangeClassification), nullable=True)
+    
+    model_change = Column(Float, nullable=True)
+    imagery_change = Column(Float, nullable=True)
+    
+    temporal_alignment_status = Column(Enum(TemporalAlignmentStatus), nullable=False)
+    result_status = Column(Enum(ValidationResultStatus), nullable=False)
+    confidence = Column(Enum(ValidationConfidence), nullable=False)
+    
+    evidence_summary = Column(String, nullable=False)
+    provenance_json = Column(JSON, nullable=False)
+    engine_version = Column(String, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+class PackageStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    READY_FOR_REVIEW = "READY_FOR_REVIEW"
+    INCOMPLETE = "INCOMPLETE"
+
+class CompletenessClassification(str, enum.Enum):
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+class ReviewState(str, enum.Enum):
+    NOT_STARTED = "NOT_STARTED"
+    IN_REVIEW = "IN_REVIEW"
+    NEEDS_ATTENTION = "NEEDS_ATTENTION"
+    READY_FOR_EXTERNAL_REVIEW = "READY_FOR_EXTERNAL_REVIEW"
+    CLOSED = "CLOSED"
+
+class ReviewActionType(str, enum.Enum):
+    START_REVIEW = "START_REVIEW"
+    FLAG_FOR_ATTENTION = "FLAG_FOR_ATTENTION"
+    MARK_REVIEWED = "MARK_REVIEWED"
+    REQUEST_MORE_EVIDENCE = "REQUEST_MORE_EVIDENCE"
+    CLOSE_REVIEW = "CLOSE_REVIEW"
+
+class EvidencePackage(Base):
+    __tablename__ = "evidence_package"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    
+    reporting_period_start = Column(DateTime(timezone=True), nullable=False)
+    reporting_period_end = Column(DateTime(timezone=True), nullable=False)
+    
+    package_version = Column(String, nullable=False, default="5.1.0")
+    status = Column(Enum(PackageStatus, create_type=False), nullable=False, default=PackageStatus.DRAFT)
+    completeness = Column(Enum(CompletenessClassification, create_type=False), nullable=False, default=CompletenessClassification.INSUFFICIENT_EVIDENCE)
+    review_state = Column(Enum(ReviewState, create_type=False), nullable=False, default=ReviewState.NOT_STARTED)
+    
+    sensor_evidence_json = Column(JSON, nullable=False, default=list)
+    model_evidence_json = Column(JSON, nullable=False, default=list)
+    carbon_evidence_json = Column(JSON, nullable=False, default=list)
+    anomaly_evidence_json = Column(JSON, nullable=False, default=list)
+    imagery_evidence_json = Column(JSON, nullable=False, default=list)
+    cross_validation_evidence_json = Column(JSON, nullable=False, default=list)
+    limitations_json = Column(JSON, nullable=False, default=list)
+    
+    canonical_hash = Column(String, nullable=True)
+    contains_simulated_data = Column(Boolean, nullable=False, default=False)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+class ReviewAction(Base):
+    __tablename__ = "review_action"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    package_id = Column(UUID(as_uuid=True), ForeignKey("evidence_package.id"), nullable=False)
+    actor = Column(String, nullable=False)
+    action = Column(Enum(ReviewActionType, create_type=False), nullable=False)
+    note = Column(String, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+

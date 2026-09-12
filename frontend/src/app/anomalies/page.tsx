@@ -26,9 +26,11 @@ export default function AnomaliesPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    let active = true;
+    const fetchIt = () => { if(active) loadData(); };
+    fetchIt();
+    const interval = setInterval(fetchIt, 5000);
+    return () => { active = false; clearInterval(interval); };
   }, [activeFilter]);
 
   return (
