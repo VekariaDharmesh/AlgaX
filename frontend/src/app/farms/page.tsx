@@ -2,8 +2,28 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Map, Droplets, ArrowRight, Shield, Activity, Globe, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { 
+  Map, 
+  Droplets, 
+  ArrowRight, 
+  Shield, 
+  Activity, 
+  Globe, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Layers, 
+  Sun, 
+  Zap, 
+  Award, 
+  User, 
+  Gauge, 
+  Leaf, 
+  Wind,
+  Thermometer,
+  Calendar
+} from 'lucide-react';
 import { fetchFarms } from '@/lib/api';
+import { DEMO_FARM, DEMO_PONDS } from '@/lib/demo/ponds';
 
 export default function FarmsPage() {
   const [allFarms, setAllFarms] = useState<any[]>([]);
@@ -16,205 +36,316 @@ export default function FarmsPage() {
         if (Array.isArray(farmsData) && farmsData.length > 0) {
           setAllFarms(farmsData);
         } else {
-          setAllFarms([
-            {
-              id: 'f1',
-              name: 'GreenRiver Algae Facility',
-              location: 'Imperial Valley, CA (34.05,-118.24)',
-              total_area_m2: 12500,
-              ponds: [
-                { id: 'p1', name: 'Raceway Pond A', species: 'Chlorella vulgaris', volume_liters: 50000, status: 'active' },
-                { id: 'p2', name: 'Raceway Pond B', species: 'Spirulina platensis', volume_liters: 45000, status: 'active' },
-                { id: 'p3', name: 'Raceway Pond C', species: 'Scenedesmus obliquus', volume_liters: 60000, status: 'active' }
-              ],
-              status: 'OPERATIONAL'
-            }
-          ]);
+          setAllFarms([]);
         }
         setLoading(false);
       });
   }, []);
 
   // Filter out test farms (those with auto-generated names) and limit display
-  const displayFarms = useMemo(() => {
-    // Prioritize farms with meaningful names (not "Test Farm XXXXX" patterns)
-    const realFarms = allFarms.filter(f =>
-      f.name && !f.name.match(/^Test Farm [a-f0-9]+$/i)
-    );
-    // Show real farms first, limit total to 20 for performance
-    const result = realFarms.length > 0 ? realFarms : allFarms;
-    return result.slice(0, 20);
+  const otherFarms = useMemo(() => {
+    return allFarms.filter(f =>
+      f.name && 
+      !f.name.match(/^Test Farm [a-f0-9]+$/i) &&
+      !f.name.toLowerCase().includes('greenriver')
+    ).slice(0, 10);
   }, [allFarms]);
-
-  const totalPonds = useMemo(() => {
-    return displayFarms.reduce((sum, f) => sum + (f.ponds?.length || 0), 0);
-  }, [displayFarms]);
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6 flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm text-slate-500 font-medium">Loading farms…</p>
+          <p className="text-sm text-slate-500 font-medium">Loading facility intelligence…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 p-6">
+    <div className="max-w-7xl mx-auto space-y-8 pb-16 p-6">
       
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            Farm Management
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              TENANT ISOLATED
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              Facility Management
             </span>
+            <span className="text-xs font-semibold text-slate-400">• Tenant Isolated</span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            Algae Cultivation Facilities
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
-            Overview of monitored algae cultivation facilities, pond topology, and operational status.
+          <p className="text-slate-500 mt-1 text-sm max-w-2xl">
+            Real-time topology, biometric monitoring, and carbon sequestration metrics across active cultivation ponds.
           </p>
         </div>
 
-        <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl flex items-center gap-2 self-start">
-          <Globe className="w-5 h-5 text-emerald-600" />
-          <span className="text-xs font-bold text-emerald-800">Primary Farm Boundary Active</span>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/ponds"
+            className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2"
+          >
+            <Droplets className="w-4 h-4 text-emerald-600" />
+            View All Ponds
+          </Link>
+          <Link
+            href="/telemetry"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2"
+          >
+            <Activity className="w-4 h-4" />
+            Live Telemetry
+          </Link>
         </div>
       </div>
 
-      {/* KPI Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100 shrink-0">
-            <Map className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Facilities</div>
-            <div className="text-2xl font-black text-slate-900">{displayFarms.length}</div>
-            {allFarms.length > displayFarms.length && (
-              <div className="text-[10px] text-slate-400">{allFarms.length - displayFarms.length} test farms hidden</div>
-            )}
-          </div>
-        </div>
+      {/* Flagship Farm Featured Hero Card */}
+      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg transition-all">
+        {/* Farm Hero Image & Top Overlay */}
+        <div className="relative h-72 md:h-96 w-full overflow-hidden bg-slate-900">
+          <img 
+            src="/images/farm-hero.jpg" 
+            alt="GreenRiver Algae Facility Aerial" 
+            className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+          
+          {/* Top Badges */}
+          <div className="absolute top-6 left-6 right-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="bg-emerald-500/90 backdrop-blur-md text-white font-bold text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                ACTIVE PRIMARY SITE
+              </span>
+              <span className="bg-slate-900/80 backdrop-blur-md text-slate-200 font-medium text-xs px-3 py-1.5 rounded-full border border-slate-700">
+                Facility ID: {DEMO_FARM.id}
+              </span>
+            </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-sky-50 rounded-xl text-sky-600 border border-sky-100 shrink-0">
-            <Droplets className="w-6 h-6" />
+            <div className="flex items-center gap-2">
+              {DEMO_FARM.certifications.map((cert) => (
+                <span key={cert} className="bg-sky-950/80 backdrop-blur-md text-sky-200 border border-sky-600/40 font-semibold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-sky-400" />
+                  {cert}
+                </span>
+              ))}
+            </div>
           </div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Ponds</div>
-            <div className="text-2xl font-black text-slate-900">{totalPonds}</div>
-          </div>
-        </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 border border-indigo-100 shrink-0">
-            <Layers className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Area</div>
-            <div className="text-2xl font-black text-slate-900">12,500 <span className="text-xs text-slate-500">m²</span></div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-teal-50 rounded-xl text-teal-600 border border-teal-100 shrink-0">
-            <Activity className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">System Health</div>
-            <div className="text-2xl font-black text-emerald-600">98.4%</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Farms List */}
-      <div className="space-y-6">
-        {displayFarms.map((farm) => {
-          // Use the farm's own nested ponds from the API response
-          const farmPonds = farm.ponds || [];
-
-          return (
-            <div key={farm.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-slate-900">{farm.name}</h2>
-                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      {farm.status || 'OPERATIONAL'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
-                    <span>📍 {farm.location || 'Location not set'}</span>
-                    <span>•</span>
-                    <span>ID: <code className="font-mono text-slate-600">{farm.id}</code></span>
-                    <span>•</span>
-                    <span>{farmPonds.length} pond{farmPonds.length !== 1 ? 's' : ''}</span>
-                  </p>
+          {/* Bottom Title & Quick Stats */}
+          <div className="absolute bottom-6 left-6 right-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  <Map className="w-3.5 h-3.5" />
+                  {DEMO_FARM.location} ({DEMO_FARM.coordinates.lat}°N, {Math.abs(DEMO_FARM.coordinates.lng)}°W)
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/ponds"
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
-                  >
-                    Manage Ponds <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
+                <h2 className="text-3xl md:text-4xl font-black tracking-tight">{DEMO_FARM.name}</h2>
+                <p className="text-slate-300 text-xs md:text-sm mt-1 max-w-2xl line-clamp-2">
+                  {DEMO_FARM.description}
+                </p>
               </div>
 
-              {/* Ponds Grid within Farm */}
-              {farmPonds.length > 0 && (
-                <div className="p-6">
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-                    Pond Topology & Active Cultivation Areas
-                  </h3>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 text-right">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Annual Capacity</div>
+                  <div className="text-base font-black text-emerald-400">{DEMO_FARM.annualCapacity}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {farmPonds.map((pond: any) => (
-                      <div key={pond.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                            <Droplets className="w-4 h-4 text-emerald-600" />
-                            {pond.name}
-                          </div>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            {pond.status || 'Active'}
-                          </span>
-                        </div>
+        {/* Facility Metadata Ribbon */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70 border-b border-slate-200">
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-indigo-500" /> Total Footprint
+            </div>
+            <div className="text-base font-black text-slate-900 mt-1">{(DEMO_FARM.totalAreaSqM).toLocaleString()} m²</div>
+            <div className="text-[10px] text-slate-500 font-medium">1.25 Hectares</div>
+          </div>
 
-                        <div className="text-xs text-slate-500 space-y-1">
-                          <div>Strain: <strong className="text-slate-800">{pond.species || 'Chlorella vulgaris'}</strong></div>
-                          <div>Volume: <strong className="text-slate-800">{(pond.volume_liters || 50000).toLocaleString()} L</strong></div>
-                        </div>
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <Sun className="w-3.5 h-3.5 text-amber-500" /> Climate Profile
+            </div>
+            <div className="text-sm font-bold text-slate-900 mt-1 truncate">Hot Desert (BWh)</div>
+            <div className="text-[10px] text-slate-500 font-medium">340+ sunny days/yr</div>
+          </div>
 
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase">Telemetry Live</span>
-                          <Link
-                            href={`/ponds/${pond.id}`}
-                            className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
-                          >
-                            View Operations →
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-yellow-500" /> Power Source
+            </div>
+            <div className="text-sm font-bold text-slate-900 mt-1">Solar PV 2.4 MW</div>
+            <div className="text-[10px] text-emerald-600 font-bold">100% Zero-Carbon</div>
+          </div>
+
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <Droplets className="w-3.5 h-3.5 text-sky-500" /> Water System
+            </div>
+            <div className="text-sm font-bold text-slate-900 mt-1 truncate">Recycled Canal</div>
+            <div className="text-[10px] text-slate-500 font-medium">Closed-Loop Recirc</div>
+          </div>
+
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-teal-500" /> Facility Lead
+            </div>
+            <div className="text-sm font-bold text-slate-900 mt-1">{DEMO_FARM.manager}</div>
+            <div className="text-[10px] text-slate-500 font-medium">Bioengineering Head</div>
+          </div>
+
+          <div className="p-4">
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-purple-500" /> Operational Since
+            </div>
+            <div className="text-sm font-bold text-slate-900 mt-1">March 2024</div>
+            <div className="text-[10px] text-emerald-600 font-bold">99.8% Uptime</div>
+          </div>
+        </div>
+
+        {/* Ponds Topology Section */}
+        <div className="p-6 md:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Droplets className="w-5 h-5 text-emerald-600" />
+                Active Pond Topology & Cultivation Units ({DEMO_PONDS.length})
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Individual raceway ponds and photobioreactors with real-time biometric instrumentation.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full self-start">
+              Total Working Volume: {DEMO_PONDS.reduce((sum, p) => sum + p.volumeLiters, 0).toLocaleString()} L
+            </span>
+          </div>
+
+          {/* Pond Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {DEMO_PONDS.map((pond) => (
+              <div 
+                key={pond.id} 
+                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col"
+              >
+                {/* Pond Image */}
+                <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                  <img 
+                    src={`/images/ponds/${pond.id}.jpg`} 
+                    alt={pond.name} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                  
+                  {/* Status Badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow ${
+                      pond.status === 'Healthy' 
+                        ? 'bg-emerald-500/90 text-white' 
+                        : 'bg-amber-500/90 text-white'
+                    }`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {pond.status}
+                    </span>
+                  </div>
+
+                  {/* Pond Type Badge */}
+                  <div className="absolute top-3 left-3">
+                    <span className="bg-slate-900/80 backdrop-blur-md text-slate-200 font-semibold text-[10px] px-2 py-0.5 rounded-md border border-slate-700">
+                      {pond.pondType}
+                    </span>
+                  </div>
+
+                  {/* Pond Name on Image */}
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <h4 className="font-black text-lg leading-tight">{pond.name}</h4>
+                    <p className="text-xs text-emerald-300 italic font-medium">{pond.species} ({pond.speciesCommon})</p>
                   </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+
+                {/* Pond Details & Telemetry Metrics */}
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  <p className="text-xs text-slate-600 line-clamp-2">
+                    {pond.description}
+                  </p>
+
+                  {/* 2x3 Metric Grid */}
+                  <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Biomass</div>
+                      <div className="text-sm font-black text-slate-900">{pond.biomass.toFixed(2)} <span className="text-[10px] font-normal text-slate-500">g/L</span></div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Temp</div>
+                      <div className="text-sm font-black text-slate-900">{pond.temperature.toFixed(1)} <span className="text-[10px] font-normal text-slate-500">°C</span></div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">pH Level</div>
+                      <div className="text-sm font-black text-slate-900">{pond.ph.toFixed(1)}</div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Nitrogen</div>
+                      <div className={`text-sm font-black ${pond.nitrogen < 5 ? 'text-amber-600' : 'text-slate-900'}`}>
+                        {pond.nitrogen.toFixed(1)} <span className="text-[10px] font-normal text-slate-500">mg/L</span>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">CO₂ Rate</div>
+                      <div className="text-sm font-black text-emerald-700">{pond.co2InjectionRate} <span className="text-[10px] font-normal text-slate-500">kg/h</span></div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <div className="text-[10px] text-slate-400 uppercase font-bold">Growth</div>
+                      <div className="text-sm font-black text-emerald-700">+{pond.dailyGrowthRate}%</div>
+                    </div>
+                  </div>
+
+                  {/* Footer Action */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Vol: {(pond.volumeLiters).toLocaleString()} L</span>
+                    <Link
+                      href={`/ponds/${pond.id}`}
+                      className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                    >
+                      Pond Analytics <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {allFarms.length > displayFarms.length && (
-        <div className="text-center py-4 text-sm text-slate-400">
-          Showing {displayFarms.length} of {allFarms.length} farms. {allFarms.length - displayFarms.length} test farms are hidden.
+      {/* Other Registered Facilities (if any) */}
+      {otherFarms.length > 0 && (
+        <div className="space-y-4 pt-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Globe className="w-4 h-4 text-emerald-600" />
+            Additional Registered Facilities ({otherFarms.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {otherFarms.map((f) => (
+              <div key={f.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900">{f.name}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">📍 {f.location || 'Location pending'}</p>
+                  <span className="inline-block mt-2 text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                    {f.ponds?.length || 0} Ponds Registered
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                  {f.status || 'ACTIVE'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
     </div>
   );
 }
-
