@@ -294,7 +294,7 @@ export default function DashboardOverview() {
               </div>
               <p className="text-xs text-gray-500 mb-2">Carbon retained after processing</p>
               <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
-                <div className="h-full bg-green-400" style={{ width: `${(carbon.endUseRetainedKg / carbon.grossFixedKg) * 100}%` }}></div>
+                <div className="h-full bg-green-400" style={{ width: carbon.grossFixedKg ? `${(carbon.endUseRetainedKg / carbon.grossFixedKg) * 100}%` : '0%' }}></div>
               </div>
             </div>
 
@@ -305,7 +305,7 @@ export default function DashboardOverview() {
               </div>
               <p className="text-xs text-gray-500 mb-2">Emissions from energy, fertilizer, etc.</p>
               <div className="h-6 w-full bg-gray-100 rounded overflow-hidden">
-                <div className="h-full bg-gray-400" style={{ width: `${(carbon.operationalFootprintKg / carbon.grossFixedKg) * 100}%` }}></div>
+                <div className="h-full bg-gray-400" style={{ width: carbon.grossFixedKg ? `${(carbon.operationalFootprintKg / carbon.grossFixedKg) * 100}%` : '0%' }}></div>
               </div>
             </div>
           </div>
