@@ -68,16 +68,6 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-<<<<<<< HEAD
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded bg-green-600 flex items-center justify-center">
-          <Droplets className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-lg leading-tight text-gray-900">AlgaX</span>
-          <span className="text-[10px] text-gray-500 font-medium tracking-wide">Carbon Intelligence Platform</span>
-=======
     <aside 
       className={`${
         isOpen ? 'w-64' : 'w-20'
@@ -133,7 +123,6 @@ export function Sidebar() {
               </span>
             </div>
           )}
->>>>>>> e926610a751bcb2f8a465040bf275bb0c557434f
         </div>
 
         {/* Toggle Collapse/Expand Button */}
