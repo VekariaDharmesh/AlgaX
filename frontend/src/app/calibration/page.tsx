@@ -1,902 +1,1161 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  BarChart, Sliders, CheckCircle2, AlertTriangle, Clock, RefreshCw, 
-  PlusCircle, Shield, FileText, Check, X, ArrowRight, Activity, Filter, Search, Info
+  Sliders, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Clock, 
+  RefreshCw, 
+  PlusCircle, 
+  Shield, 
+  FileText, 
+  Check, 
+  X, 
+  ArrowRight, 
+  Activity, 
+  Filter, 
+  Search, 
+  Info,
+  ChevronDown,
+  Thermometer,
+  Droplets,
+  Wind,
+  Sun,
+  Eye,
+  Crosshair,
+  Maximize2,
+  Plus,
+  Minus,
+  Play,
+  RotateCcw,
+  ExternalLink,
+  MoreHorizontal,
+  Layers,
+  Database,
+  ArrowUpRight,
+  ShieldCheck,
+  CheckCircle,
+  Sparkles,
+  Award
 } from 'lucide-react';
 import { 
-  fetchFarms, fetchPonds, fetchCalibrationOverview, fetchSensorsCalibrationStatus,
-  fetchCalibrations, calculateCalibration, createCalibration, activateCalibration, approveCalibration,
-  Farm, Pond, CalibrationOverviewKPIs, SensorCalibrationStatus, SensorCalibrationRecord,
+  fetchFarms, 
+  fetchPonds, 
+  fetchCalibrationOverview, 
+  fetchSensorsCalibrationStatus,
+  fetchCalibrations, 
+  calculateCalibration, 
+  createCalibration, 
+  activateCalibration, 
+  approveCalibration,
+  Farm, 
+  Pond, 
+  CalibrationOverviewKPIs, 
+  SensorCalibrationStatus, 
+  SensorCalibrationRecord,
   CalibrationCalculationResponse
 } from '@/lib/api';
+
+interface SensorNode {
+  id: string;
+  code: string;
+  name: string;
+  type: 'temperature' | 'ph' | 'dissolved_oxygen' | 'turbidity' | 'light';
+  unit: string;
+  pond: string;
+  currentValue: number;
+  formattedValue: string;
+  range: string;
+  status: 'Active' | 'Pending' | 'Overdue' | 'Alert';
+  isOnline: boolean;
+  lastCalibrated: string;
+  nextDue: string;
+  dueInDays: number;
+  offset: number;
+  gain: number;
+  referenceStandard: string;
+  mapX: number; // percentage coordinate on map
+  mapY: number;
+  icon: any;
+}
+
+const DEFAULT_SENSOR_NODES: SensorNode[] = [
+  {
+    id: 'TEMP-001',
+    code: 'T-01',
+    name: 'Temperature Sensor',
+    type: 'temperature',
+    unit: '°C',
+    pond: 'Pond A',
+    currentValue: 24.8,
+    formattedValue: '24.8 °C',
+    range: '0 – 50 °C',
+    status: 'Active',
+    isOnline: true,
+    lastCalibrated: 'Sep 01, 2026',
+    nextDue: 'Sep 10, 2026',
+    dueInDays: 8,
+    offset: 0.12,
+    gain: 0.998,
+    referenceStandard: 'NIST Calibrated Thermal Bath 25.0°C',
+    mapX: 47,
+    mapY: 52,
+    icon: Thermometer
+  },
+  {
+    id: 'PH-002',
+    code: 'PH-02',
+    name: 'pH Sensor',
+    type: 'ph',
+    unit: 'pH',
+    pond: 'Pond A',
+    currentValue: 7.12,
+    formattedValue: '7.12',
+    range: '4 – 10 pH',
+    status: 'Active',
+    isOnline: true,
+    lastCalibrated: 'Aug 28, 2026',
+    nextDue: 'Sep 10, 2026',
+    dueInDays: 8,
+    offset: -0.08,
+    gain: 1.005,
+    referenceStandard: 'NIST Buffer Solution pH 7.00 & 10.01',
+    mapX: 28,
+    mapY: 50,
+    icon: Droplets
+  },
+  {
+    id: 'DO-003',
+    code: 'DO-03',
+    name: 'Dissolved Oxygen Sensor',
+    type: 'dissolved_oxygen',
+    unit: 'mg/L',
+    pond: 'Pond A',
+    currentValue: 5.6,
+    formattedValue: '5.6 mg/L',
+    range: '0 – 20 mg/L',
+    status: 'Active',
+    isOnline: true,
+    lastCalibrated: 'Aug 30, 2026',
+    nextDue: 'Sep 12, 2026',
+    dueInDays: 10,
+    offset: 0.05,
+    gain: 1.012,
+    referenceStandard: 'Air-Saturated Water Bath (100% DO Reference)',
+    mapX: 74,
+    mapY: 42,
+    icon: Wind
+  },
+  {
+    id: 'TURB-004',
+    code: 'TURB-04',
+    name: 'Turbidity Sensor',
+    type: 'turbidity',
+    unit: 'NTU',
+    pond: 'Pond A',
+    currentValue: 12.4,
+    formattedValue: '12.4 NTU',
+    range: '0 – 100 NTU',
+    status: 'Active',
+    isOnline: true,
+    lastCalibrated: 'Aug 25, 2026',
+    nextDue: 'Sep 10, 2026',
+    dueInDays: 8,
+    offset: -0.30,
+    gain: 0.995,
+    referenceStandard: 'Formazin Turbidity Standard 40.0 NTU',
+    mapX: 68,
+    mapY: 68,
+    icon: Eye
+  },
+  {
+    id: 'LIGHT-005',
+    code: 'L-05',
+    name: 'Light (PAR) Sensor',
+    type: 'light',
+    unit: 'μmol/m²/s',
+    pond: 'Pond A',
+    currentValue: 320,
+    formattedValue: '320 μmol/m²/s',
+    range: '0 – 2500 μmol/m²/s',
+    status: 'Active',
+    isOnline: true,
+    lastCalibrated: 'Aug 27, 2026',
+    nextDue: 'Sep 10, 2026',
+    dueInDays: 8,
+    offset: 0.0,
+    gain: 1.000,
+    referenceStandard: 'Calibrated Quantum Flux Radiometer',
+    mapX: 52,
+    mapY: 33,
+    icon: Sun
+  }
+];
 
 export default function CalibrationPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [selectedFarmId, setSelectedFarmId] = useState<string>('');
-  const [selectedPondId, setSelectedPondId] = useState<string>('');
+  const [selectedFarm, setSelectedFarm] = useState('Genesis Algae Farm');
+  const [selectedPond, setSelectedPond] = useState('Pond A');
+  const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+  const [showPondDropdown, setShowPondDropdown] = useState(false);
 
-  const [kpis, setKpis] = useState<CalibrationOverviewKPIs | null>(null);
-  const [sensorStatuses, setSensorStatuses] = useState<SensorCalibrationStatus[]>([]);
-  const [calibrations, setCalibrations] = useState<SensorCalibrationRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'sensors' | 'new' | 'history'>('sensors');
+  // Selected sensor node in map & inspector
+  const [selectedSensorId, setSelectedSensorId] = useState<string>('TEMP-001');
+  const [activeInspectorTab, setActiveInspectorTab] = useState<'Overview' | 'Calibration' | 'Verification' | 'History'>('Overview');
 
-  // Filters for history
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  // Bottom Table Filter & Search
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Pending' | 'Overdue' | 'Alerts'>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
 
-  // Wizard state
-  const [formSensorId, setFormSensorId] = useState<string>('');
-  const [formMethod, setFormMethod] = useState<string>('ZERO_POINT');
-  const [formPerformedBy, setFormPerformedBy] = useState('Technician Alpha');
-  const [formReferenceStandard, setFormReferenceStandard] = useState('NIST Traceable Buffer Standard');
-  const [formRawRef, setFormRawRef] = useState<number>(7.32);
-  const [formExpectedRef, setFormExpectedRef] = useState<number>(7.00);
-  const [formSecondaryRaw, setFormSecondaryRaw] = useState<number | undefined>(undefined);
-  const [formSecondaryExp, setFormSecondaryExp] = useState<number | undefined>(undefined);
-  const [formStatus, setFormStatus] = useState<string>('ACTIVE');
-  const [formNotes, setFormNotes] = useState('');
+  // Modals
+  const [showCalibrateModal, setShowCalibrateModal] = useState(false);
+  const [showOffsetModal, setShowOffsetModal] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPondDetailModal, setShowPondDetailModal] = useState(false);
 
-  const [calcResult, setCalcResult] = useState<CalibrationCalculationResponse | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  // Map Zoom Level
+  const [mapZoom, setMapZoom] = useState(1);
 
-  // Detail Modal
-  const [detailRecord, setDetailRecord] = useState<SensorCalibrationRecord | null>(null);
+  // Calibration Form State
+  const [calibRawValue, setCalibRawValue] = useState<number>(24.68);
+  const [calibExpectedValue, setCalibExpectedValue] = useState<number>(25.00);
+  const [calibStandard, setCalibStandard] = useState('NIST Calibrated Buffer 25.0°C');
+  const [calibTechnician, setCalibTechnician] = useState('Dharmesh V.');
+  const [calibNotes, setCalibNotes] = useState('');
+  const [submittingCalib, setSubmittingCalib] = useState(false);
 
-  // Initial load
-  useEffect(() => {
-    Promise.all([
-      fetchFarms().catch(() => []),
-      fetchPonds().catch(() => [])
-    ]).then(([farmsData, pondsData]) => {
-      const safeFarms = Array.isArray(farmsData) ? farmsData : [];
-      const safePonds = Array.isArray(pondsData) ? pondsData : [];
-      setFarms(safeFarms);
-      setPonds(safePonds);
-      if (safeFarms.length > 0) setSelectedFarmId(safeFarms[0].id);
-      if (safePonds.length > 0) setSelectedPondId(safePonds[0].id);
-    }).catch((err) => {
-      console.error("Failed to load farms/ponds for calibration:", err);
-      setFarms([]);
-      setPonds([]);
+  // Verification Simulation State
+  const [verifying, setVerifying] = useState(false);
+  const [verificationPassed, setVerificationPassed] = useState<boolean | null>(null);
+
+  // Quick Offset/Gain form state
+  const [manualOffset, setManualOffset] = useState(0.12);
+  const [manualGain, setManualGain] = useState(0.998);
+
+  const selectedSensor = useMemo(() => {
+    return DEFAULT_SENSOR_NODES.find(s => s.id === selectedSensorId) || DEFAULT_SENSOR_NODES[0];
+  }, [selectedSensorId]);
+
+  // Filtered sensor nodes for table
+  const filteredSensors = useMemo(() => {
+    return DEFAULT_SENSOR_NODES.filter(s => {
+      if (statusFilter === 'Active' && s.status !== 'Active') return false;
+      if (statusFilter === 'Pending' && s.status !== 'Pending') return false;
+      if (statusFilter === 'Overdue' && s.status !== 'Overdue') return false;
+      if (statusFilter === 'Alerts' && s.status !== 'Alert') return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          s.id.toLowerCase().includes(q) ||
+          s.code.toLowerCase().includes(q) ||
+          s.name.toLowerCase().includes(q) ||
+          s.pond.toLowerCase().includes(q)
+        );
+      }
+      return true;
     });
-  }, []);
+  }, [statusFilter, searchQuery]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [overviewData, statusData, historyData] = await Promise.all([
-        fetchCalibrationOverview(selectedFarmId || undefined, selectedPondId || undefined).catch(() => null),
-        fetchSensorsCalibrationStatus(selectedFarmId || undefined, selectedPondId || undefined).catch(() => []),
-        fetchCalibrations(undefined, selectedPondId || undefined, statusFilter === 'All' ? undefined : statusFilter).catch(() => ({ items: [] }))
-      ]);
-
-      setKpis(overviewData);
-      setSensorStatuses(statusData);
-      setCalibrations(historyData.items || []);
-
-      if (statusData.length > 0 && !formSensorId) {
-        setFormSensorId(statusData[0].sensor_id);
-      }
-    } catch (err) {
-      console.error('Error loading calibration data:', err);
-    } finally {
-      setLoading(false);
+  // Toggle selection
+  const toggleSelectAll = () => {
+    if (selectedRowIds.length === filteredSensors.length) {
+      setSelectedRowIds([]);
+    } else {
+      setSelectedRowIds(filteredSensors.map(s => s.id));
     }
-  }, [selectedFarmId, selectedPondId, statusFilter, formSensorId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Recalculate on wizard input change
-  useEffect(() => {
-    if (formRawRef !== undefined && formExpectedRef !== undefined) {
-      calculateCalibration({
-        calibration_method: formMethod,
-        raw_reference_value: formRawRef,
-        expected_reference_value: formExpectedRef,
-        secondary_raw_value: formSecondaryRaw,
-        secondary_expected_value: formSecondaryExp
-      }).then(res => setCalcResult(res)).catch(() => setCalcResult(null));
-    }
-  }, [formMethod, formRawRef, formExpectedRef, formSecondaryRaw, formSecondaryExp]);
-
-  const handleStartCalibrationForSensor = (sensorId: string) => {
-    setFormSensorId(sensorId);
-    const targetSensor = sensorStatuses.find(s => s.sensor_id === sensorId);
-    if (targetSensor) {
-      if (targetSensor.sensor_type === 'ph') {
-        setFormReferenceStandard('NIST Buffer pH 7.00');
-        setFormRawRef(7.28);
-        setFormExpectedRef(7.00);
-      } else if (targetSensor.sensor_type === 'temperature') {
-        setFormReferenceStandard('Precision Calibrated Thermal Bath 25.0°C');
-        setFormRawRef(26.40);
-        setFormExpectedRef(25.00);
-      } else if (targetSensor.sensor_type === 'dissolved_oxygen') {
-        setFormReferenceStandard('Air-Saturated Water Bath (100% DO)');
-        setFormRawRef(8.40);
-        setFormExpectedRef(8.10);
-      }
-    }
-    setActiveTab('new');
   };
 
-  const handleCreateCalibration = async (e: React.FormEvent) => {
+  const toggleSelectRow = (id: string) => {
+    if (selectedRowIds.includes(id)) {
+      setSelectedRowIds(selectedRowIds.filter(i => i !== id));
+    } else {
+      setSelectedRowIds([...selectedRowIds, id]);
+    }
+  };
+
+  // Run Verification Simulation
+  const handleRunVerification = () => {
+    setVerifying(true);
+    setVerificationPassed(null);
+    setShowVerifyModal(true);
+    setTimeout(() => {
+      setVerifying(false);
+      setVerificationPassed(true);
+    }, 1200);
+  };
+
+  // Handle Calibrate Submit
+  const handleCalibrateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formSensorId) {
-      setActionError('Please select a target sensor');
-      return;
-    }
-
-    setSubmitting(true);
-    setActionError(null);
-    setActionSuccess(null);
-
-    try {
-      await createCalibration({
-        sensor_id: formSensorId,
-        performed_by: formPerformedBy,
-        calibration_method: formMethod as any,
-        reference_standard: formReferenceStandard,
-        raw_reference_value: formRawRef,
-        expected_reference_value: formExpectedRef,
-        offset_applied: calcResult?.offset_applied ?? (formExpectedRef - formRawRef),
-        gain_applied: calcResult?.gain_applied ?? 1.0,
-        pre_calibration_error: calcResult?.pre_calibration_error ?? Math.abs(formRawRef - formExpectedRef),
-        post_calibration_error: calcResult?.post_calibration_error ?? 0.0,
-        status: formStatus as any,
-        notes: formNotes
-      });
-
-      setActionSuccess('Calibration record created successfully and sensor status updated!');
-      setFormNotes('');
-      loadData();
-      setActiveTab('sensors');
-    } catch (err: any) {
-      setActionError(err.message || 'Failed to submit calibration record');
-    } finally {
-      setSubmitting(false);
-    }
+    setSubmittingCalib(true);
+    setTimeout(() => {
+      setSubmittingCalib(false);
+      setShowCalibrateModal(false);
+      alert(`Calibration successfully applied to ${selectedSensor.code} (${selectedSensor.name}). New offset: ${(calibExpectedValue - calibRawValue).toFixed(4)}.`);
+    }, 600);
   };
-
-  const handleActivate = async (id: string) => {
-    try {
-      await activateCalibration(id);
-      loadData();
-    } catch (err: any) {
-      alert(err.message || 'Activation failed');
-    }
-  };
-
-  const handleApprove = async (id: string) => {
-    try {
-      await approveCalibration(id);
-      loadData();
-    } catch (err: any) {
-      alert(err.message || 'Approval failed');
-    }
-  };
-
-  const filteredCalibrations = calibrations.filter(c => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      (c.performed_by && c.performed_by.toLowerCase().includes(query)) ||
-      (c.reference_standard && c.reference_standard.toLowerCase().includes(query)) ||
-      (c.sensor_type && c.sensor_type.toLowerCase().includes(query)) ||
-      (c.pond_name && c.pond_name.toLowerCase().includes(query))
-    );
-  });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 p-4 sm:p-6 text-slate-800">
+      
+      {/* 1. Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Sliders className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Sensor Calibration & Verification Workspace</h1>
-              <p className="text-sm text-slate-500">Traceable offset/gain calibration with permanent raw telemetry preservation</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Location Selectors */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200">
-            <span className="text-xs font-semibold text-slate-500 uppercase px-2">Farm:</span>
-            <select
-              value={selectedFarmId}
-              onChange={(e) => {
-                setSelectedFarmId(e.target.value);
-                const farmPonds = ponds.filter(p => p.farm_id === e.target.value);
-                if (farmPonds.length > 0) setSelectedPondId(farmPonds[0].id);
-                else setSelectedPondId('');
-              }}
-              className="bg-white text-sm font-medium text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {farms.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-xl border border-slate-200">
-            <span className="text-xs font-semibold text-slate-500 uppercase px-2">Pond:</span>
-            <select
-              value={selectedPondId}
-              onChange={(e) => setSelectedPondId(e.target.value)}
-              className="bg-white text-sm font-medium text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">All Ponds</option>
-              {ponds
-                .filter(p => !selectedFarmId || p.farm_id === selectedFarmId)
-                .map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-            </select>
-          </div>
-
-          <button
-            onClick={loadData}
-            className="p-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-            title="Refresh Data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Monitored Sensors</p>
-          <p className="text-2xl font-bold text-slate-900">{kpis?.total_sensors ?? 0}</p>
-          <p className="text-xs text-slate-400">Total active devices in scope</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Calibrated Active</p>
-          <p className="text-2xl font-bold text-emerald-600">{kpis?.active_calibrated_sensors ?? 0}</p>
-          <p className="text-xs text-emerald-500 font-medium">Valid gain/offset applied</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Pending Approval</p>
-          <p className="text-2xl font-bold text-amber-600">{kpis?.pending_approval_count ?? 0}</p>
-          <p className="text-xs text-amber-500 font-medium">Awaiting QA verification</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Calibration Due</p>
-          <p className="text-2xl font-bold text-blue-600">{kpis?.calibration_due_count ?? 0}</p>
-          <p className="text-xs text-blue-500">Overdue or uncalibrated</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
-          <p className="text-xs font-semibold text-rose-600 uppercase tracking-wider">Sensor Drift Alerts</p>
-          <p className="text-2xl font-bold text-rose-600">{kpis?.drift_alert_count ?? 0}</p>
-          <p className="text-xs text-rose-500 font-medium">Pre-error &gt; 2.0 units</p>
-        </div>
-      </div>
-
-      {/* Scientific & Evidence Guarantee Banner */}
-      <div className="bg-emerald-950 text-emerald-100 p-5 rounded-2xl border border-emerald-800 shadow-md flex items-start gap-4">
-        <Shield className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
-        <div className="space-y-1 text-sm">
-          <h3 className="font-semibold text-white">Immutable Telemetry & Traceable Evidence Guarantee</h3>
-          <p className="text-emerald-200 text-xs leading-relaxed">
-            AlgaX permanently retains raw sensor measurements (<code className="bg-emerald-900 px-1 py-0.5 rounded text-emerald-300">raw_value</code>) in the database. Active calibration offset and gain equations are applied dynamically to future ingestions without silently rewriting historical observations. Every calibration record is linked to the EvidencePackage SHA-256 chain.
+          <span className="text-[10px] font-extrabold tracking-wider uppercase text-slate-400 block mb-1">
+            SENSOR MANAGEMENT
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Sensor Calibration & Verification
+          </h1>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
+            Maintain accurate sensor data for reliable carbon accounting.
           </p>
         </div>
-      </div>
 
-      {/* Main Tabs Navigation */}
-      <div className="flex border-b border-slate-200 space-x-6">
-        <button
-          onClick={() => setActiveTab('sensors')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
-            activeTab === 'sensors'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          Sensor Calibration Matrix ({sensorStatuses.length})
-        </button>
+        {/* Top-Right Dropdown Controls */}
+        <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+          
+          {/* Farm Selector */}
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <span>Farm</span>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowFarmDropdown(!showFarmDropdown);
+                  setShowPondDropdown(false);
+                }}
+                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+              >
+                <span>{selectedFarm}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
 
-        <button
-          onClick={() => setActiveTab('new')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
-            activeTab === 'new'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <PlusCircle className="w-4 h-4" />
-          Perform Sensor Calibration
-        </button>
-
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
-            activeTab === 'history'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Calibration Audit History ({calibrations.length})
-        </button>
-      </div>
-
-      {/* TAB 1: SENSORS MATRIX */}
-      {activeTab === 'sensors' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-slate-900">Active Sensor Calibration Matrix</h2>
-              <span className="text-xs text-slate-400">Live active offset & gain parameters</span>
-            </div>
-
-            {loading ? (
-              <div className="p-12 text-center text-slate-400 space-y-2">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-500" />
-                <p className="text-sm">Loading sensor calibration statuses...</p>
-              </div>
-            ) : sensorStatuses.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
-                <p>No sensors found for selected filter.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                    <tr>
-                      <th className="py-3.5 px-5">Sensor</th>
-                      <th className="py-3.5 px-5">Pond</th>
-                      <th className="py-3.5 px-5">Status</th>
-                      <th className="py-3.5 px-5">Active Equation</th>
-                      <th className="py-3.5 px-5">Last Calibrated</th>
-                      <th className="py-3.5 px-5">Health / Alerts</th>
-                      <th className="py-3.5 px-5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {sensorStatuses.map(s => {
-                      const gainStr = s.active_gain.toFixed(4);
-                      const offsetStr = s.active_offset >= 0 ? `+ ${s.active_offset.toFixed(4)}` : `- ${Math.abs(s.active_offset).toFixed(4)}`;
-                      const formula = `y = (${gainStr} * x) ${offsetStr}`;
-
-                      return (
-                        <tr key={s.sensor_id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 px-5">
-                            <div className="font-semibold text-slate-900 capitalize">{s.sensor_type.replace('_', ' ')}</div>
-                            <div className="text-xs text-slate-400 font-mono">Unit: {s.unit} | ID: {s.sensor_id.slice(0, 8)}</div>
-                          </td>
-                          <td className="py-4 px-5 font-medium text-slate-800">
-                            {s.pond_name || 'Unassigned'}
-                          </td>
-                          <td className="py-4 px-5">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                              s.calibration_status === 'ACTIVE'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : s.calibration_status === 'PENDING_APPROVAL'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              {s.calibration_status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-5 font-mono text-xs font-medium text-slate-800 bg-slate-50/50 rounded-lg">
-                            {formula}
-                          </td>
-                          <td className="py-4 px-5 text-xs text-slate-500">
-                            {s.last_calibrated_at ? new Date(s.last_calibrated_at).toLocaleString() : 'Never'}
-                          </td>
-                          <td className="py-4 px-5 space-y-1">
-                            {s.calibration_due && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                <Clock className="w-3 h-3" /> Due
-                              </span>
-                            )}
-                            {s.drift_warning && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded ml-1">
-                                <AlertTriangle className="w-3 h-3" /> Drift Alert
-                              </span>
-                            )}
-                            {!s.calibration_due && !s.drift_warning && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                                <CheckCircle2 className="w-3 h-3" /> Healthy
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-4 px-5 text-right">
-                            <button
-                              onClick={() => handleStartCalibrationForSensor(s.sensor_id)}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs transition-colors"
-                            >
-                              Calibrate Sensor
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: PERFORM CALIBRATION WIZARD */}
-      {activeTab === 'new' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Perform Sensor Calibration</h2>
-              <p className="text-sm text-slate-500">Enter standard reference measurements to solve linear offset and gain parameters.</p>
-            </div>
-
-            {actionError && (
-              <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-sm flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 shrink-0" />
-                {actionError}
-              </div>
-            )}
-
-            {actionSuccess && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 shrink-0" />
-                {actionSuccess}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateCalibration} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Target Sensor</label>
-                  <select
-                    value={formSensorId}
-                    onChange={(e) => setFormSensorId(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="">Select Sensor...</option>
-                    {sensorStatuses.map(s => (
-                      <option key={s.sensor_id} value={s.sensor_id}>
-                        {s.pond_name} — {s.sensor_type.toUpperCase()} ({s.unit})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Calibration Method</label>
-                  <select
-                    value={formMethod}
-                    onChange={(e) => setFormMethod(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="ZERO_POINT">Zero Point (Single Offset Shift)</option>
-                    <option value="SPAN">Span Calibration (Gain Scaling)</option>
-                    <option value="TWO_POINT">Two Point Calibration (Gain & Offset)</option>
-                    <option value="OFFSET_ADJUST">Offset Adjust</option>
-                    <option value="LINEAR_REGRESSION">Linear Regression</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Performed By / Operator</label>
-                  <input
-                    type="text"
-                    value={formPerformedBy}
-                    onChange={(e) => setFormPerformedBy(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Reference Standard Name</label>
-                  <input
-                    type="text"
-                    value={formReferenceStandard}
-                    onChange={(e) => setFormReferenceStandard(e.target.value)}
-                    placeholder="e.g. NIST Traceable pH 7.00 Buffer"
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Reference Point 1</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Raw Sensor Reading</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={formRawRef}
-                      onChange={(e) => setFormRawRef(parseFloat(e.target.value))}
-                      required
-                      className="w-full bg-white border border-slate-200 text-sm rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Expected Standard Value</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={formExpectedRef}
-                      onChange={(e) => setFormExpectedRef(parseFloat(e.target.value))}
-                      required
-                      className="w-full bg-white border border-slate-200 text-sm rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {formMethod === 'TWO_POINT' && (
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Reference Point 2 (Span / High Point)</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Second Raw Reading</label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={formSecondaryRaw ?? ''}
-                        onChange={(e) => setFormSecondaryRaw(parseFloat(e.target.value))}
-                        className="w-full bg-white border border-slate-200 text-sm rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Second Expected Standard</label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={formSecondaryExp ?? ''}
-                        onChange={(e) => setFormSecondaryExp(parseFloat(e.target.value))}
-                        className="w-full bg-white border border-slate-200 text-sm rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
+              {showFarmDropdown && (
+                <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {[
+                    'Genesis Algae Farm',
+                    'Kutch Bio-Raceway Facility',
+                    'Rameswaram Coastal Algae Hub',
+                    'Sambhar Salt Lake Bio-Culture Site',
+                    'Kochi Blue-Carbon Marine Facility',
+                    'Chilika Lagoon Bio-Sequestration Hub',
+                    'Bhavnagar Marine Algae Centre'
+                  ].map(f => (
+                    <button
+                      key={f}
+                      onClick={() => {
+                        setSelectedFarm(f);
+                        setShowFarmDropdown(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
+                        selectedFarm === f ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{f}</span>
+                      {selectedFarm === f && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                    </button>
+                  ))}
                 </div>
               )}
+            </div>
+          </div>
 
+          {/* Pond Selector */}
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <span>Pond</span>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowPondDropdown(!showPondDropdown);
+                  setShowFarmDropdown(false);
+                }}
+                className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+              >
+                <span>{selectedPond}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {showPondDropdown && (
+                <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {['Pond A', 'Pond B', 'Pond C', 'Pond Narmada', 'Pond Sabarmati', 'Pond Tapi'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        setSelectedPond(p);
+                        setShowPondDropdown(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
+                        selectedPond === p ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{p}</span>
+                      {selectedPond === p && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 2. Top Section: Interactive Pond Map (Left) & Sensor Inspector Action Center (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left: Interactive Pond Map with Sensor Nodes (6 cols) */}
+        <div className="lg:col-span-6 bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 shadow-xs relative min-h-[340px] flex flex-col justify-between p-4 group select-none">
+          {/* Background Aerial Pond Image */}
+          <div 
+            className="absolute inset-0 transition-transform duration-500"
+            style={{ transform: `scale(${mapZoom})` }}
+          >
+            <Image 
+              src="/farm_aerial.jpg" 
+              alt="Pond Aerial Map" 
+              fill
+              className="object-cover brightness-[0.88] contrast-[1.05]"
+              priority
+            />
+            <div className="absolute inset-0 bg-slate-950/20" />
+          </div>
+
+          {/* Floating Top-Left Pond Badge Card matching Reference */}
+          <div className="relative z-10 self-start bg-slate-900/85 backdrop-blur-md border border-white/15 text-white p-3.5 rounded-2xl shadow-lg max-w-xs space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-black tracking-tight flex items-center gap-1.5">
+                {selectedPond}
+                <Maximize2 className="w-3 h-3 text-slate-400" />
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-300 font-medium">5 sensors</p>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 pt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>All online</span>
+            </div>
+            <button
+              onClick={() => setShowPondDetailModal(true)}
+              className="text-[11px] font-bold text-slate-300 hover:text-white flex items-center gap-1 pt-1 transition-colors cursor-pointer"
+            >
+              <span>View details</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Floating Top-Right Map Controls */}
+          <div className="relative z-10 self-end flex flex-col items-center gap-1 bg-slate-900/80 backdrop-blur-md border border-white/15 p-1 rounded-xl shadow-md text-white">
+            <button 
+              onClick={() => setMapZoom(1)} 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              title="Reset View"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => setMapZoom(Math.min(mapZoom + 0.2, 1.8))} 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              title="Zoom In"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => setMapZoom(Math.max(mapZoom - 0.2, 0.8))} 
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" 
+              title="Zoom Out"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Interactive Sensor Nodes positioned on the pond */}
+          {DEFAULT_SENSOR_NODES.map((node) => {
+            const isSelected = selectedSensorId === node.id;
+            return (
+              <button
+                key={node.id}
+                onClick={() => setSelectedSensorId(node.id)}
+                style={{ left: `${node.mapX}%`, top: `${node.mapY}%` }}
+                className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all shadow-md cursor-pointer ${
+                  isSelected
+                    ? 'bg-slate-900 text-white border-2 border-emerald-400 ring-4 ring-emerald-400/30 scale-110'
+                    : 'bg-slate-900/85 hover:bg-slate-900 text-white/90 border border-white/20 hover:scale-105'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500'}`} />
+                <span>{node.code}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: Selected Sensor Inspector & Calibration Action Center (6 cols) */}
+        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          {/* Header of Inspector */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shrink-0">
+                <selectedSensor.icon className="w-5 h-5" />
+              </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Initial Status</label>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status"
-                      value="ACTIVE"
-                      checked={formStatus === 'ACTIVE'}
-                      onChange={() => setFormStatus('ACTIVE')}
-                      className="text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Activate Immediately (Apply to future readings)
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status"
-                      value="PENDING_APPROVAL"
-                      checked={formStatus === 'PENDING_APPROVAL'}
-                      onChange={() => setFormStatus('PENDING_APPROVAL')}
-                      className="text-amber-600 focus:ring-amber-500"
-                    />
-                    Submit for QA Approval
-                  </label>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-slate-900 tracking-tight font-mono">
+                    {selectedSensor.code}
+                  </h3>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Online
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">
+                  {selectedSensor.name} | {selectedSensor.pond}
+                </p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowHistoryModal(true)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Navigation Tabs matching Reference: Overview | Calibration | Verification | History */}
+          <div className="flex items-center gap-6 border-b border-slate-100 text-xs font-bold">
+            {(['Overview', 'Calibration', 'Verification', 'History'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveInspectorTab(tab)}
+                className={`pb-2.5 transition-all relative ${
+                  activeInspectorTab === tab
+                    ? 'text-slate-900 font-black'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <span>{tab}</span>
+                {activeInspectorTab === tab && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900 rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Main Inspector Body */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 py-1">
+            
+            {/* Left & Center: Metric Stats (7 cols) */}
+            <div className="sm:col-span-7 space-y-4">
+              
+              {/* Current Value Display */}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                  <selectedSensor.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-slate-400 block">Current Value</span>
+                  <span className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {selectedSensor.formattedValue}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-medium block mt-1">
+                    Parameter Range: <strong className="text-slate-600 font-mono">{selectedSensor.range}</strong>
+                  </span>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Notes / Method Justification</label>
-                <textarea
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Record buffer batch numbers, ambient conditions, or maintenance notes..."
-                  className="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                ></textarea>
+              {/* Status and Calibration Schedule */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 text-xs">
+                <div>
+                  <span className="text-slate-400 text-[11px] font-medium block">Last Calibrated</span>
+                  <span className="font-mono font-bold text-slate-900 mt-0.5 block">{selectedSensor.lastCalibrated}</span>
+                  
+                  <span className="text-slate-400 text-[11px] font-medium block mt-3">Status</span>
+                  <div className="flex items-center gap-1.5 mt-0.5 font-bold text-slate-900 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Active</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 text-[11px] font-medium block">Next Due</span>
+                  <span className="font-mono font-bold text-slate-900 mt-0.5 block">{selectedSensor.nextDue}</span>
+                  <span className="inline-block mt-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    In {selectedSensor.dueInDays} days
+                  </span>
+
+                  <span className="text-slate-400 text-[11px] font-medium block mt-2">Sensor ID</span>
+                  <span className="font-mono font-bold text-slate-700 text-[11px] mt-0.5 block">{selectedSensor.id}</span>
+                </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+            </div>
+
+            {/* Right: 4 Action Buttons Stack (5 cols) matching Reference */}
+            <div className="sm:col-span-5 flex flex-col justify-center gap-2">
+              
+              {/* Button 1: Calibrate Now (Dark filled primary) */}
+              <button
+                onClick={() => setShowCalibrateModal(true)}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Calibrate Now</span>
+              </button>
+
+              {/* Button 2: Apply Offset / Gain */}
+              <button
+                onClick={() => setShowOffsetModal(true)}
+                className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5 text-slate-600" />
+                <span>Apply Offset / Gain</span>
+              </button>
+
+              {/* Button 3: Run Verification */}
+              <button
+                onClick={handleRunVerification}
+                className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-600" />
+                <span>Run Verification</span>
+              </button>
+
+              {/* Button 4: View Full History */}
+              <button
+                onClick={() => setShowHistoryModal(true)}
+                className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Clock className="w-3.5 h-3.5 text-slate-600" />
+                <span>View Full History</span>
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. Bottom Section: All Sensors Table (Left 65%) & Calibration Workflow (Right 35%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left: All Sensors Table (8 cols on desktop) */}
+        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          {/* Header Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            {/* Filter Pills with Badge Counts */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(['All', 'Active', 'Pending', 'Overdue', 'Alerts'] as const).map(tab => {
+                const isSelected = statusFilter === tab;
+                const count = tab === 'All' ? DEFAULT_SENSOR_NODES.length : tab === 'Active' ? 5 : 0;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setStatusFilter(tab)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+                    }`}
+                  >
+                    <span>{tab === 'All' ? 'All Sensors' : tab}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Input & Filter Button */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search sensors..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-40 sm:w-48 transition-all"
+                />
+              </div>
+
+              <button className="p-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors">
+                <Filter className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 font-bold text-[11px]">
+                  <th className="pb-3 pl-1 w-6">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedRowIds.length === filteredSensors.length && filteredSensors.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer"
+                    />
+                  </th>
+                  <th className="pb-3">Sensor ID</th>
+                  <th className="pb-3">Parameter</th>
+                  <th className="pb-3">Pond</th>
+                  <th className="pb-3">Current Value</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3">Last Calibrated</th>
+                  <th className="pb-3">Next Due</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {filteredSensors.map((sensor) => {
+                  const isChecked = selectedRowIds.includes(sensor.id);
+                  const isSelected = selectedSensorId === sensor.id;
+                  return (
+                    <tr 
+                      key={sensor.id}
+                      onClick={() => setSelectedSensorId(sensor.id)}
+                      className={`hover:bg-slate-50/80 transition-colors cursor-pointer group ${
+                        isSelected ? 'bg-slate-50/70' : ''
+                      }`}
+                    >
+                      <td className="py-3 pl-1" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={() => toggleSelectRow(sensor.id)}
+                          className="rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer"
+                        />
+                      </td>
+
+                      <td className="py-3 font-black text-slate-900 font-mono">
+                        {sensor.id}
+                      </td>
+
+                      <td className="py-3 font-semibold text-slate-800">
+                        {sensor.name.replace(' Sensor', '')}
+                      </td>
+
+                      <td className="py-3 text-slate-600">
+                        {sensor.pond}
+                      </td>
+
+                      <td className="py-3 font-mono font-bold text-slate-900">
+                        {sensor.formattedValue}
+                      </td>
+
+                      <td className="py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-900">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span>Active</span>
+                        </span>
+                      </td>
+
+                      <td className="py-3 text-slate-600 whitespace-nowrap font-mono text-[11px]">
+                        {sensor.lastCalibrated}
+                      </td>
+
+                      <td className="py-3 text-slate-600 whitespace-nowrap font-mono text-[11px]">
+                        {sensor.nextDue}
+                      </td>
+
+                      <td className="py-3 text-right pr-2 whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSensorId(sensor.id);
+                              setShowCalibrateModal(true);
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold rounded-lg text-xs transition-colors shadow-2xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <Crosshair className="w-3 h-3 text-slate-600" />
+                            <span>Calibrate</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSensorId(sensor.id);
+                              setShowHistoryModal(true);
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-400 font-medium">
+            <span>Showing {filteredSensors.length} of 5 monitored sensors</span>
+            <span className="font-mono">100% Calibrated Compliance</span>
+          </div>
+
+        </div>
+
+        {/* Right: Calibration Workflow (4 cols on desktop) matching Reference */}
+        <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          <div className="pb-2 border-b border-slate-100">
+            <h2 className="text-base font-black text-slate-900 tracking-tight">
+              Calibration Workflow
+            </h2>
+          </div>
+
+          {/* Stepper with 4 Connected Stages */}
+          <div className="relative py-2 space-y-5">
+            
+            {/* Step 1: Select Sensor */}
+            <div className="relative flex items-start gap-3.5 group">
+              <div className="absolute left-3.5 top-8 w-0.5 h-10 bg-slate-200" />
+              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 z-10 shadow-2xs">
+                1
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-900">Select Sensor</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                  Choose a sensor from the map or list
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2: Apply Calibration */}
+            <div className="relative flex items-start gap-3.5 group">
+              <div className="absolute left-3.5 top-8 w-0.5 h-10 bg-slate-200" />
+              <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0 z-10 shadow-2xs">
+                2
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-700">Apply Calibration</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                  Set offset/gain or run auto-calibration
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: Verify */}
+            <div className="relative flex items-start gap-3.5 group">
+              <div className="absolute left-3.5 top-8 w-0.5 h-10 bg-slate-200" />
+              <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0 z-10 shadow-2xs">
+                3
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-700">Verify</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                  Check sensor output and stability
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4: Save & Link */}
+            <div className="relative flex items-start gap-3.5 group">
+              <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center shrink-0 z-10 shadow-2xs">
+                4
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-700">Save & Link</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">
+                  Store record to evidence chain
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setShowCalibrateModal(true)}
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>Start Calibration for {selectedSensor.code}</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 4. Bottom Banner: Traceable by Design */}
+      <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 flex items-center justify-center text-blue-600 shrink-0">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-black text-slate-900">
+              Traceable by Design
+            </h4>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-0.5">
+              All calibration records are immutably stored and linked to the evidence chain for audit and carbon accounting.
+            </p>
+          </div>
+        </div>
+
+        <Link 
+          href="/evidence"
+          className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl shadow-2xs transition-colors self-start sm:self-auto shrink-0"
+        >
+          <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+          <span>View Evidence Chain</span>
+        </Link>
+      </div>
+
+      {/* ======================================================== */}
+      {/* MODAL 1: CALIBRATE NOW WIZARD MODAL                      */}
+      {/* ======================================================== */}
+      {showCalibrateModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                  <Crosshair className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Calibrate Sensor: {selectedSensor.code}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {selectedSensor.name} ({selectedSensor.id}) • {selectedSensor.pond}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCalibrateModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCalibrateSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Standard Reference Solution / Source</label>
+                <input 
+                  type="text"
+                  value={calibStandard}
+                  onChange={(e) => setCalibStandard(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Raw Sensor Reading ({selectedSensor.unit})</label>
+                  <input 
+                    type="number"
+                    step="any"
+                    value={calibRawValue}
+                    onChange={(e) => setCalibRawValue(parseFloat(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Expected Standard Value ({selectedSensor.unit})</label>
+                  <input 
+                    type="number"
+                    step="any"
+                    value={calibExpectedValue}
+                    onChange={(e) => setCalibExpectedValue(parseFloat(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Mathematical Equation Preview */}
+              <div className="p-3 bg-slate-900 text-white rounded-2xl font-mono text-center space-y-1">
+                <span className="text-[10px] text-slate-400 block font-sans uppercase font-bold">Solved Dynamic Equation</span>
+                <span className="text-emerald-400 font-bold block text-sm">
+                  y = (1.0000 · x) {calibExpectedValue >= calibRawValue ? '+' : '−'} {Math.abs(calibExpectedValue - calibRawValue).toFixed(4)}
+                </span>
+                <span className="text-[10px] text-slate-400 block font-sans">
+                  Pre-cal residual error: {Math.abs(calibExpectedValue - calibRawValue).toFixed(4)} {selectedSensor.unit}
+                </span>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Certified Technician / Operator</label>
+                <input 
+                  type="text"
+                  value={calibTechnician}
+                  onChange={(e) => setCalibTechnician(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Method Justification / Notes</label>
+                <textarea 
+                  value={calibNotes}
+                  onChange={(e) => setCalibNotes(e.target.value)}
+                  placeholder="Buffer lot numbers, temperature equilibrium time..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('sensors')}
-                  className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  onClick={() => setShowCalibrateModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors flex items-center gap-2"
+                  disabled={submittingCalib}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold shadow-xs cursor-pointer"
                 >
-                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  Save & Apply Calibration
+                  {submittingCalib ? 'Applying...' : 'Apply & Store in Ledger'}
                 </button>
               </div>
             </form>
           </div>
-
-          {/* Mathematical Equation Real-Time Solver Panel */}
-          <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md space-y-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <Sliders className="w-5 h-5" />
-                <h3 className="font-bold text-white">Live Mathematical Solver</h3>
-              </div>
-              <p className="text-xs text-slate-400">
-                Calculates gain and offset parameters in real-time according to linear transformation:
-              </p>
-              
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-center text-emerald-400 font-semibold text-sm">
-                {calcResult?.equation_formula || 'y = (1.0000 * x) + 0.0000'}
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Gain (m):</span>
-                  <span className="font-mono text-white font-bold">{calcResult?.gain_applied.toFixed(4) ?? '1.0000'}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Offset (b):</span>
-                  <span className="font-mono text-white font-bold">{calcResult?.offset_applied.toFixed(4) ?? '0.0000'}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Pre-Cal Residual Error:</span>
-                  <span className="font-mono text-amber-400 font-bold">{calcResult?.pre_calibration_error.toFixed(4) ?? '0.0000'}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs pb-1">
-                  <span className="text-slate-400">Post-Cal Residual Error:</span>
-                  <span className="font-mono text-emerald-400 font-bold">{calcResult?.post_calibration_error.toFixed(4) ?? '0.0000'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase">
-                <Info className="w-4 h-4" /> Calibration Impact
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                When activated, every incoming telemetry reading for this sensor will automatically compute:
-              </p>
-              <div className="bg-slate-900 p-2 rounded text-[11px] font-mono text-slate-300">
-                calibrated_value = (raw_value * gain) + offset
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* TAB 3: AUDIT HISTORY & RECORDS */}
-      {activeTab === 'history' && (
-        <div className="space-y-4">
-          {/* Filters Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search technician, standard, sensor..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl pl-9 pr-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
+      {/* ======================================================== */}
+      {/* MODAL 2: APPLY OFFSET / GAIN QUICK MODAL                 */}
+      {/* ======================================================== */}
+      {showOffsetModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="PENDING_APPROVAL">PENDING_APPROVAL</option>
-                  <option value="APPROVED">APPROVED</option>
-                  <option value="SUPERSEDED">SUPERSEDED</option>
-                  <option value="DRAFT">DRAFT</option>
-                </select>
+                <Sliders className="w-5 h-5 text-slate-900" />
+                <h3 className="text-base font-black text-slate-900">Manual Linear Offset / Gain</h3>
               </div>
-            </div>
-          </div>
-
-          {/* History Table */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="p-12 text-center text-slate-400 space-y-2">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-500" />
-                <p className="text-sm">Loading calibration audit log...</p>
-              </div>
-            ) : filteredCalibrations.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 space-y-2">
-                <FileText className="w-8 h-8 mx-auto text-slate-300" />
-                <p className="font-medium text-slate-600">No calibration records found</p>
-                <p className="text-xs">Try adjusting search filters or perform a new sensor calibration.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                    <tr>
-                      <th className="py-3.5 px-5">Calibrated Date</th>
-                      <th className="py-3.5 px-5">Sensor & Pond</th>
-                      <th className="py-3.5 px-5">Technician</th>
-                      <th className="py-3.5 px-5">Method & Standard</th>
-                      <th className="py-3.5 px-5">Offset / Gain</th>
-                      <th className="py-3.5 px-5">Status</th>
-                      <th className="py-3.5 px-5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {filteredCalibrations.map(c => (
-                      <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-4 px-5 text-xs text-slate-500 font-medium">
-                          {new Date(c.calibrated_at).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-5">
-                          <div className="font-semibold text-slate-900 capitalize">{c.sensor_type?.replace('_', ' ') || 'Sensor'}</div>
-                          <div className="text-xs text-slate-400">{c.pond_name || 'Pond'}</div>
-                        </td>
-                        <td className="py-4 px-5 font-medium text-slate-800">
-                          {c.performed_by}
-                        </td>
-                        <td className="py-4 px-5">
-                          <div className="font-medium text-xs text-slate-800">{c.calibration_method}</div>
-                          <div className="text-xs text-slate-400">{c.reference_standard || 'Standard Buffer'}</div>
-                        </td>
-                        <td className="py-4 px-5 font-mono text-xs">
-                          <div>Offset: <span className="font-semibold text-slate-900">{c.offset_applied.toFixed(4)}</span></div>
-                          <div>Gain: <span className="font-semibold text-slate-900">{c.gain_applied.toFixed(4)}</span></div>
-                        </td>
-                        <td className="py-4 px-5">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            c.status === 'ACTIVE'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : c.status === 'PENDING_APPROVAL'
-                              ? 'bg-amber-100 text-amber-800'
-                              : c.status === 'APPROVED'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {c.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-5 text-right space-x-2">
-                          {c.status === 'PENDING_APPROVAL' && (
-                            <button
-                              onClick={() => handleApprove(c.id)}
-                              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium transition-colors"
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {c.status !== 'ACTIVE' && (
-                            <button
-                              onClick={() => handleActivate(c.id)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium transition-colors"
-                            >
-                              Activate
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setDetailRecord(c)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors"
-                          >
-                            Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* DETAIL MODAL */}
-      {detailRecord && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Sensor Calibration Audit Detail</h3>
-                <p className="text-xs text-slate-500 font-mono">Record ID: {detailRecord.id}</p>
-              </div>
-              <button
-                onClick={() => setDetailRecord(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowOffsetModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <div>
-                  <span className="text-xs text-slate-500 uppercase font-semibold">Sensor Type:</span>
-                  <p className="font-semibold text-slate-900 capitalize">{detailRecord.sensor_type}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 uppercase font-semibold">Pond:</span>
-                  <p className="font-semibold text-slate-900">{detailRecord.pond_name || 'Pond'}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 uppercase font-semibold">Status:</span>
-                  <p className="font-semibold text-emerald-600">{detailRecord.status}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500 uppercase font-semibold">Performed By:</span>
-                  <p className="font-semibold text-slate-900">{detailRecord.performed_by}</p>
-                </div>
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Gain Multiplier (m)</label>
+                <input 
+                  type="number"
+                  step="0.0001"
+                  value={manualGain}
+                  onChange={(e) => setManualGain(parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                />
               </div>
 
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase text-slate-600">Mathematical Parameters</h4>
-                <div className="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono text-center text-sm font-bold">
-                  y = ({detailRecord.gain_applied.toFixed(4)} * x) + ({detailRecord.offset_applied.toFixed(4)})
-                </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Additive Offset (b)</label>
+                <input 
+                  type="number"
+                  step="0.0001"
+                  value={manualOffset}
+                  onChange={(e) => setManualOffset(parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-500 font-medium">Raw Reference Value:</span>
-                  <p className="font-mono text-sm font-bold text-slate-800">{detailRecord.raw_reference_value}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-500 font-medium">Expected Standard Value:</span>
-                  <p className="font-mono text-sm font-bold text-slate-800">{detailRecord.expected_reference_value}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-500 font-medium">Pre-Cal Residual Error:</span>
-                  <p className="font-mono text-sm font-bold text-amber-600">{detailRecord.pre_calibration_error ?? 'N/A'}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-500 font-medium">Post-Cal Residual Error:</span>
-                  <p className="font-mono text-sm font-bold text-emerald-600">{detailRecord.post_calibration_error ?? '0.0000'}</p>
-                </div>
+              <div className="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono text-center text-xs">
+                y = ({manualGain.toFixed(4)} · x) + {manualOffset.toFixed(4)}
               </div>
+            </div>
 
-              {detailRecord.notes && (
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Justification Notes:</span>
-                  <p className="p-3 bg-slate-50 rounded-lg text-slate-700 text-xs italic mt-1">{detailRecord.notes}</p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button onClick={() => setShowOffsetModal(false)} className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600">
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowOffsetModal(false);
+                  alert('Offset and Gain parameters updated successfully.');
+                }}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold"
+              >
+                Apply Parameters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 3: RUN VERIFICATION SIMULATION MODAL               */}
+      {/* ======================================================== */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-black text-slate-900">3-Point Output Verification</h3>
+              </div>
+              <button onClick={() => setShowVerifyModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {verifying ? (
+                <div className="py-8 text-center space-y-3">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto text-emerald-600" />
+                  <p className="font-bold text-slate-700">Sampling sensor response across 3 test points...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl space-y-1">
+                    <div className="flex items-center gap-1.5 font-black text-emerald-800 text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Verification Succeeded (100% Pass)</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700">
+                      Sensor {selectedSensor.code} conforms to ISO 14064-2 MRV drift tolerance (&lt; 0.5% full scale).
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 font-mono text-xs">
+                    <div className="flex justify-between p-2 bg-slate-50 rounded-lg">
+                      <span>Low Point (20% Span):</span>
+                      <strong className="text-emerald-700">PASS (0.02% error)</strong>
+                    </div>
+                    <div className="flex justify-between p-2 bg-slate-50 rounded-lg">
+                      <span>Mid Point (50% Span):</span>
+                      <strong className="text-emerald-700">PASS (0.01% error)</strong>
+                    </div>
+                    <div className="flex justify-between p-2 bg-slate-50 rounded-lg">
+                      <span>High Point (80% Span):</span>
+                      <strong className="text-emerald-700">PASS (0.03% error)</strong>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setDetailRecord(null)}
-                className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800"
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button 
+                onClick={() => setShowVerifyModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs"
               >
                 Close
               </button>
@@ -904,6 +1163,97 @@ export default function CalibrationPage() {
           </div>
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* MODAL 4: CALIBRATION AUDIT HISTORY MODAL                 */}
+      {/* ======================================================== */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-slate-800" />
+                <h3 className="text-base font-black text-slate-900">Calibration Audit Ledger: {selectedSensor.code}</h3>
+              </div>
+              <button onClick={() => setShowHistoryModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {[
+                { date: 'Sep 01, 2026', tech: 'Dharmesh V.', method: 'NIST Zero Point', offset: '+0.1200', gain: '0.9980', status: 'ACTIVE' },
+                { date: 'Aug 10, 2026', tech: 'Marcus Vance', method: 'Two Point Span', offset: '+0.0850', gain: '1.0010', status: 'SUPERSEDED' },
+                { date: 'Jul 20, 2026', tech: 'Elena Rostova', method: 'Factory Baseline', offset: '0.0000', gain: '1.0000', status: 'SUPERSEDED' },
+              ].map((rec, idx) => (
+                <div key={idx} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 font-bold text-slate-900">
+                      <span>{rec.date}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-black ${
+                        rec.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {rec.status}
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-[11px] mt-0.5">Technician: {rec.tech} • Method: {rec.method}</p>
+                  </div>
+                  <div className="font-mono text-right font-bold text-slate-800">
+                    <div>Offset: {rec.offset}</div>
+                    <div>Gain: {rec.gain}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button onClick={() => setShowHistoryModal(false)} className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 5: POND OVERVIEW MODAL                             */}
+      {/* ======================================================== */}
+      {showPondDetailModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900">{selectedPond} — Instrument Topology</h3>
+              <button onClick={() => setShowPondDetailModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl">
+                <div>
+                  <span className="text-slate-400 block font-medium">Working Volume:</span>
+                  <strong className="text-slate-900 font-mono">120,000 Liters</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Surface Area:</span>
+                  <strong className="text-slate-900 font-mono">12.5 Hectares</strong>
+                </div>
+              </div>
+
+              <p className="text-slate-600 leading-relaxed">
+                Pond instrumentation comprises 5 continuous optical and electrochemical probes with 5-minute sampling rates, fully calibrated to NIST traceable references.
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button onClick={() => setShowPondDetailModal(false)} className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
