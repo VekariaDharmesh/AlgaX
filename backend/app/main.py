@@ -184,3 +184,11 @@ def get_pond_anomalies(
     if status:
         query = query.filter(models.Anomaly.status == status)
     return query.order_by(desc(models.Anomaly.timestamp)).limit(limit).all()
+
+@app.get("/api/anomalies/{anomaly_id}/explanation", response_model=schemas.AnomalyExplanationResponse)
+def get_anomaly_explanation(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
+    explanation = db.query(models.AnomalyExplanation).filter(models.AnomalyExplanation.anomaly_id == anomaly_id).first()
+    if not explanation:
+        raise HTTPException(status_code=404, detail="Explanation not found for this anomaly")
+    return explanation
+

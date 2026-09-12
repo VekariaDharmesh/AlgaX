@@ -228,6 +228,10 @@ def persist_biological_anomaly(db: Session, pond_id: str, timestamp: datetime, r
         )
         db.add(anomaly)
     db.commit()
+    
+    # Phase 3.4 - Trigger Explanation Engine
+    from .explanation import generate_and_persist_explanation
+    generate_and_persist_explanation(db, existing if existing else anomaly)
 
 def resolve_biological_anomalies(db: Session, pond_id: str, timestamp: datetime, active_types: set):
     open_anomalies = db.query(models.Anomaly).filter(

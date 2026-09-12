@@ -210,3 +210,43 @@ class Anomaly(Base):
     # Phase 3.2/3.4 
     limiting_factor = Column(String, nullable=True)
     explanation = Column(JSON, nullable=True)
+
+class EvidenceStrength(str, enum.Enum):
+    INSUFFICIENT = "INSUFFICIENT"
+    WEAK = "WEAK"
+    MODERATE = "MODERATE"
+    STRONG = "STRONG"
+
+class AnomalyExplanation(Base):
+    __tablename__ = "anomaly_explanation"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    anomaly_id = Column(UUID(as_uuid=True), ForeignKey("anomaly.id"), nullable=False, unique=True)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=True)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    
+    summary = Column(String, nullable=False)
+    details = Column(String, nullable=False)
+    
+    primary_factor = Column(String, nullable=True)
+    contributing_factors_json = Column(JSON, nullable=False, default=list)
+    supporting_evidence_json = Column(JSON, nullable=False, default=list)
+    contradicting_evidence_json = Column(JSON, nullable=False, default=list)
+    
+    confidence = Column(Float, nullable=False)
+    evidence_strength = Column(Enum(EvidenceStrength), nullable=False)
+    
+    analysis_start = Column(DateTime(timezone=True), nullable=False)
+    analysis_end = Column(DateTime(timezone=True), nullable=False)
+    
+    model_run_id = Column(UUID(as_uuid=True), ForeignKey("model_run.id"), nullable=True)
+    model_version = Column(String, nullable=False)
+    explanation_version = Column(String, nullable=False)
+    
+    data_quality_notes = Column(JSON, nullable=False, default=list)
+    uncertainty_notes = Column(JSON, nullable=False, default=list)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    anomaly = relationship("Anomaly", backref="explanation_record")
+

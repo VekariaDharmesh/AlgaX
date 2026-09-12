@@ -131,3 +131,33 @@ class AnomalyResponse(AnomalyBase):
     id: UUID
     class Config:
         from_attributes = True
+
+class AnomalyExplanationBase(BaseModel):
+    anomaly_id: UUID
+    farm_id: Optional[UUID] = None
+    pond_id: UUID
+    summary: str
+    details: str
+    primary_factor: Optional[str] = None
+    contributing_factors_json: list
+    supporting_evidence_json: list
+    contradicting_evidence_json: list
+    confidence: float
+    evidence_strength: str
+    analysis_start: datetime
+    analysis_end: datetime
+    model_run_id: Optional[UUID] = None
+    model_version: str
+    explanation_version: str
+    data_quality_notes: list
+    uncertainty_notes: list
+
+class AnomalyExplanationResponse(AnomalyExplanationBase):
+    id: UUID
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class AnomalyResponseWithExplanation(AnomalyResponse):
+    explanation_record: Optional[AnomalyExplanationResponse] = None
+

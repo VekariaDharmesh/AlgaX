@@ -7,7 +7,7 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 import { DEMO_ANOMALIES } from '@/lib/demo/anomalies';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
-import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies } from '@/lib/api';
+import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
 
 const verificationData = [
   { name: 'Modeled', value: 8, color: '#16a34a' },
@@ -55,7 +55,15 @@ export default function DashboardOverview() {
             
             const anomaliesData = await fetchAnomalies();
             if (mounted) {
-              setAnomalies(anomaliesData);
+              const anomaliesWithExp = await Promise.all(anomaliesData.map(async (a: any) => {
+                 try {
+                   const exp = await fetchAnomalyExplanation(a.id);
+                   return { ...a, explanation_record: exp };
+                 } catch (e) {
+                   return a;
+                 }
+              }));
+              setAnomalies(anomaliesWithExp);
             }
           } catch (e) {
             console.error("Failed to load estimates or anomalies", e);
@@ -406,6 +414,18 @@ export default function DashboardOverview() {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">Confidence: {anomaly.confidence_score} · Sensor: {anomaly.sensor_type}</p>
                     <p className="text-xs text-gray-600 mt-1">{anomaly.description}</p>
+                    {anomaly.explanation_record && (
+                      <div className="mt-2 bg-slate-50 p-2 rounded border border-slate-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-slate-700">Mechanistic Explanation</span>
+                          <span className={`text-[10px] px-1.5 rounded font-bold ${anomaly.explanation_record.evidence_strength === 'STRONG' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'}`}>{anomaly.explanation_record.evidence_strength} EVIDENCE</span>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-1">{anomaly.explanation_record.summary}</p>
+                        {anomaly.explanation_record.primary_factor && (
+                           <p className="text-[10px] text-slate-500 font-medium">Primary Limitation: {anomaly.explanation_record.primary_factor}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

@@ -39,3 +39,12 @@ export async function fetchAnomalies() {
   if (!res.ok) throw new Error("Failed to fetch anomalies");
   return res.json();
 }
+
+export async function fetchAnomalyExplanation(anomalyId: string) {
+  const res = await fetch(`${API_BASE_URL}/anomalies/${anomalyId}/explanation`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error("Failed to fetch anomaly explanation");
+  }
+  return res.json();
+}
