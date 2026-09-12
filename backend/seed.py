@@ -85,38 +85,28 @@ def seed_database(force: bool = False):
             # Timestamps from 24 hours ago up to the exact present moment
             ts = now - datetime.timedelta(minutes=(47 - i) * 30)
             hour = ts.hour + ts.minute / 60.0
-            hours_elapsed = (i * 0.5)
             
             if s.type == SensorType.light:
                 if 6.0 <= hour <= 18.0:
                     base_par = math.sin((hour - 6.0) / 12.0 * math.pi) * 850.0
-                    val = max(0.0, round(base_par + random.uniform(-15.0, 15.0), 1))
+                    val = max(0.0, round(base_par + random.uniform(-18.0, 18.0), 1))
                 else:
                     val = 0.0
             elif s.type == SensorType.temperature:
-                base_t = 25.5 + math.sin((hour - 8.0) / 24.0 * 2.0 * math.pi) * 3.5
-                val = round(base_t + random.uniform(-0.15, 0.15), 2)
+                # Stable realistic pond temperature with probe micro-jitter
+                val = round(27.4 + math.sin((hour - 8.0) / 24.0 * 2.0 * math.pi) * 1.1 + random.uniform(-0.12, 0.12), 2)
             elif s.type == SensorType.dissolved_oxygen:
-                if 6.0 <= hour <= 18.0:
-                    base_do = 6.8 + math.sin((hour - 6.0) / 12.0 * math.pi) * 2.2
-                else:
-                    base_do = max(4.8, 6.8 - math.sin((hour - 18.0) / 12.0 * math.pi) * 1.1)
-                val = round(base_do + random.uniform(-0.10, 0.10), 2)
+                val = round(7.2 + math.sin((hour - 7.0) / 12.0 * math.pi) * 0.55 + random.uniform(-0.10, 0.10), 2)
             elif s.type == SensorType.ph:
-                if 6.0 <= hour <= 18.0:
-                    base_ph = 7.8 + math.sin((hour - 6.0) / 12.0 * math.pi) * 0.6
-                else:
-                    base_ph = 7.8
-                val = round(base_ph + random.uniform(-0.03, 0.03), 2)
+                val = round(8.1 + math.sin((hour - 6.0) / 12.0 * math.pi) * 0.22 + random.uniform(-0.03, 0.03), 2)
             elif s.type == SensorType.nitrogen:
-                val = round(max(1.5, 14.5 - (hours_elapsed / 24.0) * 4.2 + random.uniform(-0.18, 0.18)), 2)
+                val = round(max(2.0, 13.2 - ((47 - i) / 48.0) * 1.8 + random.uniform(-0.15, 0.15)), 2)
             elif s.type == SensorType.biomass:
-                val = round(0.65 + (hours_elapsed / 24.0) * 0.22 + random.uniform(-0.01, 0.01), 3)
+                val = round(0.72 + (i / 48.0) * 0.12 + random.uniform(-0.01, 0.01), 3)
             elif s.type == SensorType.turbidity:
-                bio = 0.65 + (hours_elapsed / 24.0) * 0.22
-                val = round((bio * 40.0) + random.uniform(-1.0, 1.0), 1)
+                val = round(32.5 + (i / 48.0) * 3.5 + random.uniform(-0.8, 0.8), 1)
             elif s.type == SensorType.conductivity:
-                val = round(1245.0 + random.uniform(-6.0, 6.0), 1)
+                val = round(1245.0 + random.uniform(-5.0, 5.0), 1)
             elif s.type == SensorType.water_level:
                 val = round(1.82 + random.uniform(-0.01, 0.01), 2)
             else:

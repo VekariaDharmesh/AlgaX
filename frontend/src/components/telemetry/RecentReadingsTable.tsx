@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { SensorReading } from '@/lib/api';
 import { Search, ChevronLeft, ChevronRight, Eye, Database, Filter } from 'lucide-react';
 
+import { parseUtcDate } from '@/lib/formatters';
+
 interface RecentReadingsTableProps {
   readings: SensorReading[];
   sensorsMap: Record<string, { type: string; unit: string }>;
@@ -103,7 +105,7 @@ export function RecentReadingsTable({ readings, sensorsMap, onSelectReading }: R
                 return (
                   <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-3 font-medium text-slate-600">
-                      {new Date(r.timestamp).toLocaleString()}
+                      {parseUtcDate(r.timestamp).toLocaleString([], { hour12: false })}
                     </td>
                     <td className="py-3 px-3 font-bold text-slate-900 uppercase">
                       {mType}

@@ -53,3 +53,30 @@ export function formatBiomass(gPerL: number | null | undefined): { value: string
   const val = gPerL.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   return { value: val, unit: 'g/L', fullFormatted: `${val} g/L` };
 }
+
+/**
+ * Safely parses any UTC or ISO timestamp into a localized Date object.
+ * Ensures UTC strings without 'Z' or timezone offset are interpreted as UTC
+ * so the browser accurately converts them to the user's local timezone (e.g. 22:55 IST).
+ */
+export function parseUtcDate(timestamp: string | Date | undefined | null): Date {
+  if (!timestamp) return new Date();
+  if (timestamp instanceof Date) return timestamp;
+  let str = String(timestamp).trim();
+  if (!str.endsWith('Z') && !str.includes('+') && !str.includes('T') && str.includes(' ')) {
+    str = str.replace(' ', 'T');
+  }
+  if (!str.endsWith('Z') && !str.includes('+')) {
+    str = `${str}Z`;
+  }
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? new Date(timestamp) : d;
+}
+
+/**
+ * Formats timestamp to localized HH:MM or custom format.
+ */
+export function formatLocalTime(timestamp: string | Date | undefined | null, options?: Intl.DateTimeFormatOptions): string {
+  const d = parseUtcDate(timestamp);
+  return d.toLocaleTimeString([], options || { hour: '2-digit', minute: '2-digit', hour12: false });
+}
