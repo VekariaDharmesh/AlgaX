@@ -21,8 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .api import imagery, cross_validation, evidence, weather, telemetry, harvest, calibration
+from .api import imagery, cross_validation, evidence, weather, telemetry, harvest, calibration, users, auth_routes
+from .auth import ensure_default_users, require_farm_operator
+from .simulation import router as simulation_router, simulation_manager, run_simulation_loop
 
+app.include_router(auth_routes.router, prefix="/api", tags=["auth"])
+app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(imagery.router, prefix="/api", tags=["imagery"])
 app.include_router(cross_validation.router, prefix="/api", tags=["cross-validation"])
 app.include_router(evidence.router, prefix="/api", tags=["evidence"])
@@ -31,13 +35,23 @@ app.include_router(weather.router, prefix="/api", tags=["weather"])
 app.include_router(telemetry.router, prefix="/api", tags=["telemetry"])
 app.include_router(harvest.router, prefix="/api", tags=["harvest"])
 app.include_router(calibration.router, prefix="/api", tags=["calibration"])
+app.include_router(simulation_router, prefix="/api", tags=["simulation"])
+
+@app.on_event("startup")
+def on_startup():
+    with Session(engine) as db:
+        ensure_default_users(db)
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
 @app.post("/api/ingest/reading", response_model=schemas.SensorReadingResponse)
-def ingest_reading(reading: schemas.SensorReadingCreate, db: Session = Depends(get_db)):
+def ingest_reading(
+    reading: schemas.SensorReadingCreate, 
+    db: Session = Depends(get_db),
+    operator: models.User = Depends(require_farm_operator)
+):
     # Validate sensor exists
     sensor = db.query(models.Sensor).filter(models.Sensor.id == reading.sensor_id).first()
     if not sensor:
@@ -158,13 +172,11 @@ class ScenarioRequest(schemas.BaseModel):
     scenario: str
 
 @app.post("/api/demo/inject-scenario")
-async def inject_scenario(req: ScenarioRequest):
-    # Forward to simulator control API
+def inject_scenario(req: ScenarioRequest, db: Session = Depends(get_db)):
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post("http://localhost:8001/control/inject-scenario", json=req.model_dump(mode="json"))
-            resp.raise_for_status()
-            return resp.json()
+        updated_state = simulation_manager.inject_scenario(req.pond_id, req.scenario)
+        simulation_manager.step_pond(db, req.pond_id)
+        return {"status": "ok", "scenario": req.scenario, "pond_id": str(req.pond_id), "state": updated_state}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Simulator control failed: {str(e)}")
 @app.get("/api/farms", response_model=List[schemas.FarmResponse])
@@ -251,6 +263,7 @@ async def startup_event():
     except Exception as e:
         print("Auto-seed on startup note:", e)
     asyncio.create_task(model_loop())
+    asyncio.create_task(run_simulation_loop())
 
 from sqlalchemy.orm import joinedload
 

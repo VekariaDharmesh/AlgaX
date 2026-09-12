@@ -31,20 +31,32 @@ graph TD
 
 ### Tech Stack Breakdown
 * **Frontend:** React 18 • Next.js 14 (App Router) • Vanilla CSS / Tailwind CSS • Recharts (Telemetry Analytics & Carbon Waterfalls) • Lucide Icons
-* **Backend:** Python (FastAPI) • PostgreSQL / SQLite3 (Async SQLAlchemy & Alembic) • Pydantic v2 • JWT Authentication & Role-based Access Control (`operator`, `auditor`, `verifier`, `admin`)
+* **Backend:** Python (FastAPI) • PostgreSQL / SQLite3 (Async SQLAlchemy & Alembic) • Pydantic v2 • Authoritative Role-Based Access Control (`FARM_OPERATOR`, `VERIFIER_AUDITOR`, `PLATFORM_ADMIN`)
 * **Scientific & Verification Engine:** Python 3.10+ • Monod-Droop Kinetics Engine • NumPy & SciPy • ReportLab (Audit Certificate PDF Generator) • Cryptographic SHA-256 Canonical Serializer
 
 ---
 
-## 🌟 Key Features
+## 👥 Role & Access Structure
 
-1. **Real-time Telemetry Processing Pipeline:** Streamlined ingestion of water temperature, pH, dissolved oxygen (DO), optical density (OD680/720), solar irradiance (PAR), nitrogen (N), and phosphorus (P) concentrations.
-2. **Biological Monod-Droop Growth Engine:** Predicts intracellular nutrient quotas, specific growth rates, and daily dry cell biomass accumulation ($g/L/day$) under real-world irradiance and nutrient dynamics.
-3. **4-Tier Carbon Accounting Waterfall:** Calculates precise gross carbon uptake, subtracts dark respiration losses, accounts for aqueous $\text{CO}_2$ outgassing, and tracks harvested biomass carbon to derive net sequestered $\text{tCO}_2\text{e}$.
-4. **Multi-Factor Anomaly Detection:** Identifies biological crashes, sensor drift, temperature spikes, and outgassing surges using statistical IQR bounds and mechanistic biological rule sets.
-5. **Drone & Satellite Imagery Cross-Validation:** Correlates ground sensor readings with remote sensing NDVI/NDWI metrics and aerial orthomosaics to verify pond coverage and biomass consistency.
-6. **SHA-256 Canonical Evidence Sealing:** Constructs deterministic JSON evidence payloads signed with SHA-256 hashes, creating a tamper-evident audit trail for independent verifiers.
-7. **Interactive Verifier Review & PDF Export:** Dedicated audit workspace allowing carbon credit verifiers to inspect evidence, cross-reference satellite imagery, issue approval/rejection decisions, and export certified PDF audit reports.
+AlgaX implements strict backend-enforced authorization across three primary roles:
+
+### 1. Farm Operator (`FARM_OPERATOR`)
+The Farm Operator is responsible for day-to-day operation, monitoring, and evidence preparation for assigned facilities:
+* **Scope & Permissions:** Scoped to assigned farms and raceway ponds.
+* **Capabilities:** Monitor live sensor telemetry, inspect drone/satellite imagery, investigate biological anomalies, run Monod-Droop simulations, record harvest events, log sensor calibration records, and generate/prepare Evidence Packages.
+* **Boundaries:** Cannot modify platform user accounts, cannot alter system-wide settings, and cannot issue official verifier audit decisions.
+
+### 2. Verifier / Auditor (`VERIFIER_AUDITOR`)
+The Verifier / Auditor is an independent human auditor reviewing empirical evidence produced by AlgaX:
+* **Scope & Permissions:** Access to evidence packages, cross-validation runs, audit logs, and provenance records for authorized facilities.
+* **Capabilities:** Open and inspect sealed evidence packages, verify SHA-256 cryptographic hashes, review carbon calculation waterfalls, evaluate imagery cross-validation consistency, record audit review notes, and mark evidence packages as ready for external registry submission.
+* **Boundaries:** Cannot alter raw telemetry sensor readings, cannot modify scientific model equations, cannot tamper with finalized evidence packages, and cannot administer platform accounts. *(Note: The role represents a human auditor using AlgaX; AlgaX itself does not claim independent third-party certification).*
+
+### 3. Platform Admin (`PLATFORM_ADMIN`)
+The Platform Admin is the highest-privilege platform management role:
+* **Scope & Permissions:** Unscoped platform-wide access.
+* **Capabilities:** Create, edit, and deactivate user accounts; assign roles (`FARM_OPERATOR`, `VERIFIER_AUDITOR`, `PLATFORM_ADMIN`); assign users to facilities; configure registry integrations; inspect platform audit logs; monitor system health.
+* **Boundaries:** All administrative operations are fully audited and adhere to standard security boundaries.
 
 ---
 
@@ -53,15 +65,14 @@ graph TD
 The database model is implemented in PostgreSQL/SQLite to support relational carbon accounting with strict data integrity guarantees.
 
 ### 1. `users`
-Stores registered farm operators, environmental auditors, carbon verifiers, and system administrators.
+Stores registered platform operators, verifiers/auditors, and administrators.
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | TEXT | PRIMARY KEY | Unique UUID identifier |
 | `email` | TEXT | UNIQUE | User login email |
-| `password_hash` | TEXT | - | Argon2 / Bcrypt hashed password |
-| `full_name` | TEXT | - | Registered name of the user |
-| `role` | TEXT | CHECK (In roles) | `operator`, `auditor`, `verifier`, `admin` |
-| `organization` | TEXT | - | Associated company or verification agency |
+| `name` | TEXT | - | Full name of the user |
+| `role` | TEXT | CHECK (In roles) | `FARM_OPERATOR`, `VERIFIER_AUDITOR`, `PLATFORM_ADMIN` |
+| `assigned_farm_id` | TEXT | FOREIGN KEY | References `farm(id)` for farm-level isolation |
 | `is_active` | INTEGER | DEFAULT 1 | Account status flag |
 | `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Registration timestamp |
 

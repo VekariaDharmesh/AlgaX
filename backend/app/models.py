@@ -1,7 +1,7 @@
 import uuid
 import datetime
 import enum
-from sqlalchemy import Column, String, Float, Boolean, ForeignKey, DateTime, Enum, JSON, Index
+from sqlalchemy import Column, String, Float, Boolean, ForeignKey, DateTime, Enum, JSON, Index, Uuid
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
@@ -31,6 +31,24 @@ class QualityFlag(str, enum.Enum):
 class SourceType(str, enum.Enum):
     measured = "measured"
     simulated = "simulated"
+
+class UserRole(str, enum.Enum):
+    FARM_OPERATOR = "FARM_OPERATOR"
+    VERIFIER_AUDITOR = "VERIFIER_AUDITOR"
+    PLATFORM_ADMIN = "PLATFORM_ADMIN"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    role = Column(Enum(UserRole, name="user_role_enum", create_type=False), nullable=False, default=UserRole.FARM_OPERATOR)
+    assigned_farm_id = Column(Uuid(as_uuid=True), ForeignKey("farm.id"), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    assigned_farm = relationship("Farm", foreign_keys=[assigned_farm_id], backref=backref("assigned_users", lazy="dynamic"))
 
 class Farm(Base):
     __tablename__ = "farm"

@@ -54,7 +54,7 @@ interface AccountingConfig {
 interface UserAccess {
   id: string;
   name: string;
-  role: 'Operator' | 'Researcher' | 'Reviewer' | 'Investor' | 'Admin';
+  role: 'Farm Operator' | 'Verifier / Auditor' | 'Platform Admin';
   status: 'Active' | 'Invited' | 'Suspended';
   lastActive: string;
 }
@@ -63,29 +63,29 @@ const INITIAL_USERS: UserAccess[] = [
   {
     id: 'u-1',
     name: 'Dharmesh',
-    role: 'Operator',
+    role: 'Platform Admin',
     status: 'Active',
     lastActive: 'Sep 12, 2026 10:24 AM'
   },
   {
     id: 'u-2',
-    name: 'Anna L.',
-    role: 'Researcher',
+    name: 'Priya Patel',
+    role: 'Farm Operator',
     status: 'Active',
     lastActive: 'Sep 12, 2026 09:18 AM'
   },
   {
     id: 'u-3',
     name: 'GlobalTrust Audits',
-    role: 'Reviewer',
+    role: 'Verifier / Auditor',
     status: 'Active',
     lastActive: 'Sep 11, 2026 04:32 PM'
   },
   {
     id: 'u-4',
-    name: 'GreenFund Cap',
-    role: 'Investor',
-    status: 'Invited',
+    name: 'Dr. Anand Ramanathan',
+    role: 'Verifier / Auditor',
+    status: 'Active',
     lastActive: 'Sep 09, 2026 11:21 AM'
   }
 ];
@@ -129,7 +129,7 @@ export default function SettingsPage() {
   const [tempModel, setTempModel] = useState(modelConfig);
   const [tempAccounting, setTempAccounting] = useState(accountingConfig);
   const [newUserName, setNewUserName] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'Operator' | 'Researcher' | 'Reviewer' | 'Investor' | 'Admin'>('Researcher');
+  const [newUserRole, setNewUserRole] = useState<'Farm Operator' | 'Verifier / Auditor' | 'Platform Admin'>('Farm Operator');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -704,11 +704,9 @@ export default function SettingsPage() {
                   onChange={(e: any) => setNewUserRole(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none"
                 >
-                  <option value="Operator">Operator</option>
-                  <option value="Researcher">Researcher</option>
-                  <option value="Reviewer">Reviewer (Auditor)</option>
-                  <option value="Investor">Investor</option>
-                  <option value="Admin">Admin</option>
+                  <option value="Farm Operator">Farm Operator</option>
+                  <option value="Verifier / Auditor">Verifier / Auditor</option>
+                  <option value="Platform Admin">Platform Admin</option>
                 </select>
               </div>
             </div>

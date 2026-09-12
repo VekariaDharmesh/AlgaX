@@ -73,12 +73,15 @@ def get_evidence_package(
     _check_farm_isolation(pkg, farm_id)
     return pkg
 
+from ..auth import require_verifier_auditor
+
 @router.post("/evidence-packages/{pkg_id}/seal", response_model=schemas.EvidencePackageResponse)
 def seal_package(
     pkg_id: uuid.UUID,
     farm_id: Optional[uuid.UUID] = Query(None),
     actor: Optional[str] = Query("auditor@algax.com"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    verifier: models.User = Depends(require_verifier_auditor)
 ):
     pkg = db.query(models.EvidencePackage).filter(models.EvidencePackage.id == pkg_id).first()
     if not pkg:
@@ -140,12 +143,12 @@ def get_evidence_package_report(
         raise HTTPException(status_code=404, detail="Evidence Package not found")
     _check_farm_isolation(pkg, farm_id)
         
-    html_content = generate_html_report(db, pkg)
-    return HTMLResponse(content=html_content)
+    html = generate_html_report(db, pkg)
+    return HTMLResponse(content=html, status_code=200)
 
 
 @router.get("/evidence-packages/{pkg_id}/review/actions", response_model=List[schemas.ReviewActionResponse])
-def get_review_actions(
+def list_review_actions(
     pkg_id: uuid.UUID,
     farm_id: Optional[uuid.UUID] = Query(None),
     db: Session = Depends(get_db)
@@ -163,7 +166,8 @@ def create_review_action(
     pkg_id: uuid.UUID,
     action_in: schemas.ReviewActionCreate,
     farm_id: Optional[uuid.UUID] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    verifier: models.User = Depends(require_verifier_auditor)
 ):
     pkg = db.query(models.EvidencePackage).filter(models.EvidencePackage.id == pkg_id).first()
     if not pkg:

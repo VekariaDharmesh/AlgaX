@@ -30,30 +30,6 @@ export default function DashboardOverview() {
   const [isLive, setIsLive] = useState(false);
   const [activePondId, setActivePondId] = useState<string | null>(null);
 
-  const [activeScenario, setActiveScenario] = useState<string | null>(null);
-  const [injectingScenario, setInjectingScenario] = useState<string | null>(null);
-  const [scenarioStatus, setScenarioStatus] = useState<string | null>(null);
-
-  const handleInjectScenario = async (scenarioName: string, label: string) => {
-    if (!activePondId) return;
-    setInjectingScenario(scenarioName);
-    try {
-      if (activeScenario === scenarioName) {
-        await injectScenario(activePondId, 'normal');
-        setActiveScenario(null);
-        setScenarioStatus('Reset to normal operating conditions.');
-      } else {
-        await injectScenario(activePondId, scenarioName);
-        setActiveScenario(scenarioName);
-        setScenarioStatus(`Active scenario: ${label}`);
-      }
-    } catch (err: any) {
-      console.error('Failed to inject scenario:', err);
-      setScenarioStatus(`Simulator status: ${err.message || 'Error injecting scenario'}`);
-    } finally {
-      setInjectingScenario(null);
-    }
-  };
 
 
   useEffect(() => {
@@ -115,94 +91,47 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Hero Banner */}
-      <div className="relative rounded-2xl overflow-hidden h-64 bg-slate-100 flex items-center border border-slate-200/60 shadow-sm">
-        {/* Background Image & Overlay */}
-        <div 
-          className="absolute inset-0 z-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop')" }}
-        />
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-white via-white/95 to-transparent" />
-        
+      <div className="relative rounded-3xl overflow-hidden min-h-[220px] bg-gradient-to-r from-[#113a29] via-[#164e35] to-[#1e5a3d] flex items-center border border-emerald-900/40 shadow-lg">
+        {/* Subtle Ambient Radial Highlight */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 left-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
         {/* Content */}
-        <div className="relative z-10 w-full px-8 flex justify-between items-start mb-8">
+        <div className="relative z-10 w-full px-8 py-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
               {getGreeting()}, Operator
             </h1>
-            <p className="text-slate-600 mt-2 text-lg font-medium">Carbon operations are being monitored across your farm.</p>
-            
-            {activePondId && (
-              <div className="flex flex-col gap-2 mt-6">
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    disabled={injectingScenario !== null}
-                    onClick={() => handleInjectScenario('nutrient_depletion', 'Simulate N-Depletion')}
-                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                      activeScenario === 'nutrient_depletion'
-                        ? 'bg-amber-500 text-white border-amber-600 font-black ring-2 ring-amber-500/20'
-                        : 'bg-amber-50/90 text-amber-800 border-amber-200/90 hover:bg-amber-100'
-                    }`}
-                  >
-                    {injectingScenario === 'nutrient_depletion' && <span className="w-3 h-3 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></span>}
-                    Simulate N-Depletion
-                  </button>
-                  <button 
-                    disabled={injectingScenario !== null}
-                    onClick={() => handleInjectScenario('heatwave', 'Simulate Heatwave')}
-                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                      activeScenario === 'heatwave'
-                        ? 'bg-rose-600 text-white border-rose-700 font-black ring-2 ring-rose-500/20'
-                        : 'bg-rose-50/90 text-rose-800 border-rose-200/90 hover:bg-rose-100'
-                    }`}
-                  >
-                    {injectingScenario === 'heatwave' && <span className="w-3 h-3 border-2 border-rose-800 border-t-transparent rounded-full animate-spin"></span>}
-                    Simulate Heatwave
-                  </button>
-                  <button 
-                    disabled={injectingScenario !== null}
-                    onClick={() => handleInjectScenario('sensor_dropout', 'Drop Temp Sensor')}
-                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                      activeScenario === 'sensor_dropout'
-                        ? 'bg-slate-800 text-white border-slate-900 font-black ring-2 ring-slate-500/20'
-                        : 'bg-slate-50/90 text-slate-800 border-slate-200/90 hover:bg-slate-100'
-                    }`}
-                  >
-                    {injectingScenario === 'sensor_dropout' && <span className="w-3 h-3 border-2 border-slate-800 border-t-transparent rounded-full animate-spin"></span>}
-                    Drop Temp Sensor
-                  </button>
-                </div>
-                {scenarioStatus && (
-                  <div className="text-[11px] font-bold text-slate-700 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-200/80 inline-block w-fit shadow-2xs">
-                    {scenarioStatus}
-                  </div>
-                )}
-              </div>
-            )}
+            <p className="text-emerald-100/80 mt-1.5 text-base font-normal">
+              Carbon operations are being monitored across your farm.
+            </p>
           </div>
           
           {/* Real-Time Weather Widget */}
-          <RealTimeWeatherWidget initialLocation="Gandhinagar, India" />
+          <div className="shrink-0 self-start md:self-auto">
+            <RealTimeWeatherWidget initialLocation="Gandhinagar, India" />
+          </div>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="relative z-20 px-4 -mt-16 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* KPI 1: Net Carbon Removed */}
-          <div className="bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                <Leaf className="w-6 h-6 text-green-700" />
+          {/* KPI 1: Gross CO2 Fixed */}
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] border border-slate-100 p-5 flex flex-col justify-between">
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="w-11 h-11 rounded-full bg-emerald-50/80 border border-emerald-100/60 flex items-center justify-center shrink-0">
+                <Leaf className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gross CO₂ Fixed</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {formatCo2(grossCo2).value} <span className="text-lg font-bold text-slate-600">{formatCo2(grossCo2).unit}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gross CO₂ Fixed</span>
+                <span className="text-2xl font-black text-slate-900 mt-0.5 tracking-tight">
+                  {formatCo2(grossCo2).value} <span className="text-base font-bold text-slate-600">{formatCo2(grossCo2).unit}</span>
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center">
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+              <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex items-center tracking-wide">
                 MODELED
               </span>
               <span className="text-xs text-slate-500 font-medium">This reporting period</span>
@@ -210,20 +139,20 @@ export default function DashboardOverview() {
           </div>
 
           {/* KPI 2: Biomass */}
-          <div className="bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                <FlaskConical className="w-6 h-6 text-teal-600" />
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] border border-slate-100 p-5 flex flex-col justify-between">
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="w-11 h-11 rounded-full bg-teal-50/80 border border-teal-100/60 flex items-center justify-center shrink-0">
+                <FlaskConical className="w-5 h-5 text-teal-600" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Estimated Biomass</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                  {formatBiomass(biomassAvg).value} <span className="text-lg font-bold text-slate-600">{formatBiomass(biomassAvg).unit}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimated Biomass</span>
+                <span className="text-2xl font-black text-slate-900 mt-0.5 tracking-tight">
+                  {formatBiomass(biomassAvg).value} <span className="text-base font-bold text-slate-600">{formatBiomass(biomassAvg).unit}</span>
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center">
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+              <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex items-center tracking-wide">
                 MODELED
               </span>
               <span className="text-xs text-slate-500 font-medium">Across all ponds</span>
@@ -231,33 +160,33 @@ export default function DashboardOverview() {
           </div>
 
           {/* KPI 3: Ponds Active */}
-          <div className="bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                <Droplets className="w-6 h-6 text-blue-500" />
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] border border-slate-100 p-5 flex flex-col justify-between">
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="w-11 h-11 rounded-full bg-blue-50/80 border border-blue-100/60 flex items-center justify-center shrink-0">
+                <Droplets className="w-5 h-5 text-blue-500" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Ponds Active</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">3 / 3</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ponds Active</span>
+                <span className="text-2xl font-black text-slate-900 mt-0.5 tracking-tight">3 / 3</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
               <span className="text-xs text-slate-500 font-medium">All systems online</span>
             </div>
           </div>
 
           {/* KPI 4: Model Confidence */}
-          <div className="bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-emerald-700" />
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] border border-slate-100 p-5 flex flex-col justify-between">
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="w-11 h-11 rounded-full bg-emerald-50/80 border border-emerald-100/60 flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Model Confidence</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">94.2%</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Model Confidence</span>
+                <span className="text-2xl font-black text-slate-900 mt-0.5 tracking-tight">94.2%</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
               <span className="text-xs text-slate-500 font-medium">Based on latest model run</span>
             </div>
           </div>

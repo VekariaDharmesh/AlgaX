@@ -158,8 +158,14 @@ def get_biomass_readiness(pond_id: uuid.UUID, db: Session = Depends(get_db)):
         readiness_label="Biomass available for harvest planning"
     )
 
+from ..auth import require_farm_operator
+
 @router.post("/harvests", response_model=schemas.HarvestEventResponse, status_code=201)
-def create_harvest_event(event_in: schemas.HarvestEventCreate, db: Session = Depends(get_db)):
+def create_harvest_event(
+    event_in: schemas.HarvestEventCreate, 
+    db: Session = Depends(get_db),
+    operator: models.User = Depends(require_farm_operator)
+):
     pond = db.query(models.Pond).filter(models.Pond.id == event_in.pond_id).first()
     if not pond:
         raise HTTPException(status_code=404, detail="Pond not found")

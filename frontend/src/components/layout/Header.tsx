@@ -1,25 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, ChevronDown, Shield, User, Droplets, CheckCircle, BarChart2, Briefcase, Settings } from 'lucide-react';
-
-export type UserRole = 'FARM_OPERATOR' | 'VERIFIER' | 'RESEARCHER' | 'INVESTOR' | 'ADMIN';
-
-export const ROLE_LABELS: Record<UserRole, { label: string; color: string; icon: any }> = {
-  FARM_OPERATOR: { label: 'Farm Operator', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Droplets },
-  VERIFIER: { label: 'Verifier / Auditor', color: 'bg-sky-100 text-sky-800 border-sky-200', icon: Shield },
-  RESEARCHER: { label: 'Researcher', color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: BarChart2 },
-  INVESTOR: { label: 'Investor', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Briefcase },
-  ADMIN: { label: 'Platform Admin', color: 'bg-rose-100 text-rose-800 border-rose-200', icon: Settings },
-};
+import { Bell, ChevronDown, Droplets } from 'lucide-react';
+import { useRole, ROLE_CONFIGS, UserRole } from '@/context/RoleContext';
 
 export function Header() {
   const currentDate = 'Sep 12, 2026';
   const currentTime = '10:24 AM';
-  const [role, setRole] = useState<UserRole>('FARM_OPERATOR');
+  const { role, setRole, availableRoles } = useRole();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const CurrentRoleIcon = ROLE_LABELS[role].icon;
+  const CurrentRoleIcon = ROLE_CONFIGS[role].icon;
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 relative z-30">
@@ -37,10 +28,10 @@ export function Header() {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${ROLE_LABELS[role].color}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${ROLE_CONFIGS[role].color}`}
           >
             <CurrentRoleIcon className="w-4 h-4" />
-            <span>{ROLE_LABELS[role].label}</span>
+            <span>{ROLE_CONFIGS[role].label}</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-70" />
           </button>
 
@@ -49,8 +40,8 @@ export function Header() {
               <div className="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                 Switch Role Context
               </div>
-              {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => {
-                const ItemIcon = ROLE_LABELS[r].icon;
+              {availableRoles.map((r) => {
+                const ItemIcon = ROLE_CONFIGS[r].icon;
                 return (
                   <button
                     key={r}
@@ -63,7 +54,7 @@ export function Header() {
                     }`}
                   >
                     <ItemIcon className="w-4 h-4 text-slate-500" />
-                    {ROLE_LABELS[r].label}
+                    {ROLE_CONFIGS[r].label}
                   </button>
                 );
               })}

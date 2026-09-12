@@ -30,10 +30,9 @@ AlgaX addresses all four gaps with a transparent, scientific, and auditable soft
 
 | User Role | Primary Need | Platform Capability & Workflow |
 | :--- | :--- | :--- |
-| **Algae Farm Operator** *(Primary)* | Daily operational visibility + defensible report generation | Live pond telemetry, Monod limitation diagnostics, lab dry-weight calibration, harvest/energy logging, report execution. |
-| **Carbon Auditor / Verifier** *(Secondary)* | Independent auditability without site visits | Read-only evidence inspection, SHA-256 hash verification route, interactive **Audit Action Modal** (`Approve` / `Flag` / `Reject` + Notes). |
-| **Researcher** | Scientific analysis of growth kinetics | Exportable time-series with limitation-factor breakdowns and provenance tags. |
-| **Investor** | Confidence in farm performance and carbon claims | Read-only executive dashboard showing net carbon removal waterfall and report history. |
+| **Farm Operator** (`FARM_OPERATOR`) | Daily operational visibility + defensible evidence preparation | Live pond telemetry, Monod limitation diagnostics, lab dry-weight calibration, harvest/energy logging, and Evidence Package generation. |
+| **Verifier / Auditor** (`VERIFIER_AUDITOR`) | Independent auditability without site visits | Read-only evidence inspection, SHA-256 hash verification, cross-validation review, and interactive **Audit Action Modal** (`Approve` / `Flag` / `Reject` + Notes). |
+| **Platform Admin** (`PLATFORM_ADMIN`) | Platform governance, security & user management | User account administration, role assignment, farm assignments, registry configuration, audit logs, and system health oversight. |
 
 ---
 

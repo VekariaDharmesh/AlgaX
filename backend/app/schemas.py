@@ -2,7 +2,33 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
-from .models import SensorType, QualityFlag, SourceType, PondStatus, CalibrationStatus, CalibrationMethod
+from .models import SensorType, QualityFlag, SourceType, PondStatus, CalibrationStatus, CalibrationMethod, UserRole
+
+class UserBase(BaseModel):
+    email: str
+    name: str
+    role: UserRole = UserRole.FARM_OPERATOR
+    assigned_farm_id: Optional[UUID] = None
+    is_active: bool = True
+
+class UserCreate(UserBase):
+    pass
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[UserRole] = None
+    assigned_farm_id: Optional[UUID] = None
+    is_active: Optional[bool] = None
+
+class UserResponse(UserBase):
+    id: UUID
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class UserMeResponse(UserResponse):
+    permitted_roles: List[UserRole] = []
+    assigned_farm_name: Optional[str] = None
 
 class SensorReadingCreate(BaseModel):
     sensor_id: UUID

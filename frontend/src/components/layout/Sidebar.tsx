@@ -23,6 +23,8 @@ import {
   PanelLeftOpen
 } from 'lucide-react';
 
+import { useRole, ROLE_CONFIGS } from '@/context/RoleContext';
+
 const navItems = [
   {
     group: 'FACILITIES',
@@ -66,6 +68,17 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
+  const { role, canAccessRoute } = useRole();
+
+  const currentConfig = ROLE_CONFIGS[role];
+
+  // Filter navigation items by active role permissions
+  const filteredNavGroups = navItems
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => canAccessRoute(item.href))
+    }))
+    .filter(group => group.items.length > 0);
 
   return (
     <aside 
@@ -159,7 +172,7 @@ export function Sidebar() {
         </Link>
 
         {/* Navigation Groups */}
-        {navItems.map((group, i) => (
+        {filteredNavGroups.map((group, i) => (
           <div key={i}>
             {isOpen ? (
               <div className="px-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
@@ -231,14 +244,14 @@ export function Sidebar() {
         )}
 
         {/* User Info */}
-        <div className={`flex items-center ${isOpen ? 'gap-3 px-1 pt-1' : 'justify-center'}`} title="Dharmesh (Operator / Verifier)">
+        <div className={`flex items-center ${isOpen ? 'gap-3 px-1 pt-1' : 'justify-center'}`} title={`Dharmesh (${currentConfig.label})`}>
           <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
             DS
           </div>
           {isOpen && (
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-gray-900 truncate leading-tight">Dharmesh</span>
-              <span className="text-xs text-gray-400 truncate">Operator / Verifier</span>
+              <span className="text-xs text-gray-400 truncate">{currentConfig.label}</span>
             </div>
           )}
         </div>

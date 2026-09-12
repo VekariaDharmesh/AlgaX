@@ -60,38 +60,34 @@ export default function RealTimeWeatherWidget({
     <>
       <div 
         onClick={() => setModalOpen(true)}
-        className={`group bg-white/80 hover:bg-white backdrop-blur-md border border-white/80 hover:border-sky-200 p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-3.5 min-w-[230px] relative overflow-hidden ${className}`}
+        className={`group bg-white hover:bg-white/95 backdrop-blur-md border border-white/60 p-3 rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3.5 min-w-[220px] relative overflow-hidden ${className}`}
       >
-        {/* Subtle accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-sky-400 to-emerald-400 opacity-80" />
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400" />
 
         {/* Weather Icon */}
-        <div className="p-2 bg-gradient-to-br from-sky-50 to-slate-100 rounded-xl border border-slate-100 shrink-0 group-hover:scale-105 transition-transform">
+        <div className="p-1.5 bg-amber-50/60 rounded-xl shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center">
           {getWeatherIcon(weather?.weather_code, weather?.is_day)}
         </div>
 
         {/* Info Content */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xl font-black text-slate-900 leading-none">
-                {loading && !weather ? '...' : `${weather?.temperature_c ?? 28}°C`}
-              </span>
-            </div>
-            <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 transition-colors shrink-0" />
+            <span className="text-xl font-black text-slate-900 leading-none">
+              {loading && !weather ? '...' : `${weather?.temperature_c ?? 26.6}°C`}
+            </span>
+            <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0" />
           </div>
 
           <span className="text-xs font-bold text-slate-800 truncate mt-1">
             {weather?.location_name || location}
           </span>
           
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mt-0.5">
-            <span className="truncate">{weather?.weather_description || 'Clear Sky'}</span>
-            {weather?.solar_irradiance_w_m2 !== undefined && (
-              <span className="text-amber-700 font-extrabold text-[10px] ml-1 shrink-0">
-                {weather.solar_irradiance_w_m2} W/m²
-              </span>
-            )}
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mt-0.5 gap-1">
+            <span className="truncate">{weather?.weather_description || 'Clear sky'}</span>
+            <span className="text-amber-700 font-black text-[10px] shrink-0">
+              {weather?.solar_irradiance_w_m2 ?? 0} W/m²
+            </span>
           </div>
         </div>
       </div>

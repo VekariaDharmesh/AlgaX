@@ -36,8 +36,8 @@ flowchart TB
 
     subgraph CLIENT["Frontend — Next.js"]
         DASH["Operator Dashboard"]
-        VVIEW["Verifier / Investor View"]
-        RPTV["Report Viewer"]
+        VVIEW["Verifier / Auditor View"]
+        RPTV["Report & Evidence Viewer"]
     end
 
     SIM -->|readings| ING
@@ -377,7 +377,7 @@ Index: `(pond_id, sensor_id, timestamp DESC)`.
 | id | UUID PK | |
 | name / email | text | |
 | password_hash | text | |
-| role | enum(operator, verifier, investor, admin) | |
+| role | enum(FARM_OPERATOR, VERIFIER_AUDITOR, PLATFORM_ADMIN) | |
 | farm_id | UUID FK, nullable | scoping for non-admin roles |
 
 ### 5.3 Provenance Invariants (enforced, not optional)
@@ -398,7 +398,7 @@ Default: native PostgreSQL **range partitioning** on `sensor_reading.timestamp` 
 
 - `POST /api/auth/login` → `{email, password}` → `{access_token, role, farm_id}`
 - All other routes require `Authorization: Bearer <JWT>`.
-- Role enforcement: `operator` scoped to own `farm_id`; `verifier`/`investor` scoped to farms/reports explicitly shared with them; `admin` unscoped.
+- Role enforcement: `FARM_OPERATOR` scoped to own `farm_id`; `VERIFIER_AUDITOR` scoped to authorized facilities; `PLATFORM_ADMIN` unscoped platform-wide.
 
 ### 6.2 Ingestion
 
@@ -499,7 +499,7 @@ Two independent detectors feeding one `Anomaly` table:
 
 ## 9. Frontend Architecture
 
-- **Routing:** Next.js App Router, role-aware — `operator` sees full nav (farm/pond/anomaly/report + harvest action); `verifier`/`investor` see read-only farm/report views only.
+- **Routing:** Next.js App Router, role-aware — `FARM_OPERATOR` has operational facility management; `VERIFIER_AUDITOR` has evidence, audit review, and verification portal; `PLATFORM_ADMIN` has platform configuration and user management.
 - **Data layer:** React Query for all REST reads with cache invalidation on relevant mutations (e.g., harvest submission invalidates the pond's carbon-estimate query); a thin `useWebSocket(pondId)` hook layers live updates on top of the same cache (optimistic merge of incoming `reading`/`alert` events).
 - **Component boundaries:**
   - `components/dashboard/FarmOverview` — pond grid, aggregate stats, alert banner.

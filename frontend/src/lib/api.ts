@@ -229,14 +229,122 @@ export async function fetchTelemetryStats(pondId?: string, farmId?: string, hour
   });
 }
 
+export interface SimulationPondState {
+  pond_id: string;
+  farm_id?: string;
+  name: string;
+  simulated_time: string;
+  biomass: number;
+  nitrogen: number;
+  temp_base: number;
+  active_scenario: string;
+  dropout_sensor_type: string | null;
+  is_running: boolean;
+  speed_multiplier: number;
+  step_count: number;
+  provenance: string;
+}
+
+export interface SimulationStatusResponse {
+  status: string;
+  count: number;
+  ponds: SimulationPondState[];
+  disclosure: string;
+  provenance: string;
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (typeof window !== 'undefined') {
+    try {
+      const role = localStorage.getItem('algax_active_role');
+      if (role) {
+        headers['X-AlgaX-Role'] = role;
+      }
+    } catch {
+      // localStorage access
+    }
+  }
+  return headers;
+}
+
+export async function fetchSimulationStatus(pondId?: string, farmId?: string): Promise<SimulationStatusResponse> {
+  let url = `${API_BASE_URL}/simulation/status`;
+  const params = new URLSearchParams();
+  if (pondId && pondId.trim() !== '') params.append('pond_id', pondId.trim());
+  if (farmId && farmId.trim() !== '') params.append('farm_id', farmId.trim());
+  if (params.toString()) url += `?${params.toString()}`;
+
+  try {
+    const res = await fetch(url, { 
+      cache: 'no-store',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      return {
+        status: 'ok',
+        count: 0,
+        ponds: [],
+        disclosure: 'SYNTHETIC_SIMULATION_DATA',
+        provenance: 'simulated'
+      };
+    }
+    return res.json();
+  } catch (err) {
+    return {
+      status: 'ok',
+      count: 0,
+      ponds: [],
+      disclosure: 'SYNTHETIC_SIMULATION_DATA',
+      provenance: 'simulated'
+    };
+  }
+}
+
 export async function injectScenario(pondId: string, scenario: string) {
   clearApiCache();
-  const res = await fetch(`${API_BASE_URL}/demo/inject-scenario`, {
+  const res = await fetch(`${API_BASE_URL}/simulation/scenario`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ pond_id: pondId, scenario })
   });
-  if (!res.ok) throw new Error('Failed to inject scenario');
+  if (!res.ok) {
+    // Fallback to demo endpoint if needed
+    const fallbackRes = await fetch(`${API_BASE_URL}/demo/inject-scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ pond_id: pondId, scenario })
+    });
+    if (!fallbackRes.ok) throw new Error('Failed to inject scenario');
+    return fallbackRes.json();
+  }
+  return res.json();
+}
+
+export async function controlSimulation(
+  action: 'stop' | 'resume' | 'reset' | 'set_speed',
+  speed?: number,
+  pondId?: string,
+  farmId?: string
+) {
+  clearApiCache();
+  const res = await fetch(`${API_BASE_URL}/simulation/control`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ action, speed, pond_id: pondId, farm_id: farmId })
+  });
+  if (!res.ok) throw new Error(`Failed to perform simulation action: ${action}`);
+  return res.json();
+}
+
+export async function resetSimulation(pondId?: string) {
+  clearApiCache();
+  const res = await fetch(`${API_BASE_URL}/simulation/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ pond_id: pondId })
+  });
+  if (!res.ok) throw new Error('Failed to reset simulation');
   return res.json();
 }
 
