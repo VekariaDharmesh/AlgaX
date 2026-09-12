@@ -29,6 +29,32 @@ export default function DashboardOverview() {
   const [isLive, setIsLive] = useState(false);
   const [activePondId, setActivePondId] = useState<string | null>(null);
 
+  const [activeScenario, setActiveScenario] = useState<string | null>(null);
+  const [injectingScenario, setInjectingScenario] = useState<string | null>(null);
+  const [scenarioStatus, setScenarioStatus] = useState<string | null>(null);
+
+  const handleInjectScenario = async (scenarioName: string, label: string) => {
+    if (!activePondId) return;
+    setInjectingScenario(scenarioName);
+    try {
+      if (activeScenario === scenarioName) {
+        await injectScenario(activePondId, 'normal');
+        setActiveScenario(null);
+        setScenarioStatus('Reset to normal operating conditions.');
+      } else {
+        await injectScenario(activePondId, scenarioName);
+        setActiveScenario(scenarioName);
+        setScenarioStatus(`Active scenario: ${label}`);
+      }
+    } catch (err: any) {
+      console.error('Failed to inject scenario:', err);
+      setScenarioStatus(`Simulator status: ${err.message || 'Error injecting scenario'}`);
+    } finally {
+      setInjectingScenario(null);
+    }
+  };
+
+
   useEffect(() => {
     let mounted = true;
     
@@ -121,35 +147,54 @@ export default function DashboardOverview() {
           <div>
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
               {getGreeting()}, Operator
-              {isLive && (
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1 shadow-sm border border-blue-100">
-                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                  SIMULATED DATA
-                </span>
-              )}
             </h1>
             <p className="text-slate-600 mt-2 text-lg font-medium">Carbon operations are being monitored across your farm.</p>
             
-            {isLive && activePondId && (
-              <div className="flex gap-2 mt-6">
-                <button 
-                  onClick={() => injectScenario(activePondId, 'nutrient_depletion')}
-                  className="text-xs font-bold bg-orange-50/90 backdrop-blur text-orange-700 border border-orange-200 px-3 py-1.5 rounded-md hover:bg-orange-100 transition-colors shadow-sm"
-                >
-                  Simulate N-Depletion
-                </button>
-                <button 
-                  onClick={() => injectScenario(activePondId, 'heatwave')}
-                  className="text-xs font-bold bg-red-50/90 backdrop-blur text-red-700 border border-red-200 px-3 py-1.5 rounded-md hover:bg-red-100 transition-colors shadow-sm"
-                >
-                  Simulate Heatwave
-                </button>
-                <button 
-                  onClick={() => injectScenario(activePondId, 'sensor_dropout')}
-                  className="text-xs font-bold bg-slate-50/90 backdrop-blur text-slate-700 border border-slate-200 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors shadow-sm"
-                >
-                  Drop Temp Sensor
-                </button>
+            {activePondId && (
+              <div className="flex flex-col gap-2 mt-6">
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    disabled={injectingScenario !== null}
+                    onClick={() => handleInjectScenario('nutrient_depletion', 'Simulate N-Depletion')}
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeScenario === 'nutrient_depletion'
+                        ? 'bg-amber-500 text-white border-amber-600 font-black ring-2 ring-amber-500/20'
+                        : 'bg-amber-50/90 text-amber-800 border-amber-200/90 hover:bg-amber-100'
+                    }`}
+                  >
+                    {injectingScenario === 'nutrient_depletion' && <span className="w-3 h-3 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></span>}
+                    Simulate N-Depletion
+                  </button>
+                  <button 
+                    disabled={injectingScenario !== null}
+                    onClick={() => handleInjectScenario('heatwave', 'Simulate Heatwave')}
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeScenario === 'heatwave'
+                        ? 'bg-rose-600 text-white border-rose-700 font-black ring-2 ring-rose-500/20'
+                        : 'bg-rose-50/90 text-rose-800 border-rose-200/90 hover:bg-rose-100'
+                    }`}
+                  >
+                    {injectingScenario === 'heatwave' && <span className="w-3 h-3 border-2 border-rose-800 border-t-transparent rounded-full animate-spin"></span>}
+                    Simulate Heatwave
+                  </button>
+                  <button 
+                    disabled={injectingScenario !== null}
+                    onClick={() => handleInjectScenario('sensor_dropout', 'Drop Temp Sensor')}
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeScenario === 'sensor_dropout'
+                        ? 'bg-slate-800 text-white border-slate-900 font-black ring-2 ring-slate-500/20'
+                        : 'bg-slate-50/90 text-slate-800 border-slate-200/90 hover:bg-slate-100'
+                    }`}
+                  >
+                    {injectingScenario === 'sensor_dropout' && <span className="w-3 h-3 border-2 border-slate-800 border-t-transparent rounded-full animate-spin"></span>}
+                    Drop Temp Sensor
+                  </button>
+                </div>
+                {scenarioStatus && (
+                  <div className="text-[11px] font-bold text-slate-700 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-200/80 inline-block w-fit shadow-2xs">
+                    {scenarioStatus}
+                  </div>
+                )}
               </div>
             )}
           </div>

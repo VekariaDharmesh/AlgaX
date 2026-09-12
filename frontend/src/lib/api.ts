@@ -1,18 +1,160 @@
 export const API_BASE_URL = 'http://localhost:8000/api';
 
-export async function fetchPonds() {
-  const res = await fetch(`${API_BASE_URL}/ponds`);
+export interface Farm {
+  id: string;
+  name: string;
+  location?: string;
+  created_at?: string;
+  ponds?: Pond[];
+}
+
+export interface Pond {
+  id: string;
+  farm_id: string;
+  name: string;
+  volume_liters?: number;
+  species?: string;
+  status: string;
+  sensors?: Sensor[];
+}
+
+export interface Sensor {
+  id: string;
+  pond_id: string;
+  type: string;
+  unit: string;
+  is_simulated: boolean;
+}
+
+export interface SensorReading {
+  id: string;
+  sensor_id: string;
+  pond_id: string;
+  timestamp: string;
+  value: number;
+  quality_flag: 'ok' | 'outlier' | 'missing' | 'interpolated';
+  source_type: 'measured' | 'simulated';
+}
+
+export interface SensorHealth {
+  id: string;
+  pond_id: string;
+  pond_name: string;
+  type: string;
+  unit: string;
+  is_simulated: boolean;
+  status: 'online' | 'stale' | 'offline';
+  last_value?: number;
+  last_seen?: string;
+  reading_count: number;
+  quality_flag: string;
+}
+
+export interface TelemetryKpi {
+  latest: number;
+  unit: string;
+  min: number;
+  max: number;
+  avg: number;
+  count: number;
+  last_seen?: string;
+}
+
+export interface DataQualitySummary {
+  total_readings: number;
+  ok_count: number;
+  outlier_count: number;
+  missing_count: number;
+  completeness_pct: number;
+  simulated_count: number;
+  measured_count: number;
+  last_ingestion?: string;
+}
+
+export interface DataGap {
+  start: string;
+  end: string;
+  duration_minutes: number;
+  sensor_id: string;
+  pond_id: string;
+}
+
+export interface ModelInputProvenance {
+  pond_id: string;
+  model_run_id?: string;
+  model_version: string;
+  execution_timestamp?: string;
+  provenance: string;
+  environmental_values: Record<string, number | null>;
+}
+
+export interface TelemetryStatsResponse {
+  farm: { id?: string; name: string };
+  pond: { id?: string; name: string };
+  hours: number;
+  is_simulated: boolean;
+  data_source_label: string;
+  last_received?: string;
+  total_readings: number;
+  active_sensors: number;
+  stale_sensors: number;
+  offline_sensors: number;
+  kpis: Record<string, TelemetryKpi>;
+  sensor_health: SensorHealth[];
+  data_quality: DataQualitySummary;
+  data_gaps: DataGap[];
+  model_inputs?: ModelInputProvenance;
+  recent_anomalies: any[];
+}
+
+export async function fetchFarms(): Promise<Farm[]> {
+  const res = await fetch(`${API_BASE_URL}/farms`);
+  if (!res.ok) throw new Error('Failed to fetch farms');
+  return res.json();
+}
+
+export async function fetchPonds(farmId?: string): Promise<Pond[]> {
+  const url = farmId ? `${API_BASE_URL}/ponds?farm_id=${farmId}` : `${API_BASE_URL}/ponds`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch ponds');
   return res.json();
 }
 
-export async function fetchTelemetry(pondId: string, limit: number = 50) {
-  const res = await fetch(`${API_BASE_URL}/telemetry?pond_id=${pondId}&limit=${limit}`);
+export async function fetchSensors(pondId?: string, farmId?: string): Promise<Sensor[]> {
+  const params = new URLSearchParams();
+  if (pondId) params.append('pond_id', pondId);
+  if (farmId) params.append('farm_id', farmId);
+
+  const res = await fetch(`${API_BASE_URL}/sensors?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch sensors');
+  return res.json();
+}
+
+export async function fetchTelemetry(pondId?: string, farmId?: string, sensorType?: string, limit: number = 100): Promise<SensorReading[]> {
+  const params = new URLSearchParams();
+  if (pondId) params.append('pond_id', pondId);
+  if (farmId) params.append('farm_id', farmId);
+  if (sensorType) params.append('sensor_type', sensorType);
+  params.append('limit', limit.toString());
+
+  const res = await fetch(`${API_BASE_URL}/telemetry?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch telemetry');
   return res.json();
 }
 
+export async function fetchTelemetryStats(pondId?: string, farmId?: string, hours: number = 24): Promise<TelemetryStatsResponse> {
+  const params = new URLSearchParams();
+  if (pondId) params.append('pond_id', pondId);
+  if (farmId) params.append('farm_id', farmId);
+  params.append('hours', hours.toString());
+
+  const res = await fetch(`${API_BASE_URL}/telemetry/stats?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch telemetry stats');
+  return res.json();
+}
+
 export async function injectScenario(pondId: string, scenario: string) {
+
   const res = await fetch(`${API_BASE_URL}/demo/inject-scenario`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

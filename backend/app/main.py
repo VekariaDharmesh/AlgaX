@@ -21,13 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .api import imagery, cross_validation, evidence, weather
+from .api import imagery, cross_validation, evidence, weather, telemetry
 
 app.include_router(imagery.router, prefix="/api", tags=["imagery"])
 app.include_router(cross_validation.router, prefix="/api", tags=["cross-validation"])
 app.include_router(evidence.router, prefix="/api", tags=["evidence"])
 app.include_router(evidence.router, prefix="/api/v1", tags=["evidence-v1"])
 app.include_router(weather.router, prefix="/api", tags=["weather"])
+app.include_router(telemetry.router, prefix="/api", tags=["telemetry"])
 
 @app.get("/health")
 def health_check():
@@ -57,17 +58,24 @@ def ingest_reading(reading: schemas.SensorReadingCreate, db: Session = Depends(g
 
 @app.get("/api/telemetry", response_model=List[schemas.SensorReadingResponse])
 def get_telemetry(
-    pond_id: uuid.UUID,
+    pond_id: Optional[uuid.UUID] = None,
+    farm_id: Optional[uuid.UUID] = None,
     sensor_type: Optional[models.SensorType] = None,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     limit: int = 1000,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.SensorReading).filter(models.SensorReading.pond_id == pond_id)
+    query = db.query(models.SensorReading)
+    if pond_id:
+        query = query.filter(models.SensorReading.pond_id == pond_id)
+    elif farm_id:
+        query = query.join(models.Pond, models.SensorReading.pond_id == models.Pond.id)\
+                     .filter(models.Pond.farm_id == farm_id)
     
     if sensor_type:
-        query = query.join(models.Sensor).filter(models.Sensor.type == sensor_type)
+        query = query.join(models.Sensor, models.SensorReading.sensor_id == models.Sensor.id)\
+                     .filter(models.Sensor.type == sensor_type)
     
     if start_time:
         query = query.filter(models.SensorReading.timestamp >= start_time)
@@ -76,6 +84,21 @@ def get_telemetry(
         
     readings = query.order_by(desc(models.SensorReading.timestamp)).limit(limit).all()
     return readings
+
+@app.get("/api/sensors", response_model=List[schemas.SensorResponse])
+def get_sensors(
+    pond_id: Optional[uuid.UUID] = None,
+    farm_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Sensor)
+    if pond_id:
+        query = query.filter(models.Sensor.pond_id == pond_id)
+    elif farm_id:
+        query = query.join(models.Pond, models.Sensor.pond_id == models.Pond.id)\
+                     .filter(models.Pond.farm_id == farm_id)
+    return query.all()
+
 import httpx
 
 class ScenarioRequest(schemas.BaseModel):
