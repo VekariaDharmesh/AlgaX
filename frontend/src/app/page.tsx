@@ -56,8 +56,9 @@ export default function DashboardOverview() {
             
             const anomaliesData = await fetchAnomalies();
             if (mounted) {
+              const anomaliesList = anomaliesData.items || [];
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const anomaliesWithExp = await Promise.all(anomaliesData.map(async (a: any) => {
+              const anomaliesWithExp = await Promise.all(anomaliesList.map(async (a: any) => {
                  if (a.source_provenance === 'biological_engine') {
                    try {
                      const exp = await fetchAnomalyExplanation(a.id);
@@ -304,12 +305,8 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {DEMO_PONDS.map(pond => (
               <Link href={`/ponds/${pond.id}`} key={pond.id} className="border border-gray-200 rounded-lg overflow-hidden hover:border-green-300 transition-colors block">
-                <div className="h-24 bg-gray-200 relative">
-                  {/* Mock image placeholder */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-600 opacity-80 mix-blend-multiply"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-white/30">
-                    <ImageIcon className="w-8 h-8" />
-                  </div>
+                <div className="h-24 bg-gray-200 relative overflow-hidden">
+                  <img src={`/images/ponds/${pond.id}.jpg`} alt={pond.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-1">
@@ -385,15 +382,15 @@ export default function DashboardOverview() {
         </div>
 
         {/* Recent Anomalies */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 col-span-1">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 col-span-1 h-[450px] flex flex-col">
+          <div className="flex items-center justify-between mb-4 shrink-0">
             <h2 className="text-lg font-bold text-gray-900">Recent Anomalies</h2>
             <Link href="/anomalies" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto pr-2 flex-1 scrollbar-thin scrollbar-thumb-gray-200">
             {anomalies.length === 0 ? (
               <p className="text-sm text-gray-500">No active sensor anomalies.</p>
             ) : (
