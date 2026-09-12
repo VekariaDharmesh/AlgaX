@@ -124,10 +124,10 @@ export default function FarmsPage() {
         {/* Farm Hero Image & Top Overlay */}
         <div className="relative h-72 md:h-80 w-full overflow-hidden bg-slate-950">
           <Image 
-            src="/farm_aerial.jpg" 
+            src={activeFarm.imageUrl} 
             alt={activeFarm.name} 
             fill
-            className="object-cover opacity-85 hover:scale-105 transition-transform duration-700 brightness-[0.85]"
+            className="object-cover opacity-90 hover:scale-105 transition-transform duration-700 brightness-[0.85]"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
@@ -256,7 +256,7 @@ export default function FarmsPage() {
                 {/* Pond Image */}
                 <div className="relative h-36 w-full overflow-hidden bg-slate-900">
                   <Image 
-                    src="/farm_aerial.jpg" 
+                    src={pond.imageUrl} 
                     alt={pond.name} 
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-85"
@@ -347,33 +347,46 @@ export default function FarmsPage() {
             <div 
               key={f.id} 
               onClick={() => setActiveFarmId(f.id)}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+              className={`rounded-2xl border transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
                 activeFarmId === f.id 
-                  ? 'bg-emerald-50/50 border-emerald-300 shadow-xs' 
+                  ? 'bg-emerald-50/40 border-emerald-400 shadow-md ring-2 ring-emerald-500/20' 
                   : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+              {/* Facility Thumbnail */}
+              <div className="relative h-32 w-full overflow-hidden bg-slate-950">
+                <Image 
+                  src={f.imageUrl} 
+                  alt={f.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-white/90 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded font-bold uppercase tracking-wider">
                     {f.coordinates.lat}°N, {f.coordinates.lng}°E
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-bold text-emerald-300 bg-slate-950/70 backdrop-blur-md border border-emerald-500/30 px-2 py-0.5 rounded">
                     ACTIVE MRV
                   </span>
                 </div>
-                <h4 className="font-bold text-slate-900 text-sm mt-1">{f.name}</h4>
-                <p className="text-xs text-slate-500 mt-0.5">📍 {f.location}</p>
-                <p className="text-[11px] text-slate-600 mt-2 line-clamp-2">{f.description}</p>
+                <div className="absolute bottom-2 left-3 right-3 text-white">
+                  <h4 className="font-black text-sm drop-shadow">{f.name}</h4>
+                  <p className="text-[11px] text-slate-200 drop-shadow truncate">📍 {f.location}</p>
+                </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-mono text-[11px] text-slate-700 font-bold">
-                  {f.annualCapacity}
-                </span>
-                <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs">
-                  Select Facility <ChevronRight className="w-3.5 h-3.5" />
-                </span>
+              <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">{f.description}</p>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="font-mono text-[11px] text-slate-800 font-bold">
+                    {f.annualCapacity}
+                  </span>
+                  <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs group-hover:translate-x-0.5 transition-transform">
+                    {activeFarmId === f.id ? 'Viewing Facility' : 'Select Facility'} <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
               </div>
             </div>
           ))}

@@ -18,6 +18,7 @@ export interface Pond {
   lastHarvest?: string;
   dailyGrowthRate: number;
   co2InjectionRate: number;
+  imageUrl: string;
 }
 
 export const DEMO_PONDS: Pond[] = [
@@ -41,6 +42,7 @@ export const DEMO_PONDS: Pond[] = [
     lastHarvest: '2026-09-10',
     dailyGrowthRate: 13.2,
     co2InjectionRate: 0.9,
+    imageUrl: '/images/farms/kutch.jpg',
   },
   {
     id: 'p-2',
@@ -62,6 +64,7 @@ export const DEMO_PONDS: Pond[] = [
     lastHarvest: '2026-09-06',
     dailyGrowthRate: 10.4,
     co2InjectionRate: 0.7,
+    imageUrl: '/images/farms/sambhar.jpg',
   },
   {
     id: 'p-3',
@@ -83,6 +86,7 @@ export const DEMO_PONDS: Pond[] = [
     lastHarvest: '2026-09-11',
     dailyGrowthRate: 12.0,
     co2InjectionRate: 1.2,
+    imageUrl: '/images/farms/kochi.jpg',
   },
   {
     id: 'p-4',
@@ -104,6 +108,7 @@ export const DEMO_PONDS: Pond[] = [
     lastHarvest: '2026-08-30',
     dailyGrowthRate: 11.5,
     co2InjectionRate: 0.85,
+    imageUrl: '/images/farms/bhavnagar.jpg',
   }
 ];
 
@@ -123,6 +128,7 @@ export interface FarmDetails {
   annualCapacity: string;
   energySource: string;
   pondCount: number;
+  imageUrl: string;
 }
 
 export const DEMO_FARMS: FarmDetails[] = [
@@ -142,6 +148,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '240 tonnes dry biomass',
     energySource: '100% On-site Solar PV (3.2 MW)',
     pondCount: 4,
+    imageUrl: '/images/farms/kutch.jpg',
   },
   {
     id: 'farm-2',
@@ -159,6 +166,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '190 tonnes dry biomass',
     energySource: 'Coastal Wind & Hybrid Solar (2.8 MW)',
     pondCount: 3,
+    imageUrl: '/images/farms/rameswaram.jpg',
   },
   {
     id: 'farm-3',
@@ -176,6 +184,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '310 tonnes dry biomass',
     energySource: 'Rooftop & Floating Solar PV (4.0 MW)',
     pondCount: 3,
+    imageUrl: '/images/farms/sambhar.jpg',
   },
   {
     id: 'farm-4',
@@ -193,6 +202,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '160 tonnes dry biomass',
     energySource: 'Hydro-Solar Microgrid (1.8 MW)',
     pondCount: 3,
+    imageUrl: '/images/farms/kochi.jpg',
   },
   {
     id: 'farm-5',
@@ -210,6 +220,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '210 tonnes dry biomass',
     energySource: 'On-site Solar + Grid Backing (2.5 MW)',
     pondCount: 3,
+    imageUrl: '/images/farms/chilika.jpg',
   },
   {
     id: 'farm-6',
@@ -227,6 +238,7 @@ export const DEMO_FARMS: FarmDetails[] = [
     annualCapacity: '175 tonnes dry biomass',
     energySource: 'Wind-Solar Hybrid (2.2 MW)',
     pondCount: 3,
+    imageUrl: '/images/farms/bhavnagar.jpg',
   }
 ];
 
