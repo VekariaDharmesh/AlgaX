@@ -5,6 +5,11 @@ def detect_dropout(last_timestamp: datetime, current_time: datetime, config: Sen
     if not last_timestamp:
         return {"is_anomaly": False} # No previous data, can't be a dropout (just starting)
         
+    if last_timestamp.tzinfo is not None:
+        last_timestamp = last_timestamp.replace(tzinfo=None)
+    if current_time.tzinfo is not None:
+        current_time = current_time.replace(tzinfo=None)
+
     duration = (current_time - last_timestamp).total_seconds() / 60.0
     
     if duration > config.dropout_duration_minutes:

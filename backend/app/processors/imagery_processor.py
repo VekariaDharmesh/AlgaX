@@ -6,7 +6,7 @@ from PIL import Image, ImageOps, ImageStat, ImageFilter
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
-from app import models
+from .. import models
 
 PROCESSING_VERSION = "4.2.0"
 MAX_DIMENSION = 4096

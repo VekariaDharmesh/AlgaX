@@ -2,13 +2,17 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
-from .models import SensorType, QualityFlag, SourceType, PondStatus
+from .models import SensorType, QualityFlag, SourceType, PondStatus, CalibrationStatus, CalibrationMethod
 
 class SensorReadingCreate(BaseModel):
     sensor_id: UUID
     pond_id: UUID
     timestamp: datetime
     value: float
+    raw_value: Optional[float] = None
+    calibrated_value: Optional[float] = None
+    calibration_offset: Optional[float] = None
+    calibration_gain: Optional[float] = None
     quality_flag: QualityFlag = QualityFlag.ok
     source_type: SourceType = SourceType.simulated
 
@@ -23,6 +27,8 @@ class SensorBase(BaseModel):
     unit: str
     is_simulated: bool = True
     calibration_metadata: Optional[dict] = None
+    last_calibrated_at: Optional[datetime] = None
+    calibration_status: CalibrationStatus = CalibrationStatus.DRAFT
 
 class SensorResponse(SensorBase):
     id: UUID
@@ -394,5 +400,170 @@ class CanonicalJsonBundleResponse(BaseModel):
     package_id: UUID
     canonical_hash: str
     payload: dict
+
+# Harvest Workspace Schemas
+from .models import HarvestStatus, HarvestMethod, EndUseCategory
+
+class HarvestBiomassFateBase(BaseModel):
+    end_use_category: EndUseCategory = EndUseCategory.UNSPECIFIED
+    quantity_allocated_kg: float
+    allocation_pct: float = 100.0
+    destination: str = "Storage"
+    processing_info: Optional[str] = None
+    retention_info: Optional[str] = None
+    notes: Optional[str] = None
+
+class HarvestBiomassFateCreate(HarvestBiomassFateBase):
+    pass
+
+class HarvestBiomassFateResponse(HarvestBiomassFateBase):
+    id: UUID
+    harvest_event_id: UUID
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class HarvestEventBase(BaseModel):
+    farm_id: UUID
+    pond_id: UUID
+    planned_date: datetime
+    harvest_method: HarvestMethod = HarvestMethod.FILTRATION
+    operator: str = "Operator"
+    notes: Optional[str] = None
+    estimated_harvest_kg: float = 0.0
+
+class HarvestEventCreate(HarvestEventBase):
+    status: HarvestStatus = HarvestStatus.PLANNED
+    harvest_date: Optional[datetime] = None
+    actual_harvest_kg: Optional[float] = None
+    biomass_before_g_per_l: Optional[float] = None
+    model_run_id: Optional[UUID] = None
+
+class HarvestEventUpdate(BaseModel):
+    status: Optional[HarvestStatus] = None
+    harvest_date: Optional[datetime] = None
+    actual_harvest_kg: Optional[float] = None
+    biomass_before_g_per_l: Optional[float] = None
+    notes: Optional[str] = None
+    operator: Optional[str] = None
+    harvest_method: Optional[HarvestMethod] = None
+
+class HarvestEventResponse(HarvestEventBase):
+    id: UUID
+    status: HarvestStatus
+    harvest_date: Optional[datetime] = None
+    biomass_before_g_per_l: Optional[float] = None
+    actual_harvest_kg: Optional[float] = None
+    unit: str = "kg"
+    model_run_id: Optional[UUID] = None
+    created_at: datetime
+    updated_at: datetime
+    biomass_fates: List[HarvestBiomassFateResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class HarvestOverviewKPIs(BaseModel):
+    current_biomass_g_l: Optional[float] = None
+    harvestable_biomass_kg: Optional[float] = None
+    total_harvested_kg: float = 0.0
+    latest_harvest_date: Optional[datetime] = None
+    harvest_event_count: int = 0
+    period_harvested_kg: float = 0.0
+    remaining_biomass_g_l: Optional[float] = None
+    carbon_associated_kg: Optional[float] = None
+    harvestable_status: str = "Biomass available for harvest planning"
+
+class BiomassReadinessResponse(BaseModel):
+    pond_id: UUID
+    pond_name: str
+    biomass_g_per_l: float
+    timestamp: datetime
+    model_run_id: Optional[UUID] = None
+    model_version: str = "v1.0.0"
+    confidence_score: float = 0.85
+    readiness_label: str = "Biomass available for harvest planning"
+
+# Calibration Workspace Schemas
+class SensorCalibrationBase(BaseModel):
+    sensor_id: UUID
+    performed_by: str = "Technician"
+    calibration_method: CalibrationMethod = CalibrationMethod.ZERO_POINT
+    reference_standard: Optional[str] = None
+    raw_reference_value: float
+    expected_reference_value: float
+    offset_applied: float = 0.0
+    gain_applied: float = 1.0
+    pre_calibration_error: Optional[float] = None
+    post_calibration_error: Optional[float] = None
+    notes: Optional[str] = None
+    valid_until: Optional[datetime] = None
+
+class SensorCalibrationCreate(SensorCalibrationBase):
+    status: CalibrationStatus = CalibrationStatus.DRAFT
+
+class SensorCalibrationUpdate(BaseModel):
+    status: Optional[CalibrationStatus] = None
+    performed_by: Optional[str] = None
+    calibration_method: Optional[CalibrationMethod] = None
+    reference_standard: Optional[str] = None
+    raw_reference_value: Optional[float] = None
+    expected_reference_value: Optional[float] = None
+    offset_applied: Optional[float] = None
+    gain_applied: Optional[float] = None
+    notes: Optional[str] = None
+    valid_until: Optional[datetime] = None
+
+class SensorCalibrationResponse(SensorCalibrationBase):
+    id: UUID
+    status: CalibrationStatus
+    calibrated_at: datetime
+    created_at: datetime
+    updated_at: datetime
+    sensor_type: Optional[str] = None
+    sensor_unit: Optional[str] = None
+    pond_id: Optional[UUID] = None
+    pond_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class CalibrationCalculationRequest(BaseModel):
+    calibration_method: CalibrationMethod = CalibrationMethod.ZERO_POINT
+    raw_reference_value: float
+    expected_reference_value: float
+    secondary_raw_value: Optional[float] = None
+    secondary_expected_value: Optional[float] = None
+
+class CalibrationCalculationResponse(BaseModel):
+    calibration_method: CalibrationMethod
+    offset_applied: float
+    gain_applied: float
+    pre_calibration_error: float
+    post_calibration_error: float
+    equation_formula: str
+
+class SensorCalibrationStatusResponse(BaseModel):
+    sensor_id: UUID
+    pond_id: UUID
+    pond_name: Optional[str] = None
+    sensor_type: SensorType
+    unit: str
+    is_simulated: bool
+    last_calibrated_at: Optional[datetime] = None
+    calibration_status: CalibrationStatus
+    active_offset: float = 0.0
+    active_gain: float = 1.0
+    drift_warning: bool = False
+    calibration_due: bool = False
+
+class CalibrationOverviewKPIs(BaseModel):
+    total_sensors: int = 0
+    active_calibrated_sensors: int = 0
+    pending_approval_count: int = 0
+    calibration_due_count: int = 0
+    drift_alert_count: int = 0
+    latest_calibration_date: Optional[datetime] = None
+
 
 

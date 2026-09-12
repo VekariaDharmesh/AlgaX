@@ -77,8 +77,8 @@ def collect_evidence(db: Session, biological_anomaly: models.Anomaly, window_hou
         "environmental_anomalies": env_evidence,
         "sensor_anomalies": sensor_evidence,
         "model_outputs": model_evidence,
-        "analysis_start": window_start.isoformat(),
-        "analysis_end": window_end.isoformat(),
+        "analysis_start": window_start,
+        "analysis_end": window_end,
         "collection_metadata": {
             "window_hours": window_hours,
             "anomaly_timestamp": biological_anomaly.timestamp.isoformat(),

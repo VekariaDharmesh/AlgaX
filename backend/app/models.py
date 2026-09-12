@@ -1,7 +1,7 @@
 import uuid
 import datetime
 import enum
-from sqlalchemy import Column, String, Float, Boolean, ForeignKey, DateTime, Enum, JSON
+from sqlalchemy import Column, String, Float, Boolean, ForeignKey, DateTime, Enum, JSON, Index
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
@@ -57,6 +57,21 @@ class Pond(Base):
     farm = relationship("Farm", back_populates="ponds")
     sensors = relationship("Sensor", back_populates="pond")
 
+class CalibrationStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    ACTIVE = "ACTIVE"
+    SUPERSEDED = "SUPERSEDED"
+
+class CalibrationMethod(str, enum.Enum):
+    ZERO_POINT = "ZERO_POINT"
+    SPAN = "SPAN"
+    TWO_POINT = "TWO_POINT"
+    LINEAR_REGRESSION = "LINEAR_REGRESSION"
+    OFFSET_ADJUST = "OFFSET_ADJUST"
+
 class Sensor(Base):
     __tablename__ = "sensor"
 
@@ -66,18 +81,29 @@ class Sensor(Base):
     unit = Column(String, nullable=False)
     is_simulated = Column(Boolean, nullable=False, default=True)
     calibration_metadata = Column(JSON, nullable=True)
+    last_calibrated_at = Column(DateTime(timezone=True), nullable=True)
+    calibration_status = Column(Enum(CalibrationStatus, create_type=False), nullable=False, default=CalibrationStatus.DRAFT)
 
     pond = relationship("Pond", back_populates="sensors")
     readings = relationship("SensorReading", back_populates="sensor")
+    calibration_records = relationship("SensorCalibrationRecord", back_populates="sensor", cascade="all, delete-orphan")
 
 class SensorReading(Base):
     __tablename__ = "sensor_reading"
+    __table_args__ = (
+        Index("idx_sensor_reading_pond_ts", "pond_id", "timestamp"),
+        Index("idx_sensor_reading_sensor_ts", "sensor_id", "timestamp"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"), nullable=False)
     pond_id = Column(UUID(as_uuid=True), nullable=False)
     timestamp = Column(DateTime(timezone=True), nullable=False)
     value = Column(Float, nullable=False)
+    raw_value = Column(Float, nullable=True)
+    calibrated_value = Column(Float, nullable=True)
+    calibration_offset = Column(Float, nullable=True)
+    calibration_gain = Column(Float, nullable=True)
     quality_flag = Column(Enum(QualityFlag), nullable=False, default=QualityFlag.ok)
     source_type = Column(Enum(SourceType), nullable=False, default=SourceType.simulated)
 
@@ -89,6 +115,9 @@ class ModelRunStatus(str, enum.Enum):
 
 class EnvironmentalSnapshot(Base):
     __tablename__ = "environmental_snapshot"
+    __table_args__ = (
+        Index("idx_env_snapshot_pond_ts", "pond_id", "timestamp"),
+    )
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
     timestamp = Column(DateTime(timezone=True), nullable=False)
@@ -118,6 +147,10 @@ class ModelRun(Base):
 
 class BiomassEstimate(Base):
     __tablename__ = "biomass_estimate"
+    __table_args__ = (
+        Index("idx_biomass_est_pond_ts", "pond_id", "timestamp"),
+        Index("idx_biomass_est_model_run", "model_run_id"),
+    )
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
     model_run_id = Column(UUID(as_uuid=True), ForeignKey("model_run.id"), nullable=False)
@@ -135,6 +168,10 @@ class BiomassEstimate(Base):
 
 class CarbonEstimate(Base):
     __tablename__ = "carbon_estimate"
+    __table_args__ = (
+        Index("idx_carbon_est_pond", "pond_id"),
+        Index("idx_carbon_est_model_run", "model_run_id"),
+    )
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
     model_run_id = Column(UUID(as_uuid=True), ForeignKey("model_run.id"), nullable=False)
@@ -188,6 +225,10 @@ class AnomalyStatus(str, enum.Enum):
 
 class Anomaly(Base):
     __tablename__ = "anomaly"
+    __table_args__ = (
+        Index("idx_anomaly_pond_ts", "pond_id", "timestamp"),
+        Index("idx_anomaly_farm", "farm_id"),
+    )
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=True)
     pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
@@ -456,6 +497,10 @@ class ReviewActionType(str, enum.Enum):
 
 class EvidencePackage(Base):
     __tablename__ = "evidence_package"
+    __table_args__ = (
+        Index("idx_evidence_pkg_pond", "pond_id"),
+        Index("idx_evidence_pkg_farm", "farm_id"),
+    )
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
@@ -475,6 +520,8 @@ class EvidencePackage(Base):
     anomaly_evidence_json = Column(JSON, nullable=False, default=list)
     imagery_evidence_json = Column(JSON, nullable=False, default=list)
     cross_validation_evidence_json = Column(JSON, nullable=False, default=list)
+    harvest_evidence_json = Column(JSON, nullable=False, default=list)
+    calibration_evidence_json = Column(JSON, nullable=False, default=list)
     limitations_json = Column(JSON, nullable=False, default=list)
     
     canonical_hash = Column(String, nullable=True)
@@ -496,3 +543,107 @@ class ReviewAction(Base):
     
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
+class HarvestStatus(str, enum.Enum):
+    PLANNED = "PLANNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+class HarvestMethod(str, enum.Enum):
+    FILTRATION = "FILTRATION"
+    CENTRIFUGATION = "CENTRIFUGATION"
+    FLOCCULATION = "FLOCCULATION"
+    SKIMMING = "SKIMMING"
+    OTHER = "OTHER"
+
+class EndUseCategory(str, enum.Enum):
+    BIOCHAR = "BIOCHAR"
+    BIOPLASTICS = "BIOPLASTICS"
+    FUEL = "FUEL"
+    ANIMAL_FEED = "ANIMAL_FEED"
+    UNSPECIFIED = "UNSPECIFIED"
+
+class HarvestEvent(Base):
+    __tablename__ = "harvest_event"
+    __table_args__ = (
+        Index("idx_harvest_event_farm", "farm_id"),
+        Index("idx_harvest_event_pond", "pond_id"),
+        Index("idx_harvest_event_status", "status"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    status = Column(Enum(HarvestStatus), nullable=False, default=HarvestStatus.PLANNED)
+    planned_date = Column(DateTime(timezone=True), nullable=False)
+    harvest_date = Column(DateTime(timezone=True), nullable=True)
+    harvest_method = Column(Enum(HarvestMethod), nullable=False, default=HarvestMethod.FILTRATION)
+    operator = Column(String, nullable=False, default="Operator")
+    notes = Column(String, nullable=True)
+
+    biomass_before_g_per_l = Column(Float, nullable=True)
+    estimated_harvest_kg = Column(Float, nullable=False, default=0.0)
+    actual_harvest_kg = Column(Float, nullable=True)
+    unit = Column(String, nullable=False, default="kg")
+
+    model_run_id = Column(UUID(as_uuid=True), ForeignKey("model_run.id"), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    biomass_fates = relationship("HarvestBiomassFate", back_populates="harvest_event", cascade="all, delete-orphan")
+    farm = relationship("Farm")
+    pond = relationship("Pond")
+
+class HarvestBiomassFate(Base):
+    __tablename__ = "harvest_biomass_fate"
+    __table_args__ = (
+        Index("idx_harvest_fate_event", "harvest_event_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    harvest_event_id = Column(UUID(as_uuid=True), ForeignKey("harvest_event.id"), nullable=False)
+    end_use_category = Column(Enum(EndUseCategory), nullable=False, default=EndUseCategory.UNSPECIFIED)
+    quantity_allocated_kg = Column(Float, nullable=False)
+    allocation_pct = Column(Float, nullable=False)
+    destination = Column(String, nullable=False, default="Storage")
+    processing_info = Column(String, nullable=True)
+    retention_info = Column(String, nullable=True)
+    notes = Column(String, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    harvest_event = relationship("HarvestEvent", back_populates="biomass_fates")
+
+class SensorCalibrationRecord(Base):
+    __tablename__ = "sensor_calibration"
+    __table_args__ = (
+        Index("idx_sensor_calibration_sensor", "sensor_id"),
+        Index("idx_sensor_calibration_status", "status"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"), nullable=False)
+    performed_by = Column(String, nullable=False, default="Technician")
+    calibration_method = Column(Enum(CalibrationMethod, create_type=False), nullable=False, default=CalibrationMethod.ZERO_POINT)
+    
+    reference_standard = Column(String, nullable=True)
+    raw_reference_value = Column(Float, nullable=False)
+    expected_reference_value = Column(Float, nullable=False)
+    
+    offset_applied = Column(Float, nullable=False, default=0.0)
+    gain_applied = Column(Float, nullable=False, default=1.0)
+    
+    pre_calibration_error = Column(Float, nullable=True)
+    post_calibration_error = Column(Float, nullable=True)
+    
+    status = Column(Enum(CalibrationStatus, create_type=False), nullable=False, default=CalibrationStatus.DRAFT)
+    notes = Column(String, nullable=True)
+    
+    calibrated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    valid_until = Column(DateTime(timezone=True), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    sensor = relationship("Sensor", back_populates="calibration_records")

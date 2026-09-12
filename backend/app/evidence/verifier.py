@@ -70,6 +70,10 @@ def build_canonical_payload(pkg: models.EvidencePackage) -> Dict[str, Any]:
         "limitations": pkg.limitations_json or [],
         "contains_simulated_data": bool(pkg.contains_simulated_data)
     }
+    if getattr(pkg, "harvest_evidence_json", None):
+        raw_payload["harvest_evidence"] = pkg.harvest_evidence_json
+    if getattr(pkg, "calibration_evidence_json", None):
+        raw_payload["calibration_evidence"] = pkg.calibration_evidence_json
     return canonicalize_element(raw_payload)
 
 def compute_canonical_hash(payload: Dict[str, Any]) -> str:
@@ -98,13 +102,16 @@ def verify_package_hash(pkg: models.EvidencePackage) -> Dict[str, Any]:
             "sealed_by": None
         }
 
+    payload = build_canonical_payload(pkg)
+    recomputed_hash = compute_canonical_hash(payload)
+    stored_hash = (pkg.canonical_hash or "").strip().lower()
+    is_match = (stored_hash == recomputed_hash.strip().lower()) if stored_hash else False
+
     if pkg.status != models.PackageStatus.SEALED:
-        payload = build_canonical_payload(pkg)
-        recomputed_hash = compute_canonical_hash(payload)
         return {
             "package_id": str(pkg.id),
-            "integrity_match": False,
-            "stored_hash": (pkg.canonical_hash or "").strip().lower(),
+            "integrity_match": is_match,
+            "stored_hash": stored_hash,
             "recomputed_hash": recomputed_hash,
             "status": "NOT_SEALED",
             "message": "Evidence package is unsealed — fingerprint check is preliminary.",

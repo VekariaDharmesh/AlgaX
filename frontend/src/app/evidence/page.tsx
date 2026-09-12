@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, FlaskConical, Database, Layers, CheckCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 
+import { fetchPonds, API_BASE_URL } from '@/lib/api';
+
 interface CrossValidationRun {
   id: string;
   comparison_window_start: string | null;
@@ -27,10 +29,9 @@ export default function EvidencePage() {
     // Fetch a pond first, then its CV runs
     const fetchCV = async () => {
       try {
-        const pRes = await fetch('http://localhost:8000/api/ponds');
-        const ponds = await pRes.json();
+        const ponds = await fetchPonds();
         if (ponds && ponds.length > 0) {
-          const cvRes = await fetch(`http://localhost:8000/api/ponds/${ponds[0].id}/cross-validation`);
+          const cvRes = await fetch(`${API_BASE_URL}/ponds/${ponds[0].id}/cross-validation`);
           const data = await cvRes.json();
           setCvRuns(data);
         }

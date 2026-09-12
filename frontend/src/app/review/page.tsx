@@ -6,7 +6,7 @@ import {
   RefreshCw, Download, Calendar, Activity, Check, Clock, UserCheck
 } from 'lucide-react';
 import { 
-  API_BASE_URL, verifyPackageHash, sealEvidencePackage, fetchReviewActions, 
+  API_BASE_URL, fetchPonds, verifyPackageHash, sealEvidencePackage, fetchReviewActions, 
   submitReviewAction, HashVerificationResult 
 } from '@/lib/api';
 import { formatCo2 } from '@/lib/formatters';
@@ -30,12 +30,7 @@ export default function ReviewWorkspacePage() {
   const [submittingAction, setSubmittingAction] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/farms`)
-      .then((res) => res.json())
-      .catch(() => []);
-
-    fetch(`${API_BASE_URL}/ponds`)
-      .then((res) => res.json())
+    fetchPonds()
       .then((data) => {
         setPonds(data);
         if (data.length > 0) {

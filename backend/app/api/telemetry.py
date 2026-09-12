@@ -10,6 +10,16 @@ from ..database import get_db
 
 router = APIRouter()
 
+@router.post("/telemetry/seed-demo")
+def seed_demo_telemetry(
+    pond_id: Optional[uuid.UUID] = Query(None),
+    farm_id: Optional[uuid.UUID] = Query(None),
+    db: Session = Depends(get_db)
+):
+    from ..seed import seed_database
+    seed_database()
+    return {"status": "ok", "message": "Telemetry stream populated"}
+
 @router.get("/telemetry/stats")
 def get_telemetry_stats(
     pond_id: Optional[uuid.UUID] = None,
@@ -43,22 +53,18 @@ def get_telemetry_stats(
     sensors = sensor_query.all()
     sensor_map = {s.id: s for s in sensors}
 
-    # 3. Fetch Per-Sensor Readings to ensure no metric starvation
+    sensor_ids = [s.id for s in sensors]
     readings: List[models.SensorReading] = []
-    for s in sensors:
-        s_readings = db.query(models.SensorReading)\
-                       .filter(models.SensorReading.sensor_id == s.id, models.SensorReading.timestamp >= start_time)\
-                       .order_by(desc(models.SensorReading.timestamp))\
-                       .limit(500).all()
-        if not s_readings:
-            s_readings = db.query(models.SensorReading)\
-                           .filter(models.SensorReading.sensor_id == s.id)\
-                           .order_by(desc(models.SensorReading.timestamp))\
-                           .limit(500).all()
-        readings.extend(s_readings)
-
-    # Sort all collected readings desc by timestamp
-    readings.sort(key=lambda x: x.timestamp if x.timestamp else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    if sensor_ids:
+        readings = db.query(models.SensorReading)\
+                     .filter(models.SensorReading.sensor_id.in_(sensor_ids), models.SensorReading.timestamp >= start_time)\
+                     .order_by(desc(models.SensorReading.timestamp))\
+                     .limit(1000).all()
+        if not readings:
+            readings = db.query(models.SensorReading)\
+                         .filter(models.SensorReading.sensor_id.in_(sensor_ids))\
+                         .order_by(desc(models.SensorReading.timestamp))\
+                         .limit(1000).all()
 
 
     # 3. Categorize Readings by Metric
@@ -180,7 +186,8 @@ def get_telemetry_stats(
             status = "offline"
             offline_count += 1
         else:
-            diff_minutes = abs((now - last_seen).total_seconds()) / 60.0
+            ls_tz = last_seen.replace(tzinfo=timezone.utc) if last_seen.tzinfo is None else last_seen
+            diff_minutes = abs((now - ls_tz).total_seconds()) / 60.0
             if diff_minutes <= 120:
                 status = "online"
                 online_count += 1
@@ -221,7 +228,9 @@ def get_telemetry_stats(
         prev_t = sorted_readings[i - 1].timestamp
         curr_t = sorted_readings[i].timestamp
         if prev_t and curr_t:
-            gap_seconds = (curr_t - prev_t).total_seconds()
+            pt_tz = prev_t.replace(tzinfo=timezone.utc) if prev_t.tzinfo is None else prev_t
+            ct_tz = curr_t.replace(tzinfo=timezone.utc) if curr_t.tzinfo is None else curr_t
+            gap_seconds = (ct_tz - pt_tz).total_seconds()
             if gap_seconds > 900:  # >15 minutes
                 gap_minutes = round(gap_seconds / 60.0, 1)
                 data_gaps.append({

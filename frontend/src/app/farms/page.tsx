@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Map, Droplets, ArrowRight, Shield, Activity, Globe, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
-import { API_BASE_URL } from '@/lib/api';
+import { fetchFarms, fetchPonds } from '@/lib/api';
 
 export default function FarmsPage() {
   const [farms, setFarms] = useState<any[]>([]);
@@ -12,8 +12,8 @@ export default function FarmsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE_URL}/farms`).then(r => r.json()).catch(() => []),
-      fetch(`${API_BASE_URL}/ponds`).then(r => r.json()).catch(() => [])
+      fetchFarms().catch(() => []),
+      fetchPonds().catch(() => [])
     ]).then(([farmsData, pondsData]) => {
       if (Array.isArray(farmsData) && farmsData.length > 0) {
         setFarms(farmsData);

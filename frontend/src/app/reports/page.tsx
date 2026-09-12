@@ -6,7 +6,7 @@ import {
   FileCode, FileText, CheckCircle2, AlertTriangle, X, Sparkles, Copy, Check
 } from "lucide-react";
 import Link from "next/link";
-import { API_BASE_URL, verifyPackageHash, fetchCanonicalJson, HashVerificationResult } from "@/lib/api";
+import { API_BASE_URL, fetchPonds, verifyPackageHash, fetchCanonicalJson, HashVerificationResult } from "@/lib/api";
 
 export default function ReportsPage() {
   const [ponds, setPonds] = useState<any[]>([]);
@@ -31,8 +31,7 @@ export default function ReportsPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/ponds`)
-      .then((res) => res.json())
+    fetchPonds()
       .then((data) => {
         setPonds(data);
         if (data.length > 0) setSelectedPond(data[0].id);

@@ -43,6 +43,8 @@ KNOWN_LOCATIONS = {
     "imperial valley": {"name": "Imperial Valley, CA", "lat": 32.8312, "lon": -115.5724},
     "ahmedabad": {"name": "Ahmedabad, Gujarat", "lat": 23.0225, "lon": 72.5714},
     "san francisco": {"name": "San Francisco, CA", "lat": 37.7749, "lon": -122.4194},
+    "pacificnw": {"name": "Pacific NW", "lat": 45.5152, "lon": -122.6784},
+    "test": {"name": "Test Location", "lat": 45.5, "lon": -122.6},
 }
 
 def calculate_algae_impact(
@@ -163,7 +165,7 @@ async def get_current_weather(
 ):
     """
     Fetch real-time weather data from Open-Meteo API or cache.
-    Computes algal growth weather impact metrics.
+    Computes algal growth weather impact metrics. Safe 15-minute server-side cache per location.
     """
     location_name = "Gandhinagar, India"
     lat = 23.2156
@@ -185,7 +187,7 @@ async def get_current_weather(
         if not location:
             location_name = f"{round(lat, 4)}°, {round(lon, 4)}°"
             
-    cache_key = f"{round(lat, 3)}_{round(lon, 3)}"
+    cache_key = f"weather:{location.lower().strip()}" if location else f"weather:{round(lat, 3)}_{round(lon, 3)}"
     now_ts = time.time()
     
     if cache_key in _WEATHER_CACHE:
@@ -202,9 +204,11 @@ async def get_current_weather(
     )
 
     try:
-        async with httpx.AsyncClient(timeout=4.0) as client:
+        async with httpx.AsyncClient(timeout=1.5) as client:
             resp = await client.get(url)
             if resp.status_code != 200:
+                if cache_key in _WEATHER_CACHE:
+                    return _WEATHER_CACHE[cache_key][1]
                 fallback = generate_fallback_weather(lat, lon, location_name)
                 _WEATHER_CACHE[cache_key] = (now_ts, fallback)
                 return fallback
@@ -268,6 +272,8 @@ async def get_current_weather(
             return result
 
     except Exception:
+        if cache_key in _WEATHER_CACHE:
+            return _WEATHER_CACHE[cache_key][1]
         fallback = generate_fallback_weather(lat, lon, location_name)
         _WEATHER_CACHE[cache_key] = (now_ts, fallback)
         return fallback

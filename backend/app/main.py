@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .api import imagery, cross_validation, evidence, weather, telemetry
+from .api import imagery, cross_validation, evidence, weather, telemetry, harvest, calibration
 
 app.include_router(imagery.router, prefix="/api", tags=["imagery"])
 app.include_router(cross_validation.router, prefix="/api", tags=["cross-validation"])
@@ -29,6 +29,8 @@ app.include_router(evidence.router, prefix="/api", tags=["evidence"])
 app.include_router(evidence.router, prefix="/api/v1", tags=["evidence-v1"])
 app.include_router(weather.router, prefix="/api", tags=["weather"])
 app.include_router(telemetry.router, prefix="/api", tags=["telemetry"])
+app.include_router(harvest.router, prefix="/api", tags=["harvest"])
+app.include_router(calibration.router, prefix="/api", tags=["calibration"])
 
 @app.get("/health")
 def health_check():
@@ -45,7 +47,29 @@ def ingest_reading(reading: schemas.SensorReadingCreate, db: Session = Depends(g
     if sensor.pond_id != reading.pond_id:
         raise HTTPException(status_code=400, detail="Sensor does not belong to specified pond")
 
-    db_reading = models.SensorReading(**reading.model_dump())
+    data = reading.model_dump()
+    raw_val = data.get("raw_value") if data.get("raw_value") is not None else data.get("value")
+    data["raw_value"] = raw_val
+
+    active_calib = db.query(models.SensorCalibrationRecord).filter(
+        models.SensorCalibrationRecord.sensor_id == sensor.id,
+        models.SensorCalibrationRecord.status == models.CalibrationStatus.ACTIVE
+    ).order_by(desc(models.SensorCalibrationRecord.calibrated_at)).first()
+
+    if active_calib:
+        gain = active_calib.gain_applied if active_calib.gain_applied is not None else 1.0
+        offset = active_calib.offset_applied if active_calib.offset_applied is not None else 0.0
+        calibrated_val = (raw_val * gain) + offset
+        data["calibrated_value"] = calibrated_val
+        data["calibration_offset"] = offset
+        data["calibration_gain"] = gain
+        data["value"] = calibrated_val
+    else:
+        data["calibrated_value"] = raw_val
+        data["calibration_offset"] = 0.0
+        data["calibration_gain"] = 1.0
+
+    db_reading = models.SensorReading(**data)
     db.add(db_reading)
     db.commit()
     db.refresh(db_reading)
@@ -63,9 +87,12 @@ def get_telemetry(
     sensor_type: Optional[models.SensorType] = None,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
-    limit: int = 1000,
+    limit: int = Query(200, ge=1, le=2000),
+    page: int = Query(1, ge=1),
+    downsample: bool = Query(False),
     db: Session = Depends(get_db)
 ):
+    offset = (page - 1) * limit
     if sensor_type:
         query = db.query(models.SensorReading).join(models.Sensor, models.SensorReading.sensor_id == models.Sensor.id)\
                   .filter(models.Sensor.type == sensor_type)
@@ -78,7 +105,7 @@ def get_telemetry(
             query = query.filter(models.SensorReading.timestamp >= start_time)
         if end_time:
             query = query.filter(models.SensorReading.timestamp <= end_time)
-        return query.order_by(desc(models.SensorReading.timestamp)).limit(limit).all()
+        readings = query.order_by(desc(models.SensorReading.timestamp)).offset(offset).limit(limit).all()
     else:
         # Fetch sensors in target scope
         sensor_q = db.query(models.Sensor)
@@ -89,26 +116,25 @@ def get_telemetry(
                                .filter(models.Pond.farm_id == farm_id)
         sensors = sensor_q.all()
         
-        if not sensors:
+        sensor_ids = [s.id for s in sensors]
+        if not sensor_ids:
             return []
-
-        per_sensor_limit = max(50, limit // max(1, len(sensors)))
-        readings = []
-        for s in sensors:
-            sq = db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id)
-            if start_time:
-                sq = sq.filter(models.SensorReading.timestamp >= start_time)
-            if end_time:
-                sq = sq.filter(models.SensorReading.timestamp <= end_time)
             
-            res = sq.order_by(desc(models.SensorReading.timestamp)).limit(per_sensor_limit).all()
-            if not res:
-                res = db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id)\
-                        .order_by(desc(models.SensorReading.timestamp)).limit(per_sensor_limit).all()
-            readings.extend(res)
+        sq = db.query(models.SensorReading).filter(models.SensorReading.sensor_id.in_(sensor_ids))
+        if start_time:
+            sq = sq.filter(models.SensorReading.timestamp >= start_time)
+        if end_time:
+            sq = sq.filter(models.SensorReading.timestamp <= end_time)
+        readings = sq.order_by(desc(models.SensorReading.timestamp)).offset(offset).limit(limit).all()
+        if not readings:
+            readings = db.query(models.SensorReading).filter(models.SensorReading.sensor_id.in_(sensor_ids))\
+                         .order_by(desc(models.SensorReading.timestamp)).offset(offset).limit(limit).all()
 
-        readings.sort(key=lambda x: x.timestamp if x.timestamp else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
-        return readings[:limit]
+    if downsample and len(readings) > 200:
+        step = max(1, len(readings) // 200)
+        readings = readings[::step][:200]
+
+    return readings
 
 
 @app.get("/api/sensors", response_model=List[schemas.SensorResponse])
@@ -143,11 +169,11 @@ async def inject_scenario(req: ScenarioRequest):
         raise HTTPException(status_code=500, detail=f"Simulator control failed: {str(e)}")
 @app.get("/api/farms", response_model=List[schemas.FarmResponse])
 def get_farms(db: Session = Depends(get_db)):
-    return db.query(models.Farm).all()
+    return db.query(models.Farm).options(joinedload(models.Farm.ponds).joinedload(models.Pond.sensors)).all()
 
 @app.get("/api/ponds", response_model=List[schemas.PondResponse])
 def get_ponds(farm_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db)):
-    query = db.query(models.Pond)
+    query = db.query(models.Pond).options(joinedload(models.Pond.sensors))
     if farm_id:
         query = query.filter(models.Pond.farm_id == farm_id)
     return query.all()
@@ -187,34 +213,43 @@ from .database import SessionLocal
 
 async def model_loop():
     while True:
-        await asyncio.sleep(5)
+        await asyncio.sleep(30)
         try:
-            db = SessionLocal()
-            ponds = get_ponds(db=db)
-            if ponds:
-                end_time = datetime.now(timezone.utc)
-                start_time = end_time - timedelta(hours=1)
-                for p in ponds:
-                    execute_model_run(db, p.id, start_time, end_time)
+            def sync_job():
+                db = SessionLocal()
+                try:
+                    ponds = get_ponds(db=db)
+                    if ponds:
+                        end_time = datetime.now(timezone.utc)
+                        start_time = end_time - timedelta(hours=1)
+                        for p in ponds:
+                            execute_model_run(db, p.id, start_time, end_time)
+                            
+                            # Phase 3.2: Check Environmental Anomalies
+                            from .anomaly.env_detectors.engine import check_environmental_anomalies
+                            check_environmental_anomalies(db, p.id, end_time)
+                            
+                            # Phase 3.3: Check Biological Anomalies
+                            from .anomaly.bio_detectors.engine import check_biological_anomalies
+                            check_biological_anomalies(db, p.id, end_time)
                     
-                    # Phase 3.2: Check Environmental Anomalies
-                    from .anomaly.env_detectors.engine import check_environmental_anomalies
-                    check_environmental_anomalies(db, p.id, end_time)
-                    
-                    # Phase 3.3: Check Biological Anomalies
-                    from .anomaly.bio_detectors.engine import check_biological_anomalies
-                    check_biological_anomalies(db, p.id, end_time)
-            
-            # Phase 3.1: Check for sensor dropouts
-            from .anomaly.service import check_for_dropouts
-            check_for_dropouts(db)
-            
-            db.close()
+                    # Phase 3.1: Check for sensor dropouts
+                    from .anomaly.service import check_for_dropouts
+                    check_for_dropouts(db)
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(sync_job)
         except Exception as e:
             print("Model loop error:", e)
 
 @app.on_event("startup")
 async def startup_event():
+    try:
+        from ..seed import seed_database
+        await asyncio.to_thread(seed_database)
+    except Exception as e:
+        print("Auto-seed on startup note:", e)
     asyncio.create_task(model_loop())
 
 from sqlalchemy.orm import joinedload

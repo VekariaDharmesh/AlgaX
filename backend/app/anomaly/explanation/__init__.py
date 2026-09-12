@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Session
 from app import models
 from .collector import collect_evidence
@@ -33,7 +34,7 @@ def generate_and_persist_explanation(db: Session, biological_anomaly: models.Ano
         evidence_strength=explanation_result["evidence_strength"],
         analysis_start=raw_data["analysis_start"],
         analysis_end=raw_data["analysis_end"],
-        model_run_id=model_outputs.get("model_run_id"),
+        model_run_id=uuid.UUID(model_outputs["model_run_id"]) if model_outputs.get("model_run_id") and isinstance(model_outputs.get("model_run_id"), str) else model_outputs.get("model_run_id"),
         model_version=model_outputs.get("model_version", "unknown"),
         explanation_version=EXPLANATION_VERSION,
         data_quality_notes=explanation_result["data_quality_notes"],

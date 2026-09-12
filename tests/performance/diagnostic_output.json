@@ -1,0 +1,250 @@
+{
+  "timestamp": "2026-09-12T14:45:38.172801+00:00",
+  "startup_metrics": {
+    "main_import_ms": 0.0007080016075633466,
+    "services_import_ms": 2.2760829961043783,
+    "total_startup_test_ms": 2.2767909977119416
+  },
+  "api_results": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 4.66,
+      "response_size_bytes": 15,
+      "category": "FAST",
+      "db_queries_count": 0,
+      "db_time_ms": 0,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/farms",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 3.81,
+      "response_size_bytes": 1566,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.07,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/ponds?farm_id=e070246c-4d05-46f7-bb9a-98cadfb45c40",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.96,
+      "response_size_bytes": 1393,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.05,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/sensors?farm_id=e070246c-4d05-46f7-bb9a-98cadfb45c40",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.46,
+      "response_size_bytes": 1159,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.03,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/telemetry?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9&limit=100",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 6.34,
+      "response_size_bytes": 33501,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 3.44,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/telemetry/stats?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9&hours=24",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 16.65,
+      "response_size_bytes": 2729,
+      "category": "FAST",
+      "db_queries_count": 12,
+      "db_time_ms": 4.95,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/anomalies?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 3.8,
+      "response_size_bytes": 63,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 0.11,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/model/biomass?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9&limit=100",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 2.21,
+      "response_size_bytes": 2,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.68,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/model/carbon?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9&limit=100",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.69,
+      "response_size_bytes": 2,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.17,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/harvests?farm_id=e070246c-4d05-46f7-bb9a-98cadfb45c40",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 4.9,
+      "response_size_bytes": 63,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 0.31,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/harvests/overview?farm_id=e070246c-4d05-46f7-bb9a-98cadfb45c40",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.77,
+      "response_size_bytes": 279,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.04,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/ponds/345079fb-1d41-4932-9794-076c8ad3d4b9/readiness",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.35,
+      "response_size_bytes": 267,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 0.04,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/calibrations?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 4.13,
+      "response_size_bytes": 63,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 0.26,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/calibrations/overview?farm_id=e070246c-4d05-46f7-bb9a-98cadfb45c40",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 2.38,
+      "response_size_bytes": 155,
+      "category": "FAST",
+      "db_queries_count": 2,
+      "db_time_ms": 0.07,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/calibrations/sensors?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9",
+      "method": "GET",
+      "status": 422,
+      "response_time_ms": 0.89,
+      "response_size_bytes": 348,
+      "category": "FAST",
+      "db_queries_count": 0,
+      "db_time_ms": 0,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/evidence-packages?pond_id=345079fb-1d41-4932-9794-076c8ad3d4b9",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 2.16,
+      "response_size_bytes": 2,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.04,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/imagery",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 1.99,
+      "response_size_bytes": 2,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.18,
+      "external_calls": 0
+    },
+    {
+      "endpoint": "/api/weather/current?location=PacificNW",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 840.54,
+      "response_size_bytes": 3362,
+      "category": "SLOW",
+      "db_queries_count": 0,
+      "db_time_ms": 0,
+      "external_calls": 1
+    },
+    {
+      "endpoint": "/api/explanations",
+      "method": "GET",
+      "status": 200,
+      "response_time_ms": 7.98,
+      "response_size_bytes": 2,
+      "category": "FAST",
+      "db_queries_count": 1,
+      "db_time_ms": 0.14,
+      "external_calls": 0
+    }
+  ],
+  "telemetry_range_results": [
+    {
+      "range": "1h",
+      "rows": 0,
+      "query_time_ms": 0,
+      "api_time_ms": 1.62,
+      "response_size_bytes": 429
+    },
+    {
+      "range": "24h",
+      "rows": 0,
+      "query_time_ms": 0,
+      "api_time_ms": 1.88,
+      "response_size_bytes": 429
+    },
+    {
+      "range": "7d",
+      "rows": 0,
+      "query_time_ms": 0,
+      "api_time_ms": 1.39,
+      "response_size_bytes": 429
+    },
+    {
+      "range": "30d",
+      "rows": 0,
+      "query_time_ms": 0,
+      "api_time_ms": 2.11,
+      "response_size_bytes": 429
+    }
+  ],
+  "db_conn_time_ms": 0.52
+}

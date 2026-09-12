@@ -7,7 +7,7 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
-import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
+import { fetchPonds, fetchTelemetry, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
 import RealTimeWeatherWidget from '@/components/weather/RealTimeWeatherWidget';
 import { formatCo2, formatBiomass } from '@/lib/formatters';
 
@@ -60,56 +60,34 @@ export default function DashboardOverview() {
     
     async function loadData() {
       try {
-        const ponds = await fetchPonds();
-        if (ponds.length > 0) {
+        const ponds = await fetchPonds().catch(() => []);
+        if (ponds && ponds.length > 0) {
           const pondId = ponds[0].id;
           
           if (mounted) {
             setActivePondId(pondId);
           }
           
-          const telemetry = await fetchTelemetry(pondId, undefined, 'temperature', 24);
-          const temps = telemetry.slice().reverse();
+          const [telemetry, bioData, carData, anomaliesData] = await Promise.all([
+            fetchTelemetry(pondId, undefined, 'temperature', 24).catch(() => []),
+            fetchBiomassEstimates(pondId).catch(() => []),
+            fetchCarbonEstimates(pondId).catch(() => []),
+            fetchAnomalies(1, 20).catch(() => ({ items: [] }))
+          ]);
 
+          if (!mounted) return;
+
+          const temps = telemetry.slice().reverse();
+          if (bioData && bioData.length > 0) setBiomassAvg(bioData[0].biomass_g_per_l);
+          if (carData && carData.length > 0) setGrossCo2(carData[0].gross_co2_kg);
           
-          // Fetch Phase 2 Model Estimates
-          try {
-            const bioData = await fetchBiomassEstimates(pondId);
-            const carData = await fetchCarbonEstimates(pondId);
-            
-            if (mounted) {
-              if (bioData && bioData.length > 0) setBiomassAvg(bioData[0].biomass_g_per_l);
-              if (carData && carData.length > 0) setGrossCo2(carData[0].gross_co2_kg);
-            }
-            
-            const anomaliesData = await fetchAnomalies();
-            if (mounted) {
-              const anomaliesList = anomaliesData.items || [];
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const anomaliesWithExp = await Promise.all(anomaliesList.map(async (a: any) => {
-                 if (a.source_provenance === 'biological_engine') {
-                   try {
-                     const exp = await fetchAnomalyExplanation(a.id);
-                     return { ...a, explanation_record: exp };
-                   } catch (err) {
-                     return a;
-                   }
-                 }
-                 return a;
-              }));
-              setAnomalies(anomaliesWithExp);
-            }
-          } catch (e) {
-            console.error("Failed to load estimates or anomalies", e);
-          }
-          
-          if (mounted) {
-            setTelemetryData(temps.map((t: {timestamp: string, value: number}) => ({
-              time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              value: Number(t.value.toFixed(1))
-            })));
-            setIsLive(true);
-          }
+          setAnomalies(anomaliesData.items || []);
+
+          setTelemetryData(temps.map((t: {timestamp: string, value: number}) => ({
+            time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            value: Number(t.value.toFixed(1))
+          })));
+          setIsLive(true);
         }
       } catch (err) {
         console.error("Failed to load live telemetry", err);
@@ -117,7 +95,7 @@ export default function DashboardOverview() {
     }
     
     loadData();
-    const interval = setInterval(loadData, 5000);
+    const interval = setInterval(loadData, 15000);
     return () => {
       mounted = false;
       clearInterval(interval);

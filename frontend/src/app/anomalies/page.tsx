@@ -29,7 +29,7 @@ export default function AnomaliesPage() {
     let active = true;
     const fetchIt = () => { if(active) loadData(); };
     fetchIt();
-    const interval = setInterval(fetchIt, 5000);
+    const interval = setInterval(fetchIt, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [activeFilter]);
 

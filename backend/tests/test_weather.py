@@ -35,3 +35,27 @@ def test_search_locations_endpoint():
     assert isinstance(data, list)
     assert len(data) > 0
     assert "Gandhinagar" in data[0]["name"]
+
+def test_weather_cache_performance():
+    # First call (cache fill)
+    res1 = client.get("/api/weather/current?location=PacificNW")
+    assert res1.status_code == 200
+    
+    # Second call (must be fast cache hit)
+    import time
+    t0 = time.perf_counter()
+    res2 = client.get("/api/weather/current?location=PacificNW")
+    t1 = time.perf_counter()
+    duration_ms = (t1 - t0) * 1000.0
+    
+    assert res2.status_code == 200
+    assert duration_ms < 20.0, f"Cached weather call took {duration_ms}ms, expected < 20ms"
+    assert res1.json()["location_name"] == res2.json()["location_name"]
+
+def test_weather_cache_location_isolation():
+    res_loc1 = client.get("/api/weather/current?location=Gandhinagar")
+    res_loc2 = client.get("/api/weather/current?location=San%20Francisco")
+    
+    assert res_loc1.status_code == 200
+    assert res_loc2.status_code == 200
+    assert res_loc1.json()["location_name"] != res_loc2.json()["location_name"]

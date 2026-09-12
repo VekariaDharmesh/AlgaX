@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Upload, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
+import { fetchFarms, fetchPonds, fetchImagery, API_BASE_URL as API_BASE } from "@/lib/api";
 
 interface Farm { id: string; name: string; }
 interface Pond { id: string; name: string; }
@@ -14,6 +15,10 @@ interface ImageryRecord {
   file_size_bytes: number;
   processing_status: string;
   sha256_hash: string;
+  processing_version: string;
+  processed_storage_reference: string;
+  original_sha256_hash: string;
+  processed_sha256_hash: string;
 }
 
 interface ImageryProcessingResponse {
@@ -38,53 +43,60 @@ interface ImageryProcessingResponse {
   };
 }
 
-interface ImageryAnalysisResponse {
-  id: string;
-  analysis_status: string;
-  green_dominance: number;
-  green_pixel_fraction: number;
-  spatial_mean: number;
-  spatial_std: number;
-  absolute_change: number | null;
-  relative_change: number | null;
-  change_classification: string | null;
-  grid_data: { row: number; col: number; green_fraction: number }[];
+interface VisualAnalysisResponse {
+  id?: string;
+  imagery_id?: string;
+  analysis_status?: string;
+  green_dominance?: number;
+  green_pixel_fraction?: number;
+  spatial_mean?: number;
+  spatial_std?: number;
+  absolute_change?: number | null;
+  relative_change?: number | null;
+  change_classification?: string | null;
+  canopy_cover_percentage?: number;
+  optical_density_estimate?: number;
+  anomaly_flags?: string[];
+  grid_data?: { row: number; col: number; green_fraction: number }[];
 }
 
-export default function ImageryPage() {
-  const [imagery, setImagery] = useState<ImageryRecord[]>([]);
+export default function ImageryWorkspace() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [isFarmsLoading, setIsFarmsLoading] = useState(true);
-  const [isPondsLoading, setIsPondsLoading] = useState(false);
-  const [isImageryLoading, setIsImageryLoading] = useState(true);
-  const [loading, setLoading] = useState(true); // Keeping for legacy if needed, but we'll phase it out
-  const [uploading, setUploading] = useState(false);
+  const [selectedFarm, setSelectedFarm] = useState<string>("");
+  const [selectedPond, setSelectedPond] = useState<string>("");
+
+  const [imageryRecords, setImageryRecords] = useState<ImageryRecord[]>([]);
+  const [imagery, setImagery] = useState<ImageryRecord[]>([]);
+  const [selectedImage, setSelectedImage] = useState<ImageryRecord | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
+
+  const [isFarmsLoading, setIsFarmsLoading] = useState(false);
+  const [isPondsLoading, setIsPondsLoading] = useState(false);
+  const [isImageryLoading, setIsImageryLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [processingData, setProcessingData] = useState<ImageryProcessingResponse | null>(null);
+  const [analysisData, setAnalysisData] = useState<VisualAnalysisResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [analysisData, setAnalysisData] = useState<ImageryAnalysisResponse | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
+
   // Upload form state
-  const [selectedFarm, setSelectedFarm] = useState("");
-  const [selectedPond, setSelectedPond] = useState("");
   const [selectedSource, setSelectedSource] = useState("SIMULATED");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_BASE = "http://localhost:8000/api";
+
 
   const loadFarms = async () => {
     try {
       setIsFarmsLoading(true);
-      const res = await fetch(`${API_BASE}/farms`);
-      if (res.ok) {
-        const data = await res.json();
-        setFarms(data);
-      }
+      const data = await fetchFarms();
+      setFarms(data || []);
     } catch (e) {
       console.error("Failed to load farms", e);
+      setFarms([]);
     } finally {
       setIsFarmsLoading(false);
     }
@@ -93,14 +105,11 @@ export default function ImageryPage() {
   const loadImagery = async (farmId?: string) => {
     try {
       setIsImageryLoading(true);
-      const url = farmId ? `${API_BASE}/imagery?farm_id=${farmId}` : `${API_BASE}/imagery`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setImagery(data);
-      }
+      const data = await fetchImagery(farmId);
+      setImagery(data || []);
     } catch (e) {
       console.error("Failed to load imagery", e);
+      setImagery([]);
     } finally {
       setIsImageryLoading(false);
       setLoading(false);
@@ -187,13 +196,11 @@ export default function ImageryPage() {
     
     try {
       setIsPondsLoading(true);
-      const res = await fetch(`${API_BASE}/ponds?farm_id=${farmId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPonds(data);
-      }
+      const data = await fetchPonds(farmId);
+      setPonds(data || []);
     } catch (e) {
       console.error("Failed to load ponds", e);
+      setPonds([]);
     } finally {
       setIsPondsLoading(false);
     }
@@ -515,7 +522,7 @@ export default function ImageryPage() {
                   <div>
                     <span className="font-semibold block">Visual Green Coverage</span>
                     <span className="text-xl font-bold">
-                      {analysisData.green_pixel_fraction !== null ? (analysisData.green_pixel_fraction * 100).toFixed(1) : "N/A"}%
+                      {(analysisData.green_pixel_fraction !== undefined && analysisData.green_pixel_fraction !== null) ? (analysisData.green_pixel_fraction * 100).toFixed(1) : "N/A"}%
                     </span>
                     <span className="text-xs block text-purple-700/70">
                       Mean Dominance: {analysisData.green_dominance?.toFixed(3) || "N/A"}
@@ -540,7 +547,7 @@ export default function ImageryPage() {
                           {analysisData.change_classification}
                         </span>
                         <span className="text-xs">
-                          {analysisData.absolute_change !== null ? (analysisData.absolute_change > 0 ? "+" : "") + (analysisData.absolute_change * 100).toFixed(1) + " pp" : ""}
+                          {(analysisData.absolute_change !== undefined && analysisData.absolute_change !== null) ? (analysisData.absolute_change > 0 ? "+" : "") + (analysisData.absolute_change * 100).toFixed(1) + " pp" : ""}
                         </span>
                       </div>
                     ) : (

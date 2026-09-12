@@ -99,6 +99,48 @@ def generate_evidence_package(
         "imagery_trend": cv.imagery_trend.value if cv.imagery_trend else None
     } for cv in cv_runs]
     
+    # Gather Harvests
+    harvests = db.query(models.HarvestEvent).filter(
+        models.HarvestEvent.pond_id == pond_id,
+        models.HarvestEvent.created_at >= start_date,
+        models.HarvestEvent.created_at <= end_date
+    ).all()
+    
+    harvest_ev = [{
+        "id": str(h.id),
+        "status": h.status.value,
+        "harvest_method": h.harvest_method.value,
+        "operator": h.operator,
+        "estimated_harvest_kg": h.estimated_harvest_kg,
+        "actual_harvest_kg": h.actual_harvest_kg,
+        "fates": [{
+            "id": str(f.id),
+            "end_use_category": f.end_use_category.value,
+            "quantity_allocated_kg": f.quantity_allocated_kg,
+            "allocation_pct": f.allocation_pct
+        } for f in (h.biomass_fates or [])]
+    } for h in harvests]
+
+    # Gather Calibrations
+    calibrations = db.query(models.SensorCalibrationRecord).join(
+        models.Sensor, models.SensorCalibrationRecord.sensor_id == models.Sensor.id
+    ).filter(
+        models.Sensor.pond_id == pond_id,
+        models.SensorCalibrationRecord.calibrated_at >= start_date,
+        models.SensorCalibrationRecord.calibrated_at <= end_date
+    ).all()
+
+    calib_ev = [{
+        "id": str(c.id),
+        "sensor_id": str(c.sensor_id),
+        "calibration_method": c.calibration_method.value if hasattr(c.calibration_method, "value") else str(c.calibration_method),
+        "performed_by": c.performed_by,
+        "offset_applied": c.offset_applied,
+        "gain_applied": c.gain_applied,
+        "status": c.status.value if hasattr(c.status, "value") else str(c.status),
+        "calibrated_at": c.calibrated_at.isoformat() if c.calibrated_at else None
+    } for c in calibrations]
+
     # Classify completeness
     missing_sections = []
     if not sensor_ev: missing_sections.append("Sensor Evidence")
@@ -134,6 +176,8 @@ def generate_evidence_package(
         anomaly_evidence_json=anomaly_ev,
         imagery_evidence_json=imagery_ev,
         cross_validation_evidence_json=cv_ev,
+        harvest_evidence_json=harvest_ev,
+        calibration_evidence_json=calib_ev,
         limitations_json=limitations,
         contains_simulated_data=has_sim
     )

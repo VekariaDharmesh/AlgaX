@@ -88,9 +88,9 @@ export default function TelemetryPage() {
     setError(null);
     try {
       const [statsData, readingsData, sensorsData] = await Promise.all([
-        fetchTelemetryStats(selectedPondId || undefined, selectedFarmId || undefined, selectedHours),
-        fetchTelemetry(selectedPondId || undefined, selectedFarmId || undefined, undefined, 500),
-        fetchSensors(selectedPondId || undefined, selectedFarmId || undefined),
+        fetchTelemetryStats(selectedPondId || undefined, selectedFarmId || undefined, selectedHours).catch(() => null),
+        fetchTelemetry(selectedPondId || undefined, selectedFarmId || undefined, undefined, 200).catch(() => []),
+        fetchSensors(selectedPondId || undefined, selectedFarmId || undefined).catch(() => []),
       ]);
 
       setStats(statsData);
@@ -175,13 +175,31 @@ export default function TelemetryPage() {
               No active IoT readings found for {selectedPondObj ? selectedPondObj.name : 'selected pond'}. Enable the background simulator to generate live telemetry data.
             </p>
           </div>
-          <Link
-            href="/simulation"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
-          >
-            <Play className="w-4 h-4 fill-white" />
-            <span>Start Telemetry Simulator</span>
-          </Link>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  await fetch('http://localhost:8000/api/telemetry/seed-demo', { method: 'POST' }).catch(() => null);
+                  await loadTelemetryData();
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              <span>Generate Telemetry Stream</span>
+            </button>
+            <Link
+              href="/simulation"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+            >
+              <span>Simulator Control</span>
+            </Link>
+          </div>
         </div>
       ) : (
         /* Main Telemetry Dashboard Content */
