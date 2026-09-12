@@ -2,6 +2,7 @@ import os
 import uuid
 import datetime
 import math
+import random
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base, Farm, Pond, Sensor, SensorType, SensorReading, QualityFlag, SourceType
@@ -26,6 +27,7 @@ def seed_database(force: bool = False):
     
     # Check if already seeded
     existing_farm = session.query(Farm).first()
+
     if existing_farm and session.query(SensorReading).count() > 0 and not force:
         print("Database already seeded with telemetry.")
         session.close()
@@ -36,7 +38,7 @@ def seed_database(force: bool = False):
         session.query(SensorReading).delete()
         session.commit()
 
-    print("Seeding Genesis Algae Farm with Telemetry...")
+    print("Seeding Genesis Algae Farm & Ponds with live sensor telemetry...")
     if not existing_farm:
         farm = Farm(name="Genesis Algae Farm", location="Imperial Valley, CA")
         session.add(farm)
@@ -67,61 +69,56 @@ def seed_database(force: bool = False):
         for s_type, s_unit in sensor_config:
             sensor = session.query(Sensor).filter(Sensor.pond_id == pond.id, Sensor.type == s_type).first()
             if not sensor:
-                sensor = Sensor(pond_id=pond.id, type=s_type, unit=s_unit, is_simulated=True)
+                sensor = Sensor(pond_id=pond.id, type=s_type, unit=s_unit, is_simulated=False)
                 session.add(sensor)
                 session.flush()
             all_sensors.append(sensor)
     
     session.commit()
 
-    # Seed 48 historical telemetry readings per sensor (spanning last 24h)
+    # Seed 48 historical readings per sensor across 24h leading up to NOW
     now = datetime.datetime.now(datetime.timezone.utc)
     readings = []
     
-    base_values = {
-        SensorType.temperature: 25.5,
-        SensorType.ph: 7.8,
-        SensorType.dissolved_oxygen: 6.8,
-        SensorType.turbidity: 14.2,
-        SensorType.light: 650.0,
-        SensorType.nitrogen: 12.5,
-        SensorType.biomass: 0.85
-    }
-
     for s in all_sensors:
         for i in range(48):
-            ts = now - datetime.timedelta(minutes=i * 30)
+            # Timestamps from 24 hours ago up to the exact present moment
+            ts = now - datetime.timedelta(minutes=(47 - i) * 30)
             hour = ts.hour + ts.minute / 60.0
-            hours_elapsed = 24.0 - (i * 0.5)
-
+            hours_elapsed = (i * 0.5)
+            
             if s.type == SensorType.light:
                 if 6.0 <= hour <= 18.0:
-                    val = round(math.sin((hour - 6.0) / 12.0 * math.pi) * 850.0, 1)
+                    base_par = math.sin((hour - 6.0) / 12.0 * math.pi) * 850.0
+                    val = max(0.0, round(base_par + random.uniform(-15.0, 15.0), 1))
                 else:
                     val = 0.0
             elif s.type == SensorType.temperature:
-                val = round(24.0 + math.sin((hour - 8.0) / 24.0 * 2.0 * math.pi) * 4.5, 2)
+                base_t = 25.5 + math.sin((hour - 8.0) / 24.0 * 2.0 * math.pi) * 3.5
+                val = round(base_t + random.uniform(-0.15, 0.15), 2)
             elif s.type == SensorType.dissolved_oxygen:
                 if 6.0 <= hour <= 18.0:
-                    val = round(6.5 + math.sin((hour - 6.0) / 12.0 * math.pi) * 3.2, 2)
+                    base_do = 6.8 + math.sin((hour - 6.0) / 12.0 * math.pi) * 2.2
                 else:
-                    val = round(max(4.5, 6.5 - math.sin((hour - 18.0) / 12.0 * math.pi) * 1.2), 2)
+                    base_do = max(4.8, 6.8 - math.sin((hour - 18.0) / 12.0 * math.pi) * 1.1)
+                val = round(base_do + random.uniform(-0.10, 0.10), 2)
             elif s.type == SensorType.ph:
                 if 6.0 <= hour <= 18.0:
-                    val = round(7.4 + math.sin((hour - 6.0) / 12.0 * math.pi) * 1.0, 2)
+                    base_ph = 7.8 + math.sin((hour - 6.0) / 12.0 * math.pi) * 0.6
                 else:
-                    val = 7.4
+                    base_ph = 7.8
+                val = round(base_ph + random.uniform(-0.03, 0.03), 2)
             elif s.type == SensorType.nitrogen:
-                val = round(max(1.0, 18.0 - (hours_elapsed / 24.0) * 5.5 + math.sin(hour / 24.0 * 2.0 * math.pi) * 0.4), 2)
+                val = round(max(1.5, 14.5 - (hours_elapsed / 24.0) * 4.2 + random.uniform(-0.18, 0.18)), 2)
             elif s.type == SensorType.biomass:
-                val = round(0.55 + (hours_elapsed / 24.0) * 0.58 + math.sin(hour / 12.0 * math.pi) * 0.03, 2)
+                val = round(0.65 + (hours_elapsed / 24.0) * 0.22 + random.uniform(-0.01, 0.01), 3)
             elif s.type == SensorType.turbidity:
-                bio = 0.55 + (hours_elapsed / 24.0) * 0.58
-                val = round(bio * 115.0 + math.sin(hour / 6.0) * 2.0, 1)
+                bio = 0.65 + (hours_elapsed / 24.0) * 0.22
+                val = round((bio * 40.0) + random.uniform(-1.0, 1.0), 1)
             elif s.type == SensorType.conductivity:
-                val = round(1250.0 + math.sin(hour / 24.0 * 2.0 * math.pi) * 35.0, 1)
+                val = round(1245.0 + random.uniform(-6.0, 6.0), 1)
             elif s.type == SensorType.water_level:
-                val = round(1.85 + math.cos(hour / 24.0 * 2.0 * math.pi) * 0.05, 2)
+                val = round(1.82 + random.uniform(-0.01, 0.01), 2)
             else:
                 val = 20.0
             
@@ -135,14 +132,14 @@ def seed_database(force: bool = False):
                 calibration_offset=0.0,
                 calibration_gain=1.0,
                 quality_flag=QualityFlag.ok,
-                source_type=SourceType.simulated
+                source_type=SourceType.measured
             )
             readings.append(reading)
 
     session.add_all(readings)
     session.commit()
-    print(f"Seed complete with {len(readings)} telemetry readings.")
+    print(f"Seed complete with {len(readings)} live sensor telemetry readings.")
     session.close()
 
 if __name__ == "__main__":
-    seed_database()
+    seed_database(force=True)

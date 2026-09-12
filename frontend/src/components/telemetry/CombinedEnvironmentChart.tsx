@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  CartesianGrid, 
+  Legend 
+} from 'recharts';
 import { SensorReading } from '@/lib/api';
-import { Layers, Sliders } from 'lucide-react';
+import { Layers, Radio, SlidersHorizontal } from 'lucide-react';
 
 interface CombinedEnvironmentChartProps {
   readings: SensorReading[];
@@ -11,9 +20,9 @@ interface CombinedEnvironmentChartProps {
 }
 
 export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvironmentChartProps) {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['temperature', 'ph', 'light', 'nitrogen']);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['temperature', 'ph', 'nitrogen', 'light']);
 
-  // Aggregate readings by timestamp slot (rounded to 5 min intervals)
+  // Aggregate readings by timestamp slot (rounded to 10 min intervals)
   const timeSlotMap: Record<string, { timeLabel: string; timestamp: string; [key: string]: any }> = {};
 
   readings.forEach((r) => {
@@ -21,9 +30,8 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
     if (!sInfo) return;
 
     const dateObj = new Date(r.timestamp);
-    // Round to 5 minutes
     dateObj.setSeconds(0, 0);
-    dateObj.setMinutes(Math.floor(dateObj.getMinutes() / 5) * 5);
+    dateObj.setMinutes(Math.floor(dateObj.getMinutes() / 10) * 10);
     const timeKey = dateObj.toISOString();
     const timeLabel = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -39,12 +47,13 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  const METRIC_PALETTE: Record<string, { name: string; color: string; unit: string }> = {
-    temperature: { name: 'Temp (°C)', color: '#f43f5e', unit: '°C' },
-    ph: { name: 'pH Balance', color: '#6366f1', unit: 'pH' },
-    light: { name: 'Solar Irradiance', color: '#f59e0b', unit: 'µmol/m²/s' },
-    nitrogen: { name: 'Nitrogen', color: '#10b981', unit: 'mg/L' },
-    dissolved_oxygen: { name: 'DO', color: '#0284c7', unit: 'mg/L' },
+  const METRIC_PALETTE: Record<string, { name: string; color: string; unit: string; yAxisId: 'left' | 'right' }> = {
+    temperature: { name: 'Temp (°C)', color: '#f43f5e', unit: '°C', yAxisId: 'left' },
+    ph: { name: 'pH Index', color: '#6366f1', unit: 'pH', yAxisId: 'left' },
+    nitrogen: { name: 'Nitrogen (mg/L)', color: '#10b981', unit: 'mg/L', yAxisId: 'left' },
+    dissolved_oxygen: { name: 'DO (mg/L)', color: '#0284c7', unit: 'mg/L', yAxisId: 'left' },
+    light: { name: 'Solar PAR (µmol)', color: '#f59e0b', unit: 'µmol/m²/s', yAxisId: 'right' },
+    turbidity: { name: 'Turbidity (NTU)', color: '#14b8a6', unit: 'NTU', yAxisId: 'right' },
   };
 
   const toggleMetric = (key: string) => {
@@ -57,16 +66,27 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
     }
   };
 
+  const hasRightAxisMetrics = selectedMetrics.some(
+    (k) => METRIC_PALETTE[k]?.yAxisId === 'right'
+  );
+
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
+    <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              DUAL-AXIS BUS
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Synchronized Telemetry</span>
+          </div>
+          <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Layers className="w-4 h-4 text-emerald-600" />
-            Environmental Multi-Variable Comparison
+            Environmental Multi-Variable Live Alignment
           </h3>
           <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Cross-variable alignment of temperature, pH, solar irradiance, and nutrient depletion.
+            Cross-variable alignment with dual scaling: Biological/chemical variables on left axis, optical irradiance/turbidity on right axis.
           </p>
         </div>
 
@@ -80,9 +100,9 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
               <button
                 key={key}
                 onClick={() => toggleMetric(key)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
                   isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -95,21 +115,45 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
       </div>
 
       {chartData.length > 0 ? (
-        <div className="h-72 w-full pt-2">
+        <div className="h-80 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="timeLabel" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} domain={['auto', 'auto']} />
+            <LineChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="timeLabel" 
+                tick={{ fontSize: 10, fill: '#64748b' }} 
+                tickLine={false} 
+              />
+              
+              {/* Left Y Axis for Temperature, pH, Nitrogen, DO (0-35 range) */}
+              <YAxis 
+                yAxisId="left"
+                tick={{ fontSize: 10, fill: '#64748b' }} 
+                tickLine={false} 
+                domain={['auto', 'auto']} 
+              />
+
+              {/* Right Y Axis for Solar PAR & Turbidity (0-1000 range) */}
+              {hasRightAxisMetrics && (
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 10, fill: '#f59e0b' }} 
+                  tickLine={false} 
+                  domain={[0, 'auto']} 
+                />
+              )}
+
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#0f172a',
+                  backgroundColor: '#090d16',
                   color: '#fff',
-                  borderRadius: '0.75rem',
-                  border: 'none',
+                  borderRadius: '0.85rem',
+                  border: '1px solid #1e293b',
                   fontSize: '12px',
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)',
                 }}
+                labelFormatter={(label: any) => `Time: ${label}`}
               />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
 
@@ -120,12 +164,13 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
                 return (
                   <Line
                     key={key}
-                    type="monotone"
+                    yAxisId={cfg.yAxisId}
+                    type="linear"
                     dataKey={key}
                     name={cfg.name}
                     stroke={cfg.color}
                     strokeWidth={2}
-                    dot={false}
+                    dot={{ r: 1.5, fill: cfg.color }}
                     activeDot={{ r: 5 }}
                   />
                 );
@@ -134,8 +179,8 @@ export function CombinedEnvironmentChart({ readings, sensorsMap }: CombinedEnvir
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="h-64 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs font-semibold text-slate-400">
-          No combined environmental telemetry data available
+        <div className="h-72 flex items-center justify-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs font-semibold text-slate-400">
+          No combined environmental telemetry stream available
         </div>
       )}
     </div>
