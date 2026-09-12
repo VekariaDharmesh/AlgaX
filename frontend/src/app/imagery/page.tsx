@@ -16,6 +16,28 @@ interface ImageryRecord {
   sha256_hash: string;
 }
 
+interface ImageryProcessingResponse {
+  imagery_id: string;
+  processing_version: string;
+  processing_status: string;
+  processed_storage_reference: string;
+  original_sha256_hash: string;
+  processed_sha256_hash: string;
+  original_width_px: number;
+  original_height_px: number;
+  processed_width_px: number;
+  processed_height_px: number;
+  quality_classification: string;
+  quality_flags: string[];
+  quality_metrics: {
+    sharpness?: number;
+    brightness?: number;
+    contrast?: number;
+    underexposed_fraction?: number;
+    overexposed_fraction?: number;
+  };
+}
+
 export default function ImageryPage() {
   const [imagery, setImagery] = useState<ImageryRecord[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -23,6 +45,8 @@ export default function ImageryPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [processingData, setProcessingData] = useState<ImageryProcessingResponse | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Upload form state
   const [selectedFarm, setSelectedFarm] = useState("");
@@ -56,6 +80,36 @@ export default function ImageryPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (previewId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProcessingData(null);
+      fetch(`${API_BASE}/imagery/${previewId}/processing`)
+        .then(res => {
+          if (res.ok) return res.json();
+          return null;
+        })
+        .then(data => setProcessingData(data))
+        .catch(() => setProcessingData(null));
+    }
+  }, [previewId]);
+
+  const handleProcessImage = async () => {
+    if (!previewId) return;
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`${API_BASE}/imagery/${previewId}/process`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setProcessingData(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleFarmChange = async (farmId: string) => {
     setSelectedFarm(farmId);
@@ -291,9 +345,73 @@ export default function ImageryPage() {
                 <span className="font-semibold">ID: </span> {previewId}
               </div>
               <div>
-                <span className="font-semibold">SHA-256: </span> 
+                <span className="font-semibold">Original SHA-256: </span> 
                 <span className="font-mono text-xs">{imagery.find(i => i.id === previewId)?.sha256_hash}</span>
               </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-blue-900">Phase 4.2 Quality Assessment</h4>
+                <button 
+                  onClick={handleProcessImage}
+                  disabled={isProcessing}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50"
+                >
+                  {isProcessing ? "Processing..." : processingData ? "Reprocess Image" : "Run Preprocessing"}
+                </button>
+              </div>
+
+              {processingData ? (
+                <div className="grid grid-cols-2 gap-4 text-blue-900">
+                  <div>
+                    <span className="font-semibold block mb-1">Quality Classification</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      processingData.quality_classification === "GOOD" ? "bg-green-100 text-green-700" :
+                      processingData.quality_classification === "REVIEW" ? "bg-orange-100 text-orange-700" :
+                      "bg-red-100 text-red-700"
+                    }`}>
+                      {processingData.quality_classification}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold block mb-1">Quality Flags</span>
+                    {processingData.quality_flags?.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap">
+                        {processingData.quality_flags.map((flag: string) => (
+                          <span key={flag} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">
+                            {flag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 italic">No flags</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-semibold block">Metrics</span>
+                    <ul className="list-disc list-inside text-xs mt-1">
+                      <li>Sharpness: {processingData.quality_metrics?.sharpness?.toFixed(2) || "N/A"}</li>
+                      <li>Brightness: {processingData.quality_metrics?.brightness?.toFixed(2) || "N/A"}</li>
+                      <li>Contrast: {processingData.quality_metrics?.contrast?.toFixed(2) || "N/A"}</li>
+                      <li>Exposure (Over/Under): {(processingData.quality_metrics?.overexposed_fraction * 100)?.toFixed(1)}% / {(processingData.quality_metrics?.underexposed_fraction * 100)?.toFixed(1)}%</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="font-semibold block">Processing Info</span>
+                    <ul className="text-xs mt-1 space-y-1">
+                      <li><span className="font-medium">Version:</span> {processingData.processing_version}</li>
+                      <li><span className="font-medium">Status:</span> {processingData.processing_status}</li>
+                      <li><span className="font-medium">Processed Hash:</span> <span className="font-mono">{processingData.processed_sha256_hash?.substring(0, 16)}...</span></li>
+                      <li><span className="font-medium">Dimensions:</span> {processingData.processed_width_px}x{processingData.processed_height_px}</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-blue-600/70 py-4 italic">
+                  Image has not been processed yet. Click the button above to run Phase 4.2 preprocessing.
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@ from PIL import Image, UnidentifiedImageError
 
 from .. import models, schemas
 from ..database import get_db
+from ..processors import imagery_processor
 
 router = APIRouter()
 
@@ -156,3 +157,30 @@ def preview_imagery(record_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Image file missing from storage")
         
     return FileResponse(file_path, media_type=record.mime_type)
+
+@router.post("/imagery/{record_id}/process", response_model=schemas.ImageryProcessingResponse)
+def process_imagery_endpoint(record_id: uuid.UUID, db: Session = Depends(get_db)):
+    record = db.query(models.ImageryRecord).filter(models.ImageryRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Imagery record not found")
+        
+    processing = imagery_processor.process_imagery(db, record)
+    return processing
+
+@router.get("/imagery/{record_id}/processing", response_model=schemas.ImageryProcessingResponse)
+def get_imagery_processing(record_id: uuid.UUID, db: Session = Depends(get_db)):
+    record = db.query(models.ImageryRecord).filter(models.ImageryRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Imagery record not found")
+        
+    processing = db.query(models.ImageryProcessing).filter(models.ImageryProcessing.imagery_id == record_id).order_by(desc(models.ImageryProcessing.created_at)).first()
+    if not processing:
+        raise HTTPException(status_code=404, detail="Processing record not found")
+    return processing
+
+@router.get("/imagery/{record_id}/quality", response_model=schemas.QualityAssessmentResponse)
+def get_imagery_quality(record_id: uuid.UUID, db: Session = Depends(get_db)):
+    processing = db.query(models.ImageryProcessing).filter(models.ImageryProcessing.imagery_id == record_id).order_by(desc(models.ImageryProcessing.created_at)).first()
+    if not processing:
+        raise HTTPException(status_code=404, detail="Quality assessment not found (process the image first)")
+    return processing

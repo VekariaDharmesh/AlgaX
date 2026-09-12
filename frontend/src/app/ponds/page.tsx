@@ -18,8 +18,12 @@ export default function PondsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {DEMO_PONDS.map(pond => (
           <Link href={`/ponds/${pond.id}`} key={pond.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full">
-            <div className="h-32 bg-green-50 flex items-center justify-center border-b border-gray-100">
-              <Droplets className="w-12 h-12 text-green-200 group-hover:text-green-300 transition-colors" />
+            <div className="h-48 w-full relative border-b border-gray-100 overflow-hidden">
+              <img 
+                src={`/images/ponds/${pond.id}.jpg`} 
+                alt={`${pond.name} view`} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+              />
             </div>
             
             <div className="p-6 flex-1 flex flex-col">

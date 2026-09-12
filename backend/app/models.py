@@ -285,3 +285,52 @@ class ImageryRecord(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
 
+class QualityClassification(str, enum.Enum):
+    GOOD = "GOOD"
+    REVIEW = "REVIEW"
+    UNSUITABLE = "UNSUITABLE"
+
+class ImageQualityFlag(str, enum.Enum):
+    BLUR = "BLUR"
+    TOO_DARK = "TOO_DARK"
+    TOO_BRIGHT = "TOO_BRIGHT"
+    LOW_CONTRAST = "LOW_CONTRAST"
+    OVEREXPOSED = "OVEREXPOSED"
+    UNDEREXPOSED = "UNDEREXPOSED"
+    LOW_RESOLUTION = "LOW_RESOLUTION"
+    CORRUPTED = "CORRUPTED"
+    UNSUPPORTED_FORMAT = "UNSUPPORTED_FORMAT"
+    MISSING_PIXELS = "MISSING_PIXELS"
+
+class ImageryProcessing(Base):
+    __tablename__ = "imagery_processing"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    imagery_id = Column(UUID(as_uuid=True), ForeignKey("imagery_record.id"), nullable=False)
+    processing_version = Column(String, nullable=False)
+    processing_status = Column(String, nullable=False)
+    
+    processed_storage_reference = Column(String, nullable=True)
+    original_sha256_hash = Column(String, nullable=False)
+    processed_sha256_hash = Column(String, nullable=True)
+    
+    original_width_px = Column(Float, nullable=True)
+    original_height_px = Column(Float, nullable=True)
+    processed_width_px = Column(Float, nullable=True)
+    processed_height_px = Column(Float, nullable=True)
+    
+    color_space = Column(String, nullable=True)
+    orientation_corrected = Column(Boolean, nullable=False, default=False)
+    resize_applied = Column(Boolean, nullable=False, default=False)
+    
+    quality_classification = Column(Enum(QualityClassification), nullable=True)
+    quality_flags = Column(JSON, nullable=False, default=list)
+    quality_metrics = Column(JSON, nullable=True)
+    
+    preprocessing_metadata = Column(JSON, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    
+    imagery_record = relationship("ImageryRecord", backref=backref("processings", cascade="all, delete-orphan"))
+

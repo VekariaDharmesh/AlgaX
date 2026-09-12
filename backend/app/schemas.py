@@ -196,3 +196,39 @@ class ImageryRecordResponse(ImageryRecordBase):
     
     class Config:
         from_attributes = True
+
+class ImageryProcessingCreate(BaseModel):
+    processing_version: str
+    original_sha256_hash: str
+    original_width_px: Optional[float] = None
+    original_height_px: Optional[float] = None
+
+class ImageryProcessingResponse(BaseModel):
+    id: UUID
+    imagery_id: UUID
+    processing_version: str
+    processing_status: str
+    processed_storage_reference: Optional[str] = None
+    original_sha256_hash: str
+    processed_sha256_hash: Optional[str] = None
+    original_width_px: Optional[float] = None
+    original_height_px: Optional[float] = None
+    processed_width_px: Optional[float] = None
+    processed_height_px: Optional[float] = None
+    color_space: Optional[str] = None
+    orientation_corrected: bool
+    resize_applied: bool
+    quality_classification: Optional[str] = None
+    quality_flags: list = []
+    quality_metrics: Optional[dict] = None
+    preprocessing_metadata: Optional[dict] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class QualityAssessmentResponse(BaseModel):
+    quality_classification: Optional[str] = None
+    quality_flags: list = []
+    quality_metrics: Optional[dict] = None
