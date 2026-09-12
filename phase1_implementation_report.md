@@ -1,4 +1,4 @@
-# AlgaeMRV — Phase 1: Foundations + Sensor Simulation Implementation Report
+# AlgaX — Phase 1: Foundations + Sensor Simulation Implementation Report
 
 ## Phase Status
 **Phase 1 COMPLETE**

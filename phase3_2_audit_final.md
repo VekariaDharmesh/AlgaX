@@ -59,7 +59,7 @@ The dashboard automatically inherits the new `anomaly_type` values via standard 
 * **Phase 3.1**: `test_anomaly.py` and `test_anomaly_integration.py` successfully completed.
 
 ## Commands Executed
-* `source venv/bin/activate && export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/algaemrv_test" && export PYTHONPATH=$(pwd):$(pwd)/.. && pytest tests/`
+* `source venv/bin/activate && export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/algax_test" && export PYTHONPATH=$(pwd):$(pwd)/.. && pytest tests/`
   * **Result**: `22 passed, 14 warnings in 0.64s` (PASS)
 * `curl -s "http://localhost:8000/api/anomalies?limit=50&status=OPEN"`
   * **Result**: Properly returned live JSON array of `STALE_VALUE` and `OUT_OF_RANGE` alerts without overlapping combinations improperly (PASS)

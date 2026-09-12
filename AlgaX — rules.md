@@ -1,6 +1,6 @@
-# AlgaeMRV — Engineering & Product Rules
+# AlgaX — Engineering & Product Rules
 
-This document contains the general rules that every developer or coding agent must follow while working on AlgaeMRV.
+This document contains the general rules that every developer or coding agent must follow while working on AlgaX.
 
 These rules apply to every phase of development.
 
@@ -16,7 +16,7 @@ This file defines the quality, coding, UI, communication, and engineering standa
 
 # 1. General Principle
 
-Build AlgaeMRV as a real software product, not as a collection of AI-generated demonstrations.
+Build AlgaX as a real software product, not as a collection of AI-generated demonstrations.
 
 Every implementation should have a clear purpose within the product.
 
@@ -756,7 +756,7 @@ Mock data is acceptable only for explicitly defined foundation/prototype boundar
 
 # 29. Scientific Honesty
 
-AlgaeMRV must clearly distinguish:
+AlgaX must clearly distinguish:
 
 ```text
 Simulated Observation
@@ -947,7 +947,7 @@ Do not silently make large architectural decisions.
 
 # 36. Final Quality Standard
 
-AlgaeMRV should feel like a serious technical product built by a small professional engineering team.
+AlgaX should feel like a serious technical product built by a small professional engineering team.
 
 The desired characteristics are:
 
@@ -992,7 +992,7 @@ When in doubt:
 
 **Build less, but build it correctly.**
 
-Do not add complexity, decoration, data, AI, or features unless they have a clear purpose in AlgaeMRV.
+Do not add complexity, decoration, data, AI, or features unless they have a clear purpose in AlgaX.
 
 Every part of the system should contribute to the core chain:
 

@@ -1,10 +1,10 @@
-# Algae Carbon Intelligence & Verification Platform (AlgaeMRV)
+# Algae Carbon Intelligence & Verification Platform (AlgaX)
 ##### HackOut'26 · Problem Statement 15 · Updated Master Implementation Blueprint (V2)
 
 ---
 
 ### 1. Executive Summary
-We are building **AlgaeMRV** — a carbon intelligence and verification platform for algae-based carbon sequestration operations. It is **not** a sensor dashboard. It is a system that turns raw pond telemetry into a defensible, uncertainty-labeled, cryptographically auditable chain of evidence: 
+We are building **AlgaX** — a carbon intelligence and verification platform for algae-based carbon sequestration operations. It is **not** a sensor dashboard. It is a system that turns raw pond telemetry into a defensible, uncertainty-labeled, cryptographically auditable chain of evidence: 
 `sensor readings → biomass/growth estimate → gross carbon fixation → full LCA operational net sequestration → anomaly detection with mechanistic root-cause explanation → cryptographic hash-chained verification report`.
 
 The single biggest risk in this domain is **scientific overclaiming** — presenting a simulated number as a certified carbon credit or ignoring the operational energy footprint required to cultivate and harvest algae. Our core differentiation is to build a system that is **honest by construction**, where:
@@ -22,7 +22,7 @@ Algae farms sequester carbon by growing biomass through photosynthesis, but four
 3. **Data Integrity & Auditability:** Standard database logs can be manipulated prior to audits. Verifiers need cryptographically verifiable proof that raw readings were not altered post-hoc.
 4. **Causal Transparency:** Black-box AI flags anomalies without explaining biological limitations, making third-party verification impossible without site visits.
 
-AlgaeMRV addresses all four gaps with a transparent, scientific, and auditable software architecture.
+AlgaX addresses all four gaps with a transparent, scientific, and auditable software architecture.
 
 ---
 

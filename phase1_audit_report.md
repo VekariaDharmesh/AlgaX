@@ -41,7 +41,7 @@ The Phase 1 pipeline is fully functional end-to-end, maintaining correct scienti
 ```text
 pytest                     PASS
 npm run lint               PASS (with minor warnings for unused icon imports)
-alembic upgrade head       PASS (verified on clean 'algaemrv_test' DB)
+alembic upgrade head       PASS (verified on clean 'algax_test' DB)
 curl -X POST inject...     PASS (verified end-to-end data pipeline)
 npm run build              FAIL (Upstream Next.js Turbopack compiler panic on Tailwind v4 `globals.css`. Handled via `next dev --webpack` as a known workaround)
 ```
