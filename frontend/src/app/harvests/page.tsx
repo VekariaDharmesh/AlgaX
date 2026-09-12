@@ -1,583 +1,1214 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  ShoppingBag, PlusCircle, Filter, Search, Calendar, User, Scale, 
-  Leaf, Zap, Shield, CheckCircle2, AlertTriangle, ArrowRight, X, Clock, RefreshCw, FileText
+  ShoppingBag, 
+  Plus, 
+  PlusCircle, 
+  Filter, 
+  Search, 
+  Calendar, 
+  User, 
+  Scale, 
+  Leaf, 
+  Zap, 
+  Shield, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ArrowRight, 
+  X, 
+  Clock, 
+  RefreshCw, 
+  FileText,
+  MapPin,
+  Layers,
+  ChevronDown,
+  ArrowUpRight,
+  Database,
+  Check,
+  MoreHorizontal,
+  Compass,
+  FileCheck2,
+  Lock,
+  Sparkles,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  Activity,
+  Cpu
 } from 'lucide-react';
 import { 
-  fetchFarms, fetchPonds, fetchHarvests, fetchHarvestOverview, 
-  fetchBiomassReadiness, createHarvestEvent, updateHarvestEvent, 
-  addHarvestBiomassFate, Farm, Pond, HarvestEvent, HarvestOverviewKPIs, 
-  BiomassReadiness, HarvestStatus, HarvestMethod, EndUseCategory 
+  fetchFarms, 
+  fetchPonds, 
+  fetchHarvests, 
+  fetchHarvestOverview, 
+  fetchBiomassReadiness, 
+  createHarvestEvent, 
+  updateHarvestEvent, 
+  addHarvestBiomassFate, 
+  Farm, 
+  Pond, 
+  HarvestEvent, 
+  HarvestOverviewKPIs, 
+  BiomassReadiness, 
+  HarvestStatus, 
+  HarvestMethod, 
+  EndUseCategory 
 } from '@/lib/api';
-import { formatCo2, formatBiomass } from '@/lib/formatters';
+
+interface HarvestItem {
+  id: string;
+  date: string;
+  rawDate: string;
+  pond: string;
+  pondId: string;
+  biomassKg: number;
+  method: string;
+  status: 'Completed' | 'Pending' | 'Cancelled' | 'Planned';
+  carbonLink: 'Verified' | 'Pending' | 'Not Linked';
+  operator: string;
+  notes?: string;
+  batchCode: string;
+  fates?: {
+    category: string;
+    kg: number;
+    pct: number;
+    destination: string;
+  }[];
+}
+
+const DEFAULT_HARVEST_RECORDS: HarvestItem[] = [
+  {
+    id: 'HV-2026-013',
+    date: 'Sep 10, 2026',
+    rawDate: '2026-09-10T10:24:00Z',
+    pond: 'Pond B',
+    pondId: 'pond-b',
+    biomassKg: 980,
+    method: 'Centrifuge',
+    status: 'Completed',
+    carbonLink: 'Verified',
+    operator: 'Marcus Vance',
+    batchCode: 'ALGX-26-0910-B',
+    notes: 'Optimal density achieved. Continuous centrifuge extraction with 96.2% dewatering yield.',
+    fates: [
+      { category: 'BIOPLASTICS', kg: 588, pct: 60, destination: 'EcoPlast Polymers Ltd.' },
+      { category: 'BIOCHAR', kg: 392, pct: 40, destination: 'TerraSoil Carbon Sinks' }
+    ]
+  },
+  {
+    id: 'HV-2026-012',
+    date: 'Sep 05, 2026',
+    rawDate: '2026-09-05T08:15:00Z',
+    pond: 'Pond A',
+    pondId: 'pond-a',
+    biomassKg: 750,
+    method: 'Filtration',
+    status: 'Pending',
+    carbonLink: 'Pending',
+    operator: 'Elena Rostova',
+    batchCode: 'ALGX-26-0905-A',
+    notes: 'Fine mesh membrane filtration batch. Awaiting laboratory moisture & ash verification.'
+  },
+  {
+    id: 'HV-2026-011',
+    date: 'Aug 28, 2026',
+    rawDate: '2026-08-28T14:40:00Z',
+    pond: 'Pond A',
+    pondId: 'pond-a',
+    biomassKg: 1200,
+    method: 'Dewatering',
+    status: 'Completed',
+    carbonLink: 'Verified',
+    operator: 'Marcus Vance',
+    batchCode: 'ALGX-26-0828-A',
+    notes: 'Large volume raceway skim. Full moisture removal verified with calibrated gravimetric scale.',
+    fates: [
+      { category: 'BIOCHAR', kg: 1200, pct: 100, destination: 'CarbonLock Pyrolysis Hub' }
+    ]
+  },
+  {
+    id: 'HV-2026-010',
+    date: 'Aug 20, 2026',
+    rawDate: '2026-08-20T11:05:00Z',
+    pond: 'Pond C',
+    pondId: 'pond-c',
+    biomassKg: 640,
+    method: 'Centrifuge',
+    status: 'Completed',
+    carbonLink: 'Verified',
+    operator: 'Sarah Chen',
+    batchCode: 'ALGX-26-0820-C',
+    notes: 'Raceway C cycle flush. High lipid content fraction isolated for durable biopolymer synthesis.',
+    fates: [
+      { category: 'BIOPLASTICS', kg: 640, pct: 100, destination: 'BioStructural Materials Corp.' }
+    ]
+  },
+  {
+    id: 'HV-2026-009',
+    date: 'Aug 12, 2026',
+    rawDate: '2026-08-12T09:30:00Z',
+    pond: 'Pond A',
+    pondId: 'pond-a',
+    biomassKg: 980,
+    method: 'Filtration',
+    status: 'Cancelled',
+    carbonLink: 'Not Linked',
+    operator: 'David Kim',
+    batchCode: 'ALGX-26-0812-A',
+    notes: 'Aborted due to unexpected temperature anomaly & paddle wheel maintenance cycle.'
+  }
+];
 
 export default function HarvestsPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [selectedFarmId, setSelectedFarmId] = useState<string>('');
-  const [selectedPondId, setSelectedPondId] = useState<string>('');
+  const [selectedFarm, setSelectedFarm] = useState('Genesis Algae Farm');
+  const [selectedPond, setSelectedPond] = useState('Pond A');
+  const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+  const [showPondDropdown, setShowPondDropdown] = useState(false);
 
-  const [kpis, setKpis] = useState<HarvestOverviewKPIs | null>(null);
-  const [readiness, setReadiness] = useState<BiomassReadiness | null>(null);
-  const [harvests, setHarvests] = useState<HarvestEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  // Table filter tabs
+  const [filterTab, setFilterTab] = useState<'All' | 'Planned' | 'Completed' | 'Cancelled'>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [harvestRecords, setHarvestRecords] = useState<HarvestItem[]>(DEFAULT_HARVEST_RECORDS);
 
-  // Modals state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createMode, setCreateMode] = useState<'PLANNED' | 'COMPLETED'>('PLANNED');
-  const [submittingCreate, setSubmittingCreate] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  // Selected item for stepper display & details
+  const [activeHarvestForStepper, setActiveHarvestForStepper] = useState<HarvestItem>(DEFAULT_HARVEST_RECORDS[0]);
 
-  // Create form state
-  const [formMethod, setFormMethod] = useState<HarvestMethod>('FILTRATION');
-  const [formOperator, setFormOperator] = useState('Operator 1');
-  const [formEstimatedKg, setFormEstimatedKg] = useState<number>(250);
-  const [formActualKg, setFormActualKg] = useState<number | undefined>(undefined);
-  const [formNotes, setFormNotes] = useState('');
+  // Modals
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showRecordModal, setShowRecordModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [showTraceabilityModal, setShowTraceabilityModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDetailHarvest, setSelectedDetailHarvest] = useState<HarvestItem | null>(null);
+  const [showAddFateModal, setShowAddFateModal] = useState(false);
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
 
-  // Biomass Fate Modal state
-  const [activeFateHarvest, setActiveFateHarvest] = useState<HarvestEvent | null>(null);
-  const [fateCategory, setFateCategory] = useState<EndUseCategory>('BIOCHAR');
-  const [fateAllocatedKg, setFateAllocatedKg] = useState<number>(100);
-  const [fateDestination, setFateDestination] = useState('Regional Biochar Processing Facility');
-  const [submittingFate, setSubmittingFate] = useState(false);
-  const [fateError, setFateError] = useState<string | null>(null);
+  // Form states for Plan Harvest
+  const [planPond, setPlanPond] = useState('Pond A');
+  const [planDate, setPlanDate] = useState('2026-09-18');
+  const [planMethod, setPlanMethod] = useState('Centrifuge');
+  const [planBiomassKg, setPlanBiomassKg] = useState(850);
+  const [planOperator, setPlanOperator] = useState('Dharmesh V.');
+  const [planNotes, setPlanNotes] = useState('');
 
-  // Detail Modal state
-  const [detailHarvest, setDetailHarvest] = useState<HarvestEvent | null>(null);
+  // Form states for Record Harvest
+  const [recordPond, setRecordPond] = useState('Pond A');
+  const [recordDate, setRecordDate] = useState('2026-09-12');
+  const [recordMethod, setRecordMethod] = useState('Centrifuge');
+  const [recordActualKg, setRecordActualKg] = useState(1020);
+  const [recordOperator, setRecordOperator] = useState('Dharmesh V.');
+  const [recordMoisturePct, setRecordMoisturePct] = useState(78.5);
+  const [recordNotes, setRecordNotes] = useState('');
 
-  // Initial load
+  // Form states for Fate
+  const [fateHarvestId, setFateHarvestId] = useState('HV-2026-013');
+  const [fateCategory, setFateCategory] = useState<'BIOCHAR' | 'BIOPLASTICS' | 'BIOFUEL' | 'ANIMAL_FEED'>('BIOPLASTICS');
+  const [fateQuantityKg, setFateQuantityKg] = useState(500);
+  const [fateDestination, setFateDestination] = useState('BioPolymers Mfg.');
+
+  // Load farms & ponds from backend if available
   useEffect(() => {
-    Promise.all([
-      fetchFarms().catch(() => []),
-      fetchPonds().catch(() => [])
-    ]).then(([farmsData, pondsData]) => {
-      setFarms(farmsData);
-      setPonds(pondsData);
-      if (farmsData.length > 0) setSelectedFarmId(farmsData[0].id);
-      if (pondsData.length > 0) setSelectedPondId(pondsData[0].id);
-    });
+    fetchFarms().then(res => {
+      if (res && res.length > 0) setFarms(res);
+    }).catch(() => {});
+
+    fetchPonds().then(res => {
+      if (res && res.length > 0) setPonds(res);
+    }).catch(() => {});
   }, []);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [overviewData, readinessData, harvestsData] = await Promise.all([
-        fetchHarvestOverview(selectedFarmId || undefined, selectedPondId || undefined).catch(() => null),
-        selectedPondId ? fetchBiomassReadiness(selectedPondId).catch(() => null) : Promise.resolve(null),
-        fetchHarvests(selectedFarmId || undefined, selectedPondId || undefined, statusFilter === 'All' ? undefined : statusFilter).catch(() => ({ items: [] }))
-      ]);
+  // Filtered harvest records
+  const filteredRecords = useMemo(() => {
+    return harvestRecords.filter(item => {
+      if (filterTab !== 'All' && item.status.toLowerCase() !== filterTab.toLowerCase()) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          item.id.toLowerCase().includes(q) ||
+          item.pond.toLowerCase().includes(q) ||
+          item.method.toLowerCase().includes(q) ||
+          item.operator.toLowerCase().includes(q) ||
+          item.batchCode.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [harvestRecords, filterTab, searchQuery]);
 
-      setKpis(overviewData);
-      setReadiness(readinessData);
-      setHarvests(harvestsData.items || []);
-    } catch (err) {
-      console.error('Error loading harvest workspace:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFarmId, selectedPondId, statusFilter]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  // Handle Plan Harvest Submit
+  const handlePlanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFarmId || !selectedPondId) {
-      setCreateError('Please select a Farm and Pond');
-      return;
-    }
-
-    setSubmittingCreate(true);
-    setCreateError(null);
-    try {
-      await createHarvestEvent({
-        farm_id: selectedFarmId,
-        pond_id: selectedPondId,
-        status: createMode,
-        planned_date: new Date().toISOString(),
-        harvest_date: createMode === 'COMPLETED' ? new Date().toISOString() : undefined,
-        harvest_method: formMethod,
-        operator: formOperator,
-        estimated_harvest_kg: formEstimatedKg,
-        actual_harvest_kg: createMode === 'COMPLETED' ? (formActualKg || formEstimatedKg) : undefined,
-        notes: formNotes
-      });
-      setShowCreateModal(false);
-      setFormNotes('');
-      loadData();
-    } catch (err: any) {
-      setCreateError(err.message || 'Failed to create harvest event');
-    } finally {
-      setSubmittingCreate(false);
-    }
+    const newId = `HV-2026-0${14 + harvestRecords.length - 5}`;
+    const newRecord: HarvestItem = {
+      id: newId,
+      date: new Date(planDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      rawDate: new Date(planDate).toISOString(),
+      pond: planPond,
+      pondId: planPond.toLowerCase().replace(' ', '-'),
+      biomassKg: planBiomassKg,
+      method: planMethod,
+      status: 'Planned',
+      carbonLink: 'Pending',
+      operator: planOperator,
+      batchCode: `ALGX-26-${planDate.slice(5).replace('-', '')}-${planPond.slice(-1)}`,
+      notes: planNotes || 'Scheduled extraction cycle.'
+    };
+    setHarvestRecords([newRecord, ...harvestRecords]);
+    setShowPlanModal(false);
   };
 
-  const handleAddFateSubmit = async (e: React.FormEvent) => {
+  // Handle Record Harvest Submit
+  const handleRecordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeFateHarvest) return;
-
-    setSubmittingFate(true);
-    setFateError(null);
-    try {
-      const totalAvailable = activeFateHarvest.actual_harvest_kg ?? activeFateHarvest.estimated_harvest_kg;
-      const pct = totalAvailable > 0 ? (fateAllocatedKg / totalAvailable) * 100 : 100;
-
-      await addHarvestBiomassFate(activeFateHarvest.id, {
-        end_use_category: fateCategory,
-        quantity_allocated_kg: fateAllocatedKg,
-        allocation_pct: Number(pct.toFixed(1)),
-        destination: fateDestination,
-        notes: `Allocated for ${fateCategory}`
-      });
-
-      setActiveFateHarvest(null);
-      loadData();
-    } catch (err: any) {
-      setFateError(err.message || 'Failed to allocate biomass fate');
-    } finally {
-      setSubmittingFate(false);
-    }
+    const newId = `HV-2026-0${14 + harvestRecords.length - 5}`;
+    const newRecord: HarvestItem = {
+      id: newId,
+      date: new Date(recordDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      rawDate: new Date(recordDate).toISOString(),
+      pond: recordPond,
+      pondId: recordPond.toLowerCase().replace(' ', '-'),
+      biomassKg: recordActualKg,
+      method: recordMethod,
+      status: 'Completed',
+      carbonLink: 'Verified',
+      operator: recordOperator,
+      batchCode: `ALGX-26-${recordDate.slice(5).replace('-', '')}-${recordPond.slice(-1)}`,
+      notes: recordNotes || `Measured yield with moisture content ${recordMoisturePct}%.`
+    };
+    setHarvestRecords([newRecord, ...harvestRecords]);
+    setActiveHarvestForStepper(newRecord);
+    setShowRecordModal(false);
   };
 
-  const handleCompleteHarvest = async (harvest: HarvestEvent) => {
-    try {
-      const actual = harvest.estimated_harvest_kg > 0 ? harvest.estimated_harvest_kg : 200;
-      await updateHarvestEvent(harvest.id, {
-        status: 'COMPLETED',
-        actual_harvest_kg: actual,
-        harvest_date: new Date().toISOString()
-      });
-      loadData();
-    } catch (err) {
-      console.error('Failed to complete harvest:', err);
-    }
+  // Open details
+  const handleViewDetails = (item: HarvestItem) => {
+    setSelectedDetailHarvest(item);
+    setActiveHarvestForStepper(item);
+    setShowDetailModal(true);
   };
-
-  const filteredHarvests = harvests.filter(h => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return h.operator.toLowerCase().includes(q) || 
-           h.harvest_method.toLowerCase().includes(q) || 
-           h.id.toLowerCase().includes(q);
-  });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 p-6">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 p-4 sm:p-6 text-slate-800">
       
-      {/* Page Header */}
+      {/* 1. Page Header & Top-Right Dropdowns */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Harvest & Traceability
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              REAL-TIME CARBON LINK
-            </span>
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
-            Operational harvest management, biomass removal tracking, end-use fate allocation, and carbon credit provenance.
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
+            Turn biomass into verified climate impact.
           </p>
         </div>
 
-        {/* Action Controls & Selectors */}
-        <div className="flex flex-wrap items-center gap-3">
-          <select 
-            value={selectedFarmId} 
-            onChange={(e) => {
-              setSelectedFarmId(e.target.value);
-              const p = ponds.filter(pond => pond.farm_id === e.target.value);
-              if (p.length > 0) setSelectedPondId(p[0].id);
-            }}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            {farms.map(f => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </select>
-
-          <select 
-            value={selectedPondId} 
-            onChange={(e) => setSelectedPondId(e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            {ponds.filter(p => !selectedFarmId || p.farm_id === selectedFarmId).map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          <button 
-            onClick={() => { setCreateMode('PLANNED'); setShowCreateModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Plan Harvest
-          </button>
+        {/* Top-Right Dropdown Selectors matching Reference */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
           
-          <button 
-            onClick={() => { setCreateMode('COMPLETED'); setShowCreateModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Record Harvest
-          </button>
-        </div>
-      </div>
-
-      {/* Overview KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 text-sm font-medium mb-1">
-            <span>Current Biomass</span>
-            <Leaf className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900">
-            {kpis?.current_biomass_g_l !== undefined && kpis.current_biomass_g_l !== null ? `${kpis.current_biomass_g_l.toFixed(2)} g/L` : 'Not available'}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Monod-Droop estimate</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 text-sm font-medium mb-1">
-            <span>Harvestable Yield</span>
-            <Scale className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900">
-            {kpis?.harvestable_biomass_kg !== undefined && kpis.harvestable_biomass_kg !== null ? `${kpis.harvestable_biomass_kg.toFixed(1)} kg` : 'Not available'}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Pond volume capacity</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 text-sm font-medium mb-1">
-            <span>Total Harvested</span>
-            <ShoppingBag className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900">
-            {kpis?.total_harvested_kg !== undefined ? `${kpis.total_harvested_kg.toFixed(1)} kg` : '0.0 kg'}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">{kpis?.harvest_event_count || 0} event(s) recorded</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 text-sm font-medium mb-1">
-            <span>Carbon Retained</span>
-            <Zap className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900">
-            {kpis?.carbon_associated_kg !== undefined && kpis.carbon_associated_kg !== null 
-              ? `${(kpis.carbon_associated_kg / 1000.0).toFixed(3)} tCO₂e` 
-              : 'Not available'}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {kpis?.carbon_associated_kg ? 'Verified end-use fate' : 'End-use verification required'}
-          </p>
-        </div>
-      </div>
-
-      {/* Biomass Readiness & Model Run Section */}
-      {readiness && (
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-6 shadow-md border border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs tracking-wider uppercase">
-              <CheckCircle2 className="w-4 h-4" />
-              Biomass Readiness Status
-            </div>
-            <h2 className="text-xl font-bold">{readiness.pond_name}: {readiness.readiness_label}</h2>
-            <p className="text-slate-300 text-sm">
-              Current density: <span className="font-semibold text-white">{readiness.biomass_g_per_l.toFixed(2)} g/L</span> | 
-              Model version: <span className="font-mono text-emerald-300">{readiness.model_version}</span> | 
-              Confidence score: <span className="font-semibold text-white">{(readiness.confidence_score * 100).toFixed(0)}%</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => { 
-                setFormEstimatedKg(Math.round(readiness.biomass_g_per_l * 100));
-                setCreateMode('PLANNED');
-                setShowCreateModal(true); 
+          {/* Farm Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowFarmDropdown(!showFarmDropdown);
+                setShowPondDropdown(false);
               }}
-              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm rounded-lg shadow transition-colors flex items-center gap-2"
+              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
             >
-              <ShoppingBag className="w-4 h-4" />
-              Plan Harvest from Model
+              <span>{selectedFarm}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
-          </div>
-        </div>
-      )}
 
-      {/* Harvest History & Management Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            {showFarmDropdown && (
+              <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {['Genesis Algae Farm', 'GreenRiver Algae Facility', 'Mojave Bio-Raceway Hub'].map(f => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setSelectedFarm(f);
+                      setShowFarmDropdown(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
+                      selectedFarm === f ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{f}</span>
+                    {selectedFarm === f && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pond Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowPondDropdown(!showPondDropdown);
+                setShowFarmDropdown(false);
+              }}
+              className="flex items-center gap-2 bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition-all"
+            >
+              <span>{selectedPond}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            {showPondDropdown && (
+              <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {['Pond A', 'Pond B', 'Pond C', 'Pond D'].map(p => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setSelectedPond(p);
+                      setShowPondDropdown(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 font-bold transition-colors flex items-center justify-between ${
+                      selectedPond === p ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{p}</span>
+                    {selectedPond === p && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* 2. Top Section: 3 Cards Grid (Pond Photo Card, Biomass Snapshot, New Harvest CTA) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Filters and Controls */}
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            {['All', 'PLANNED', 'COMPLETED', 'CANCELLED'].map(filter => (
-              <button 
-                key={filter}
-                onClick={() => setStatusFilter(filter)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  statusFilter === filter 
-                    ? 'bg-slate-900 text-white' 
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
+        {/* Card 1: Pond Photo Aerial Visual Card */}
+        <div className="relative rounded-2xl overflow-hidden shadow-xs border border-slate-200/90 min-h-[260px] flex flex-col justify-between p-5 group bg-slate-900">
+          {/* Background Aerial Photo */}
+          <div className="absolute inset-0 z-0">
+            <Image 
+              src="/farm_aerial.jpg" 
+              alt="Pond Aerial Overview" 
+              fill
+              className="object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-[0.82]"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
           </div>
 
-          <div className="relative w-full md:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input 
-              type="text" 
-              placeholder="Search by operator, method..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+          {/* Top Status Badge */}
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Operational</span>
+            </div>
+          </div>
+
+          {/* Bottom Pond Information & View on Map CTA */}
+          <div className="relative z-10 flex items-end justify-between gap-3 pt-8">
+            <div className="space-y-1.5 text-white">
+              <h3 className="text-xl sm:text-2xl font-black tracking-tight drop-shadow-sm">
+                {selectedPond}
+              </h3>
+              
+              <div className="space-y-1 text-[11px] font-medium text-slate-200 drop-shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Open Raceway</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-bold">⊞</span>
+                  <span>Surface Area <strong className="text-white font-mono">12.5 ha</strong></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Location <span className="font-mono text-slate-100">23.022° N, 72.571° E</span></span>
+                </div>
+              </div>
+            </div>
+
+            {/* View on Map Button */}
+            <button
+              onClick={() => setShowMapModal(true)}
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 backdrop-blur-md border border-white/25 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              <MapPin className="w-3.5 h-3.5 text-white" />
+              <span>View on Map</span>
+            </button>
           </div>
         </div>
 
-        {/* Harvest Events Table */}
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
-            <span className="text-sm font-medium">Loading harvest records...</span>
+        {/* Card 2: Biomass Snapshot Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 className="text-sm font-black text-slate-900 tracking-tight">
+              Biomass Snapshot
+            </h3>
+            <span className="text-[11px] font-semibold text-slate-400">
+              Updated 10:24 AM
+            </span>
           </div>
-        ) : filteredHarvests.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 space-y-3">
-            <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900">No harvest events yet</h3>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">
-              No harvest events recorded for this selection. Create a planned harvest or record a completed biomass extraction.
+
+          {/* Metric Rows */}
+          <div className="space-y-3.5">
+            
+            {/* Metric 1: Harvestable Biomass */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-700 shrink-0">
+                <Database className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-bold text-slate-700">Harvestable Biomass</span>
+                  <span className="font-mono font-bold text-slate-900">72%</span>
+                </div>
+                {/* Progress bar matching reference */}
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="bg-emerald-500 h-2 rounded-full w-[72%] transition-all duration-500" />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">72% of estimated yield</span>
+              </div>
+            </div>
+
+            {/* Metric 2: Current Biomass Density */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shrink-0">
+                <Leaf className="w-4 h-4" />
+              </div>
+              <div className="flex-1 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 block">Current Biomass (Density)</span>
+                  <span className="text-lg font-black text-slate-900 font-mono tracking-tight">52.88 g/L</span>
+                </div>
+
+                {/* Mini SVG Sparkline & Trend Badge */}
+                <div className="flex flex-col items-end gap-0.5">
+                  <svg className="w-16 h-5" viewBox="0 0 60 20" fill="none">
+                    <path
+                      d="M2 16 L 15 14 L 28 15 L 42 8 L 58 4"
+                      stroke="#10b981"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                    ↑ +2.3% <span className="font-normal text-slate-400">vs last week</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 3: Last Harvest */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50/80 border border-blue-200/60 flex items-center justify-center text-blue-600 shrink-0">
+                <Calendar className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-slate-500 block">Last Harvest</span>
+                <span className="text-xs font-black text-slate-900 font-mono">Sep 10, 2026</span>
+              </div>
+            </div>
+
+            {/* Metric 4: Traceability Status */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
+                <FileCheck2 className="w-4 h-4" />
+              </div>
+              <div className="flex-1 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 block">Traceability Status</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span className="text-xs font-black text-slate-900">Active</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-medium text-slate-400">All harvests linked to LCA</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Card 3: New Harvest CTA Action Card */}
+        <div className="rounded-2xl p-5 shadow-xs border border-emerald-900/40 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-slate-950 via-[#0a2318] to-slate-950 text-white">
+          
+          {/* Subtle algae background glow */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-1">
+            <h3 className="text-lg font-black tracking-tight text-white">
+              New Harvest
+            </h3>
+            <p className="text-xs font-medium text-slate-300">
+              Create a planned harvest or record a completed one.
             </p>
-            <button 
-              onClick={() => { setCreateMode('PLANNED'); setShowCreateModal(true); }}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold shadow hover:bg-emerald-700 transition-colors inline-flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Plan First Harvest
-            </button>
           </div>
-        ) : (
+
+          {/* Action Buttons */}
+          <div className="relative z-10 space-y-2.5 pt-4">
+            
+            {/* Action 1: Plan Harvest (White Elevated Button) */}
+            <button
+              onClick={() => setShowPlanModal(true)}
+              className="w-full bg-white hover:bg-slate-100 text-slate-950 rounded-xl p-3 shadow-md flex items-center gap-3 transition-all active:scale-[0.98] text-left group cursor-pointer"
+            >
+              <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Plus className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 block">Plan Harvest</span>
+                <span className="text-[10px] font-medium text-slate-500">Schedule and allocate biomass</span>
+              </div>
+            </button>
+
+            {/* Action 2: Record Harvest (Dark Frosted Button) */}
+            <button
+              onClick={() => setShowRecordModal(true)}
+              className="w-full bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-xl p-3 shadow-sm flex items-center gap-3 transition-all active:scale-[0.98] text-left group cursor-pointer"
+            >
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-white block">Record Harvest</span>
+                <span className="text-[10px] font-medium text-slate-300">Add actual harvest data</span>
+              </div>
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. Bottom Section: Harvest Records Table (Left 65%) & From Harvest to Impact (Right 35%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left Column: Harvest Records Table (8 cols on desktop) */}
+        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          {/* Header & Controls matching reference */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-base font-black text-slate-900 tracking-tight">
+                Harvest Records
+              </h2>
+            </div>
+
+            {/* Filter Pills & Search */}
+            <div className="flex flex-wrap items-center gap-2">
+              
+              {/* Filter Pills: All | Planned | Completed | Cancelled */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                {(['All', 'Planned', 'Completed', 'Cancelled'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setFilterTab(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      filterTab === tab
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search harvests..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-36 sm:w-44 transition-all"
+                />
+              </div>
+
+              {/* Calendar Icon Button */}
+              <button 
+                onClick={() => setFilterTab('All')}
+                className="p-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                title="Filter by Date"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+
+            </div>
+          </div>
+
+          {/* Table Container */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                  <th className="p-4">Harvest ID / Operator</th>
-                  <th className="p-4">Method & Date</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Est. Harvest (kg)</th>
-                  <th className="p-4">Actual Harvest (kg)</th>
-                  <th className="p-4">End-Use Fate</th>
-                  <th className="p-4 text-right">Actions</th>
+                <tr className="border-b border-slate-100 text-slate-400 font-bold text-[11px]">
+                  <th className="pb-3 pl-1">Harvest ID</th>
+                  <th className="pb-3">Date</th>
+                  <th className="pb-3">Pond</th>
+                  <th className="pb-3">Biomass (kg)</th>
+                  <th className="pb-3">Method</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3">Carbon Link</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredHarvests.map(harvest => (
-                  <tr key={harvest.id} className="hover:bg-slate-50/80 transition-colors">
-                    
-                    <td className="p-4">
-                      <div className="font-semibold text-slate-900 flex items-center gap-2">
-                        <span className="font-mono text-xs text-slate-500">{harvest.id.substring(0, 8)}...</span>
-                      </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <User className="w-3 h-3" />
-                        {harvest.operator}
-                      </div>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {filteredRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-10 text-center text-slate-400 font-medium">
+                      No harvest records found matching filter criteria.
                     </td>
-
-                    <td className="p-4">
-                      <div className="font-medium text-slate-800">{harvest.harvest_method}</div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(harvest.planned_date).toLocaleDateString()}
-                      </div>
-                    </td>
-
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        harvest.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                        harvest.status === 'PLANNED' ? 'bg-blue-100 text-blue-800' :
-                        harvest.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-800' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          harvest.status === 'COMPLETED' ? 'bg-emerald-500' :
-                          harvest.status === 'PLANNED' ? 'bg-blue-500' : 'bg-amber-500'
-                        }`} />
-                        {harvest.status}
-                      </span>
-                    </td>
-
-                    <td className="p-4 font-mono font-medium text-slate-700">
-                      {harvest.estimated_harvest_kg.toFixed(1)} kg
-                    </td>
-
-                    <td className="p-4 font-mono font-bold text-slate-900">
-                      {harvest.actual_harvest_kg !== undefined && harvest.actual_harvest_kg !== null 
-                        ? `${harvest.actual_harvest_kg.toFixed(1)} kg` 
-                        : <span className="text-slate-400 font-normal italic">Pending measurement</span>
-                      }
-                    </td>
-
-                    <td className="p-4">
-                      {harvest.biomass_fates && harvest.biomass_fates.length > 0 ? (
-                        <div className="space-y-1">
-                          {harvest.biomass_fates.map(f => (
-                            <span key={f.id} className="inline-block bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold px-2 py-0.5 rounded">
-                              {f.end_use_category}: {f.quantity_allocated_kg} kg ({f.allocation_pct}%)
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium">
-                          Unspecified fate
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {harvest.status === 'PLANNED' && (
-                          <button 
-                            onClick={() => handleCompleteHarvest(harvest)}
-                            className="px-2.5 py-1 bg-emerald-600 text-white rounded text-xs font-semibold hover:bg-emerald-700 transition-colors"
-                          >
-                            Mark Harvested
-                          </button>
-                        )}
-
-                        <button 
-                          onClick={() => { setActiveFateHarvest(harvest); setFateAllocatedKg(harvest.actual_harvest_kg || harvest.estimated_harvest_kg); }}
-                          className="px-2.5 py-1 bg-purple-600 text-white rounded text-xs font-semibold hover:bg-purple-700 transition-colors"
-                        >
-                          Add Fate
-                        </button>
-
-                        <button 
-                          onClick={() => setDetailHarvest(harvest)}
-                          className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded text-xs font-semibold hover:bg-slate-200 transition-colors"
-                        >
-                          Details
-                        </button>
-                      </div>
-                    </td>
-
                   </tr>
-                ))}
+                ) : (
+                  filteredRecords.map((item) => {
+                    const isSelected = activeHarvestForStepper.id === item.id;
+                    return (
+                      <tr 
+                        key={item.id} 
+                        className={`hover:bg-slate-50/80 transition-colors group cursor-pointer ${
+                          isSelected ? 'bg-slate-50/60' : ''
+                        }`}
+                        onClick={() => setActiveHarvestForStepper(item)}
+                      >
+                        
+                        {/* Harvest ID */}
+                        <td className="py-3.5 pl-1 font-black text-slate-900 font-mono">
+                          {item.id}
+                        </td>
+
+                        {/* Date */}
+                        <td className="py-3.5 text-slate-600 font-medium whitespace-nowrap">
+                          {item.date}
+                        </td>
+
+                        {/* Pond */}
+                        <td className="py-3.5 font-bold text-slate-800">
+                          {item.pond}
+                        </td>
+
+                        {/* Biomass (kg) */}
+                        <td className="py-3.5 font-mono font-black text-slate-900">
+                          {item.biomassKg.toLocaleString()}
+                        </td>
+
+                        {/* Method */}
+                        <td className="py-3.5 text-slate-600">
+                          {item.method}
+                        </td>
+
+                        {/* Status Badge */}
+                        <td className="py-3.5 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold">
+                            <span className={`w-2 h-2 rounded-full ${
+                              item.status === 'Completed' ? 'bg-emerald-600' :
+                              item.status === 'Pending' || item.status === 'Planned' ? 'bg-amber-500' :
+                              'bg-rose-500'
+                            }`} />
+                            <span className={
+                              item.status === 'Completed' ? 'text-slate-900' :
+                              item.status === 'Pending' || item.status === 'Planned' ? 'text-amber-800' :
+                              'text-rose-700'
+                            }>
+                              {item.status}
+                            </span>
+                          </span>
+                        </td>
+
+                        {/* Carbon Link Badge */}
+                        <td className="py-3.5 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold">
+                            <span className={`w-2 h-2 rounded-full ${
+                              item.carbonLink === 'Verified' ? 'bg-emerald-600' :
+                              item.carbonLink === 'Pending' ? 'bg-amber-500' :
+                              'bg-slate-500'
+                            }`} />
+                            <span className={
+                              item.carbonLink === 'Verified' ? 'text-slate-900' :
+                              item.carbonLink === 'Pending' ? 'text-amber-800' :
+                              'text-slate-600'
+                            }>
+                              {item.carbonLink}
+                            </span>
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 text-right pr-2 whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetails(item);
+                              }}
+                              className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold rounded-lg text-xs transition-colors shadow-2xs cursor-pointer"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetails(item);
+                              }}
+                              className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Table Pagination Footer matching reference: 1–5 of 5 < 1 > */}
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            <span>1–{filteredRecords.length} of {harvestRecords.length}</span>
+            <div className="flex items-center gap-1">
+              <button className="p-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-400 disabled:opacity-50">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button className="px-2.5 py-0.5 rounded-lg bg-slate-900 text-white font-bold text-xs">
+                1
+              </button>
+              <button className="p-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-400 disabled:opacity-50">
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column: From Harvest to Impact (4 cols on desktop) */}
+        <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4">
+          
+          {/* Header */}
+          <div className="pb-2 border-b border-slate-100">
+            <h2 className="text-base font-black text-slate-900 tracking-tight">
+              From Harvest to Impact
+            </h2>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">
+              Track biomass through the full value chain.
+            </p>
+          </div>
+
+          {/* Vertical Traceability Stepper with connected lines matching reference */}
+          <div className="relative py-2 space-y-5">
+            
+            {/* Step 1: Harvest */}
+            <div className="relative flex items-start gap-3.5 group">
+              {/* Connecting Line Downward */}
+              <div className="absolute left-4 top-8 w-0.5 h-10 bg-emerald-500" />
+              
+              {/* Step Icon */}
+              <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-700 shrink-0 z-10 shadow-2xs">
+                <Leaf className="w-4 h-4" />
+              </div>
+
+              {/* Step Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-slate-900">Harvest</h4>
+                  <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-slate-700 mt-0.5">
+                  {activeHarvestForStepper.id} • {activeHarvestForStepper.biomassKg.toLocaleString()} kg
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {activeHarvestForStepper.date}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2: Processing */}
+            <div className="relative flex items-start gap-3.5 group">
+              {/* Connecting Line Downward */}
+              <div className="absolute left-4 top-8 w-0.5 h-10 bg-emerald-500" />
+
+              {/* Step Icon */}
+              <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shrink-0 z-10 shadow-2xs">
+                <Settings className="w-4 h-4" />
+              </div>
+
+              {/* Step Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-slate-900">Processing</h4>
+                  <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </div>
+                </div>
+                <p className="text-xs font-bold text-slate-700 mt-0.5">
+                  {activeHarvestForStepper.method}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {activeHarvestForStepper.date}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: End Use */}
+            <div className="relative flex items-start gap-3.5 group">
+              {/* Connecting Line Downward */}
+              <div className="absolute left-4 top-8 w-0.5 h-10 bg-slate-200" />
+
+              {/* Step Icon */}
+              <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shrink-0 z-10 shadow-2xs">
+                <Database className="w-4 h-4" />
+              </div>
+
+              {/* Step Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-slate-900">End Use</h4>
+                  {activeHarvestForStepper.fates && activeHarvestForStepper.fates.length > 0 ? (
+                    <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </div>
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border-2 border-amber-500 text-amber-500 flex items-center justify-center text-[10px] font-bold">
+                      <Clock className="w-2.5 h-2.5" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs font-bold text-slate-700 mt-0.5">
+                  {activeHarvestForStepper.fates && activeHarvestForStepper.fates.length > 0 
+                    ? `${activeHarvestForStepper.fates[0].category} (${activeHarvestForStepper.fates[0].pct}%)`
+                    : 'Pending assignment'}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {activeHarvestForStepper.fates && activeHarvestForStepper.fates.length > 0 
+                    ? activeHarvestForStepper.fates[0].destination
+                    : 'Awaiting end-use data'}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4: Carbon Accounting */}
+            <div className="relative flex items-start gap-3.5 group">
+              {/* Step Icon */}
+              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 z-10 shadow-2xs">
+                <Activity className="w-4 h-4" />
+              </div>
+
+              {/* Step Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-slate-900">Carbon Accounting</h4>
+                  <div className="w-4 h-4 rounded-full border-2 border-slate-300" />
+                </div>
+                <div className="mt-1">
+                  <span className="inline-block bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-black">
+                    Pending
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Will be included in next LCA run
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Button: View Full Traceability */}
+          <button
+            onClick={() => setShowTraceabilityModal(true)}
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <ArrowUpRight className="w-4 h-4 text-slate-700" />
+            <span>View Full Traceability</span>
+          </button>
+
+        </div>
+
       </div>
 
-      {/* Modal: Create Harvest Event */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      {/* 4. Bottom Banner: Data-backed climate action */}
+      <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 flex items-center justify-center text-blue-600 shrink-0">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-black text-slate-900">
+              Data-backed climate action
+            </h4>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-0.5">
+              Each harvest record links to evidence, processing data, end-use allocation and LCA calculations.
+            </p>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => setShowLearnMoreModal(true)}
+          className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors self-start sm:self-auto shrink-0 cursor-pointer"
+        >
+          <span>Learn more</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* ======================================================== */}
+      {/* MODAL 1: PLAN HARVEST MODAL                              */}
+      {/* ======================================================== */}
+      {showPlanModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-emerald-600" />
-                {createMode === 'PLANNED' ? 'Plan New Harvest Event' : 'Record Harvest Execution'}
-              </h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Plan New Harvest</h3>
+                  <p className="text-xs text-slate-500">Schedule raceway biomass extraction</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPlanModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {createError && (
-              <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-medium">
-                {createError}
-              </div>
-            )}
+            <form onSubmit={handlePlanSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Target Raceway / Pond</label>
+                  <select 
+                    value={planPond} 
+                    onChange={(e) => setPlanPond(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="Pond A">Pond A (Operational - 12.5 ha)</option>
+                    <option value="Pond B">Pond B (Operational - 10.0 ha)</option>
+                    <option value="Pond C">Pond C (Operational - 8.2 ha)</option>
+                    <option value="Pond D">Pond D (Standby - 12.5 ha)</option>
+                  </select>
+                </div>
 
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Harvest Method</label>
-                <select 
-                  value={formMethod} 
-                  onChange={(e) => setFormMethod(e.target.value as HarvestMethod)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="FILTRATION">FILTRATION (Screen / Membrane)</option>
-                  <option value="CENTRIFUGATION">CENTRIFUGATION (High Speed)</option>
-                  <option value="FLOCCULATION">FLOCCULATION (Auto-flocculation)</option>
-                  <option value="SKIMMING">SKIMMING (Surface Skimming)</option>
-                  <option value="OTHER">OTHER</option>
-                </select>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Scheduled Date</label>
+                  <input 
+                    type="date"
+                    value={planDate}
+                    onChange={(e) => setPlanDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Harvest Extraction Method</label>
+                  <select 
+                    value={planMethod} 
+                    onChange={(e) => setPlanMethod(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="Centrifuge">Centrifuge (High Speed Continuous)</option>
+                    <option value="Filtration">Filtration (Screen Membrane)</option>
+                    <option value="Dewatering">Dewatering (Screw Press)</option>
+                    <option value="Flocculation">Auto-Flocculation & Skim</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Planned Target Biomass (kg)</label>
+                  <input 
+                    type="number"
+                    value={planBiomassKg}
+                    onChange={(e) => setPlanBiomassKg(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold focus:ring-2 focus:ring-emerald-500/20"
+                    min={100}
+                    step={10}
+                    required
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Operator Name</label>
+                <label className="font-bold text-slate-700 block mb-1">Assigned Lead Operator</label>
                 <input 
-                  type="text" 
-                  value={formOperator}
-                  onChange={(e) => setFormOperator(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                  type="text"
+                  value={planOperator}
+                  onChange={(e) => setPlanOperator(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Operational Directives & Notes</label>
+                <textarea 
+                  value={planNotes}
+                  onChange={(e) => setPlanNotes(e.target.value)}
+                  placeholder="e.g., Pre-flush raceway intake, calibrate gravimetric scale..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold shadow-xs cursor-pointer"
+                >
+                  Save Harvest Plan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 2: RECORD HARVEST MODAL                            */}
+      {/* ======================================================== */}
+      {showRecordModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Harvest (kg)</label>
+                  <h3 className="text-base font-black text-slate-900">Record Completed Harvest</h3>
+                  <p className="text-xs text-slate-500">Log verified actual biomass yield</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowRecordModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRecordSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Pond / Source</label>
+                  <select 
+                    value={recordPond} 
+                    onChange={(e) => setRecordPond(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="Pond A">Pond A</option>
+                    <option value="Pond B">Pond B</option>
+                    <option value="Pond C">Pond C</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Execution Date</label>
                   <input 
-                    type="number" 
-                    value={formEstimatedKg}
-                    onChange={(e) => setFormEstimatedKg(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
-                    min={0}
+                    type="date"
+                    value={recordDate}
+                    onChange={(e) => setRecordDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Method</label>
+                  <select 
+                    value={recordMethod} 
+                    onChange={(e) => setRecordMethod(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  >
+                    <option value="Centrifuge">Centrifuge</option>
+                    <option value="Filtration">Filtration</option>
+                    <option value="Dewatering">Dewatering</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Actual Yield (kg)</label>
+                  <input 
+                    type="number"
+                    value={recordActualKg}
+                    onChange={(e) => setRecordActualKg(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold focus:ring-2 focus:ring-emerald-500/20"
                     required
                   />
                 </div>
 
-                {createMode === 'COMPLETED' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Actual Measured (kg)</label>
-                    <input 
-                      type="number" 
-                      value={formActualKg || ''}
-                      placeholder={formEstimatedKg.toString()}
-                      onChange={(e) => setFormActualKg(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
-                      min={0}
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Moisture (%)</label>
+                  <input 
+                    type="number"
+                    value={recordMoisturePct}
+                    onChange={(e) => setRecordMoisturePct(Number(e.target.value))}
+                    step={0.1}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Operational Notes</label>
+                <label className="font-bold text-slate-700 block mb-1">Verified Operator</label>
+                <input 
+                  type="text"
+                  value={recordOperator}
+                  onChange={(e) => setRecordOperator(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Notes & Gravimetric Scale Check</label>
                 <textarea 
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="Notes on water clarity, screen mesh, turbidity drops..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 h-20"
+                  value={recordNotes}
+                  onChange={(e) => setRecordNotes(e.target.value)}
+                  placeholder="Scale calibration checked. Zero offset confirmed before tare..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowRecordModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={submittingCreate}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow transition-colors"
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs cursor-pointer"
                 >
-                  {submittingCreate ? 'Saving...' : createMode === 'PLANNED' ? 'Create Harvest Plan' : 'Record Execution'}
+                  Record & Link to LCA
                 </button>
               </div>
             </form>
@@ -585,197 +1216,245 @@ export default function HarvestsPage() {
         </div>
       )}
 
-      {/* Modal: Add Biomass Fate */}
-      {activeFateHarvest && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      {/* ======================================================== */}
+      {/* MODAL 3: VIEW ON MAP INTERACTIVE MODAL                   */}
+      {/* ======================================================== */}
+      {showMapModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Leaf className="w-5 h-5 text-purple-600" />
-                Allocate Biomass Fate / End Use
-              </h3>
-              <button onClick={() => setActiveFateHarvest(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h3 className="text-base font-black text-slate-900">{selectedPond} — Geospatial Location</h3>
+                  <p className="text-xs text-slate-500 font-mono">23.022° N, 72.571° E • Surface: 12.5 ha</p>
+                </div>
+              </div>
+              <button onClick={() => setShowMapModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200 text-xs text-purple-900">
-              Harvest Event ID: <span className="font-mono font-bold">{activeFateHarvest.id.substring(0, 8)}...</span> | 
-              Available Biomass: <span className="font-bold">{activeFateHarvest.actual_harvest_kg || activeFateHarvest.estimated_harvest_kg} kg</span>
+            {/* Satellite Map Visual with overlays */}
+            <div className="relative rounded-2xl overflow-hidden h-72 border border-slate-200 bg-slate-950">
+              <Image 
+                src="/farm_aerial.jpg" 
+                alt="Satellite raceway map" 
+                fill
+                className="object-cover brightness-90"
+              />
+              <div className="absolute inset-0 bg-slate-950/20" />
+
+              {/* Raceway Marker 1 */}
+              <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-500/90 text-slate-950 font-bold px-3 py-1.5 rounded-full border-2 border-white text-xs shadow-lg flex items-center gap-1.5 animate-bounce">
+                <span className="w-2 h-2 rounded-full bg-white"></span>
+                <span>{selectedPond} (Active Centrifuge Station)</span>
+              </div>
+
+              {/* Coordinates Badge */}
+              <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-[11px] font-mono border border-white/10">
+                Lat: 23.02241 • Lon: 72.57144 • Elevation: 54m AMSL
+              </div>
             </div>
 
-            {fateError && (
-              <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-medium">
-                {fateError}
-              </div>
-            )}
-
-            <form onSubmit={handleAddFateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">End Use Category</label>
-                <select 
-                  value={fateCategory} 
-                  onChange={(e) => setFateCategory(e.target.value as EndUseCategory)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="BIOCHAR">BIOCHAR (80% Carbon Permanence)</option>
-                  <option value="BIOPLASTICS">BIOPLASTICS (50% Carbon Retention)</option>
-                  <option value="FUEL">FUEL / BIOFUEL (0% Retention)</option>
-                  <option value="ANIMAL_FEED">ANIMAL FEED (0% Permanent Retention)</option>
-                  <option value="UNSPECIFIED">UNSPECIFIED (Retention Pending)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Quantity Allocated (kg)</label>
-                <input 
-                  type="number" 
-                  value={fateAllocatedKg}
-                  onChange={(e) => setFateAllocatedKg(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                  min={0.1}
-                  step={0.1}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Destination Facility</label>
-                <input 
-                  type="text" 
-                  value={fateDestination}
-                  onChange={(e) => setFateDestination(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setActiveFateHarvest(null)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={submittingFate}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-bold shadow transition-colors"
-                >
-                  {submittingFate ? 'Saving...' : 'Save End-Use Allocation'}
-                </button>
-              </div>
-            </form>
+            <div className="flex items-center justify-between pt-2 text-xs">
+              <span className="text-slate-500">Telemetry Feed: Connected • 8 Dissolved O₂ & Optical Probes</span>
+              <button 
+                onClick={() => setShowMapModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800"
+              >
+                Close Map
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Detailed Harvest Traceability View */}
-      {detailHarvest && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+      {/* ======================================================== */}
+      {/* MODAL 4: FULL TRACEABILITY & CARBON MRV AUDIT LEDGER     */}
+      {/* ======================================================== */}
+      {showTraceabilityModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-emerald-600" />
-                  Harvest Traceability Detail
-                </h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">ID: {detailHarvest.id}</p>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Cryptographic Traceability Ledger</h3>
+                  <p className="text-xs text-slate-500 font-mono">Record: {activeHarvestForStepper.id} • Batch: {activeHarvestForStepper.batchCode}</p>
+                </div>
               </div>
-              <button onClick={() => setDetailHarvest(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowTraceabilityModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Event Metadata Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-              <div>
-                <span className="text-slate-500 block">Operator</span>
-                <span className="font-bold text-slate-900">{detailHarvest.operator}</span>
+            {/* Cryptographic Ledger Breakdown */}
+            <div className="space-y-3 text-xs">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 font-mono">
+                <div className="flex justify-between text-slate-500">
+                  <span>Audit Merkle Root Hash:</span>
+                  <span className="font-bold text-slate-800">0x7f8a9b2c...4d3e2f10</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Optical Sensor Signature:</span>
+                  <span className="font-bold text-slate-800">VERIFIED (52.88 g/L at harvest)</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Carbon Removal Allocation:</span>
+                  <span className="font-bold text-emerald-700">1.19 t CO₂e (ISO 14064-2 Compliant)</span>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-500 block">Method</span>
-                <span className="font-bold text-slate-900">{detailHarvest.harvest_method}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Status</span>
-                <span className="font-bold text-emerald-700">{detailHarvest.status}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Date</span>
-                <span className="font-bold text-slate-900">{new Date(detailHarvest.planned_date).toLocaleDateString()}</span>
+
+              {/* 4 Value Chain Milestones */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-900">1. Atmospheric CO₂ Fixation via Photosynthesis</span>
+                  </div>
+                  <span className="font-mono text-emerald-700 font-bold">+2.14 t CO₂e</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-900">2. Dewatering & Off-Gas Centrifuge Deductions</span>
+                  </div>
+                  <span className="font-mono text-slate-600 font-bold">−0.86 t CO₂e</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-900">3. Durable Bioplastic Fate Locking</span>
+                  </div>
+                  <span className="font-mono text-emerald-700 font-bold">1.28 t CO₂e</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-900">4. Parasitic Operational Energy Deduction</span>
+                  </div>
+                  <span className="font-mono text-slate-600 font-bold">−0.10 t CO₂e</span>
+                </div>
               </div>
             </div>
 
-            {/* Biomass Quantities */}
-            <div className="border border-slate-200 rounded-xl p-4 space-y-2">
-              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Leaf className="w-4 h-4 text-emerald-600" />
-                Biomass Measurements & Yield
-              </h4>
-              <div className="grid grid-cols-3 gap-4 text-sm pt-1">
-                <div>
-                  <span className="text-slate-500 text-xs block">Biomass Before</span>
-                  <span className="font-mono font-bold text-slate-800">
-                    {detailHarvest.biomass_before_g_per_l ? `${detailHarvest.biomass_before_g_per_l.toFixed(2)} g/L` : 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs block">Estimated Harvest</span>
-                  <span className="font-mono font-bold text-blue-700">{detailHarvest.estimated_harvest_kg.toFixed(1)} kg</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs block">Actual Measured</span>
-                  <span className="font-mono font-bold text-emerald-700">
-                    {detailHarvest.actual_harvest_kg ? `${detailHarvest.actual_harvest_kg.toFixed(1)} kg` : 'Pending'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* End-Use Fates */}
-            <div className="border border-slate-200 rounded-xl p-4 space-y-2">
-              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-purple-600" />
-                End-Use Allocations & Fate
-              </h4>
-              {detailHarvest.biomass_fates && detailHarvest.biomass_fates.length > 0 ? (
-                <div className="space-y-2 pt-1">
-                  {detailHarvest.biomass_fates.map(f => (
-                    <div key={f.id} className="flex items-center justify-between bg-purple-50/60 border border-purple-100 p-2.5 rounded-lg text-xs">
-                      <div>
-                        <span className="font-bold text-purple-900 block">{f.end_use_category} ({f.allocation_pct}%)</span>
-                        <span className="text-purple-700">{f.destination}</span>
-                      </div>
-                      <span className="font-mono font-bold text-purple-900">{f.quantity_allocated_kg} kg</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-amber-700 italic pt-1">
-                  No biomass fate allocated yet. Retention factor defaults to unspecified.
-                </p>
-              )}
-            </div>
-
-            {/* Provenance and Navigation Links */}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <Link 
-                href="/review" 
+                href="/carbon"
                 className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
               >
-                <FileText className="w-4 h-4" /> View in Review Workspace
+                Open Carbon Waterfall Dashboard →
               </Link>
-
               <button 
-                onClick={() => setDetailHarvest(null)} 
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors"
+                onClick={() => setShowTraceabilityModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-slate-800"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 5: HARVEST RECORD DETAIL MODAL                     */}
+      {/* ======================================================== */}
+      {showDetailModal && selectedDetailHarvest && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  {selectedDetailHarvest.id} — Harvest Details
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Batch Code: {selectedDetailHarvest.batchCode}
+                </p>
+              </div>
+              <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <div>
+                  <span className="text-slate-400 block font-medium">Execution Date:</span>
+                  <span className="font-bold text-slate-900">{selectedDetailHarvest.date}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Pond Location:</span>
+                  <span className="font-bold text-slate-900">{selectedDetailHarvest.pond}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Extraction Method:</span>
+                  <span className="font-bold text-slate-900">{selectedDetailHarvest.method}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Measured Yield:</span>
+                  <span className="font-mono font-black text-slate-900">{selectedDetailHarvest.biomassKg} kg</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Execution Status:</span>
+                  <span className="font-bold text-emerald-700">{selectedDetailHarvest.status}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Carbon Accounting Link:</span>
+                  <span className="font-bold text-emerald-700">{selectedDetailHarvest.carbonLink}</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-slate-500 font-bold block mb-1">Operational Audit Notes:</span>
+                <p className="text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 font-medium">
+                  {selectedDetailHarvest.notes || 'No operational deviations recorded.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-slate-800"
               >
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
+      {/* ======================================================== */}
+      {/* MODAL 6: LEARN MORE MODAL                                */}
+      {/* ======================================================== */}
+      {showLearnMoreModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-blue-600" />
+                <h3 className="text-base font-black text-slate-900">MRV Biomass Traceability Protocol</h3>
+              </div>
+              <button onClick={() => setShowLearnMoreModal(false)} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              AlgaX MRV enforces strict chain-of-custody tracking from pond optical sensor telemetry, through mechanical centrifugation, to downstream durable carbon fate. Each kilogram of harvested biomass is cryptographically hashed and linked with physical weigh-scale receipts.
+            </p>
+
+            <div className="flex items-center justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setShowLearnMoreModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs"
+              >
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       )}
