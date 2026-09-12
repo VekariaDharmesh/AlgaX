@@ -47,12 +47,26 @@ def list_evidence_packages(
     packages = db.query(models.EvidencePackage).filter(models.EvidencePackage.pond_id == pond_id).order_by(models.EvidencePackage.created_at.desc()).all()
     return packages
 
+@router.get("/evidence-packages", response_model=List[schemas.EvidencePackageResponse])
+def list_all_evidence_packages(
+    pond_id: Optional[uuid.UUID] = Query(None),
+    farm_id: Optional[uuid.UUID] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.EvidencePackage)
+    if pond_id:
+        query = query.filter(models.EvidencePackage.pond_id == pond_id)
+    elif farm_id:
+        query = query.filter(models.EvidencePackage.farm_id == farm_id)
+    return query.order_by(models.EvidencePackage.created_at.desc()).all()
+
 @router.get("/evidence-packages/{pkg_id}", response_model=schemas.EvidencePackageResponse)
 def get_evidence_package(
     pkg_id: uuid.UUID,
     farm_id: Optional[uuid.UUID] = Query(None),
     db: Session = Depends(get_db)
 ):
+
     pkg = db.query(models.EvidencePackage).filter(models.EvidencePackage.id == pkg_id).first()
     if not pkg:
         raise HTTPException(status_code=404, detail="Evidence Package not found")

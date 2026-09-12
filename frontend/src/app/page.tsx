@@ -68,9 +68,9 @@ export default function DashboardOverview() {
             setActivePondId(pondId);
           }
           
-          const res = await fetch(`http://localhost:8000/api/telemetry?pond_id=${pondId}&sensor_type=temperature&limit=24`);
-          const telemetry = await res.json();
-          const temps = telemetry.reverse();
+          const telemetry = await fetchTelemetry(pondId, undefined, 'temperature', 24);
+          const temps = telemetry.slice().reverse();
+
           
           // Fetch Phase 2 Model Estimates
           try {
