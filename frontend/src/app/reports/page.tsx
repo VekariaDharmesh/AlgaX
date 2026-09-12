@@ -741,8 +741,8 @@ export default function ReportsPage() {
                       <span className="bg-emerald-50 text-emerald-700 font-bold text-[10px] px-2 py-0.5 rounded-md border border-emerald-200">
                         {pkg.status}
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(pkg.createdAt).toLocaleDateString()}
+                      <span className="text-[10px] text-slate-400 font-mono" suppressHydrationWarning>
+                        {pkg.createdAt.slice(0, 10)}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">
