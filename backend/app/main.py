@@ -66,24 +66,50 @@ def get_telemetry(
     limit: int = 1000,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.SensorReading)
-    if pond_id:
-        query = query.filter(models.SensorReading.pond_id == pond_id)
-    elif farm_id:
-        query = query.join(models.Pond, models.SensorReading.pond_id == models.Pond.id)\
-                     .filter(models.Pond.farm_id == farm_id)
-    
     if sensor_type:
-        query = query.join(models.Sensor, models.SensorReading.sensor_id == models.Sensor.id)\
-                     .filter(models.Sensor.type == sensor_type)
-    
-    if start_time:
-        query = query.filter(models.SensorReading.timestamp >= start_time)
-    if end_time:
-        query = query.filter(models.SensorReading.timestamp <= end_time)
+        query = db.query(models.SensorReading).join(models.Sensor, models.SensorReading.sensor_id == models.Sensor.id)\
+                  .filter(models.Sensor.type == sensor_type)
+        if pond_id:
+            query = query.filter(models.SensorReading.pond_id == pond_id)
+        elif farm_id:
+            query = query.join(models.Pond, models.SensorReading.pond_id == models.Pond.id)\
+                         .filter(models.Pond.farm_id == farm_id)
+        if start_time:
+            query = query.filter(models.SensorReading.timestamp >= start_time)
+        if end_time:
+            query = query.filter(models.SensorReading.timestamp <= end_time)
+        return query.order_by(desc(models.SensorReading.timestamp)).limit(limit).all()
+    else:
+        # Fetch sensors in target scope
+        sensor_q = db.query(models.Sensor)
+        if pond_id:
+            sensor_q = sensor_q.filter(models.Sensor.pond_id == pond_id)
+        elif farm_id:
+            sensor_q = sensor_q.join(models.Pond, models.Sensor.pond_id == models.Pond.id)\
+                               .filter(models.Pond.farm_id == farm_id)
+        sensors = sensor_q.all()
         
-    readings = query.order_by(desc(models.SensorReading.timestamp)).limit(limit).all()
-    return readings
+        if not sensors:
+            return []
+
+        per_sensor_limit = max(50, limit // max(1, len(sensors)))
+        readings = []
+        for s in sensors:
+            sq = db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id)
+            if start_time:
+                sq = sq.filter(models.SensorReading.timestamp >= start_time)
+            if end_time:
+                sq = sq.filter(models.SensorReading.timestamp <= end_time)
+            
+            res = sq.order_by(desc(models.SensorReading.timestamp)).limit(per_sensor_limit).all()
+            if not res:
+                res = db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id)\
+                        .order_by(desc(models.SensorReading.timestamp)).limit(per_sensor_limit).all()
+            readings.extend(res)
+
+        readings.sort(key=lambda x: x.timestamp if x.timestamp else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+        return readings[:limit]
+
 
 @app.get("/api/sensors", response_model=List[schemas.SensorResponse])
 def get_sensors(

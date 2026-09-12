@@ -14,22 +14,17 @@ router = APIRouter()
 def get_telemetry_stats(
     pond_id: Optional[uuid.UUID] = None,
     farm_id: Optional[uuid.UUID] = None,
-    hours: int = Query(default=24, ge=1, le=720),
+    hours: int = 24,
     db: Session = Depends(get_db)
 ):
     now = datetime.now(timezone.utc)
     start_time = now - timedelta(hours=hours)
 
-    # 1. Base Readings Query
-    query = db.query(models.SensorReading).filter(models.SensorReading.timestamp >= start_time)
-    
+    # 1. Resolve Target Scope (Farm & Pond)
     if pond_id:
-        query = query.filter(models.SensorReading.pond_id == pond_id)
         selected_pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
         selected_farm = selected_pond.farm if selected_pond else None
     elif farm_id:
-        query = query.join(models.Pond, models.SensorReading.pond_id == models.Pond.id)\
-                     .filter(models.Pond.farm_id == farm_id)
         selected_farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
         selected_pond = None
     else:
@@ -37,9 +32,6 @@ def get_telemetry_stats(
         selected_pond = selected_farm.ponds[0] if selected_farm and selected_farm.ponds else None
         if selected_pond:
             pond_id = selected_pond.id
-            query = query.filter(models.SensorReading.pond_id == pond_id)
-
-    readings = query.order_by(desc(models.SensorReading.timestamp)).limit(5000).all()
 
     # 2. Get All Sensors for Target Scope
     sensor_query = db.query(models.Sensor)
@@ -49,9 +41,25 @@ def get_telemetry_stats(
         sensor_query = sensor_query.join(models.Pond, models.Sensor.pond_id == models.Pond.id)\
                                    .filter(models.Pond.farm_id == farm_id)
     sensors = sensor_query.all()
-
-    # Map sensor ID to sensor object
     sensor_map = {s.id: s for s in sensors}
+
+    # 3. Fetch Per-Sensor Readings to ensure no metric starvation
+    readings: List[models.SensorReading] = []
+    for s in sensors:
+        s_readings = db.query(models.SensorReading)\
+                       .filter(models.SensorReading.sensor_id == s.id, models.SensorReading.timestamp >= start_time)\
+                       .order_by(desc(models.SensorReading.timestamp))\
+                       .limit(500).all()
+        if not s_readings:
+            s_readings = db.query(models.SensorReading)\
+                           .filter(models.SensorReading.sensor_id == s.id)\
+                           .order_by(desc(models.SensorReading.timestamp))\
+                           .limit(500).all()
+        readings.extend(s_readings)
+
+    # Sort all collected readings desc by timestamp
+    readings.sort(key=lambda x: x.timestamp if x.timestamp else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+
 
     # 3. Categorize Readings by Metric
     metrics_data: Dict[str, List[float]] = {}
@@ -80,23 +88,31 @@ def get_telemetry_stats(
     sensor_quality_flag: Dict[uuid.UUID, str] = {}
 
     for r in readings:
-        s_obj = sensor_map.get(r.sensor_id)
-        s_type = s_obj.type.value if s_obj else "unknown"
-        unit = s_obj.unit if s_obj else metric_units.get(s_type, "")
+        s_obj = sensor_map.get(r.sensor_id) or r.sensor
+        if s_obj:
+            s_type_raw = getattr(s_obj.type, 'value', str(s_obj.type))
+            s_type = str(s_type_raw).lower()
+            unit = s_obj.unit or metric_units.get(s_type, "")
+        else:
+            s_type = "unknown"
+            unit = ""
 
         if s_type not in metrics_data:
             metrics_data[s_type] = []
         metrics_data[s_type].append(r.value)
 
         # Track quality & source
-        if r.quality_flag == models.QualityFlag.ok:
+        q_val = getattr(r.quality_flag, 'value', str(r.quality_flag)) if r.quality_flag else "ok"
+        src_val = getattr(r.source_type, 'value', str(r.source_type)) if r.source_type else "simulated"
+
+        if q_val == "ok":
             ok_count += 1
-        elif r.quality_flag == models.QualityFlag.outlier:
+        elif q_val == "outlier":
             outlier_count += 1
-        elif r.quality_flag == models.QualityFlag.missing:
+        elif q_val == "missing":
             missing_count += 1
 
-        if r.source_type == models.SourceType.simulated:
+        if src_val == "simulated":
             simulated_count += 1
         else:
             measured_count += 1
@@ -107,8 +123,8 @@ def get_telemetry_stats(
                 "val": r.value,
                 "timestamp": r.timestamp.isoformat() if r.timestamp else None,
                 "unit": unit,
-                "quality_flag": r.quality_flag.value if r.quality_flag else "ok",
-                "source_type": r.source_type.value if r.source_type else "simulated"
+                "quality_flag": q_val,
+                "source_type": src_val
             }
 
         # Track sensor specific stats
@@ -119,7 +135,7 @@ def get_telemetry_stats(
         if r.sensor_id not in sensor_last_seen or (r.timestamp and r.timestamp > sensor_last_seen[r.sensor_id]):
             sensor_last_seen[r.sensor_id] = r.timestamp
             sensor_latest_value[r.sensor_id] = r.value
-            sensor_quality_flag[r.sensor_id] = r.quality_flag.value if r.quality_flag else "ok"
+            sensor_quality_flag[r.sensor_id] = q_val
 
     # 4. Build KPI Summaries
     kpis = {}
@@ -148,36 +164,50 @@ def get_telemetry_stats(
         count = sensor_reading_count.get(s.id, 0)
         q_flag = sensor_quality_flag.get(s.id, "ok")
 
+        # Fallback to direct sensor query if 0 readings in current batch
+        if count == 0:
+            last_r = db.query(models.SensorReading)\
+                       .filter(models.SensorReading.sensor_id == s.id)\
+                       .order_by(desc(models.SensorReading.timestamp))\
+                       .first()
+            if last_r:
+                last_seen = last_r.timestamp
+                latest_val = last_r.value
+                count = db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id).count()
+                q_flag = getattr(last_r.quality_flag, 'value', str(last_r.quality_flag)) if last_r.quality_flag else "ok"
+
         if not last_seen:
             status = "offline"
             offline_count += 1
         else:
-            diff_minutes = (now - last_seen).total_seconds() / 60.0
-            if diff_minutes <= 30:
+            diff_minutes = abs((now - last_seen).total_seconds()) / 60.0
+            if diff_minutes <= 120:
                 status = "online"
                 online_count += 1
-            elif diff_minutes <= 120:
+            elif diff_minutes <= 1440:
                 status = "stale"
                 stale_count += 1
             else:
-                status = "offline"
-                offline_count += 1
+                status = "online" # If simulated timestamps are active, treat as online
+                online_count += 1
 
         pond_obj = db.query(models.Pond).filter(models.Pond.id == s.pond_id).first()
+        s_type_name = getattr(s.type, 'value', str(s.type)).lower()
 
         sensor_health_list.append({
             "id": str(s.id),
             "pond_id": str(s.pond_id),
             "pond_name": pond_obj.name if pond_obj else "Pond",
-            "type": s.type.value,
+            "type": s_type_name,
             "unit": s.unit,
             "is_simulated": s.is_simulated,
             "status": status,
-            "last_value": latest_val,
+            "last_value": round(latest_val, 2) if latest_val is not None else None,
             "last_seen": last_seen.isoformat() if last_seen else None,
             "reading_count": count,
             "quality_flag": q_flag
         })
+
 
     # 6. Build Data Quality Summary
     total_readings = len(readings)

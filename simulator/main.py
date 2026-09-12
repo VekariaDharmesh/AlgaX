@@ -174,14 +174,17 @@ async def inject_scenario(req: ScenarioReq):
     
     if req.scenario == "nutrient_depletion":
         state.active_scenario = "nutrient_depletion"
+        state.dropout_sensor_type = None
     elif req.scenario == "heatwave":
         state.active_scenario = "heatwave"
+        state.dropout_sensor_type = None
     elif req.scenario == "sensor_dropout":
         state.active_scenario = "sensor_dropout"
         state.dropout_sensor_type = "temperature" # arbitrary choice
     else:
         state.active_scenario = None
         state.dropout_sensor_type = None
+
         
     return {"status": "ok", "scenario": req.scenario}
 

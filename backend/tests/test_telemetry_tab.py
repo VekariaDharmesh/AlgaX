@@ -142,3 +142,56 @@ def test_telemetry_gap_detection():
     finally:
         db.close()
 
+def test_water_temperature_pipeline():
+    db = SessionLocal()
+    try:
+        farm = models.Farm(id=uuid.uuid4(), name="Temperature Pipeline Farm")
+        db.add(farm)
+        db.commit()
+
+        pond = models.Pond(id=uuid.uuid4(), farm_id=farm.id, name="Temperature Pond")
+        db.add(pond)
+        db.commit()
+
+        sensor_temp = models.Sensor(
+            id=uuid.uuid4(),
+            pond_id=pond.id,
+            type=models.SensorType.temperature,
+            unit="°C",
+            is_simulated=True
+        )
+        db.add(sensor_temp)
+        db.commit()
+
+        now = datetime.now(timezone.utc)
+
+        r = models.SensorReading(
+            id=uuid.uuid4(),
+            sensor_id=sensor_temp.id,
+            pond_id=pond.id,
+            timestamp=now - timedelta(minutes=2),
+            value=25.84,
+            quality_flag=models.QualityFlag.ok,
+            source_type=models.SourceType.simulated
+        )
+        db.add(r)
+        db.commit()
+
+        # Check telemetry endpoint
+        res = client.get(f"/api/telemetry?pond_id={pond.id}")
+        assert res.status_code == 200
+        items = res.json()
+        assert len(items) >= 1
+        assert items[0]["value"] == 25.84
+
+        # Check telemetry stats endpoint
+        res_stats = client.get(f"/api/telemetry/stats?pond_id={pond.id}")
+        assert res_stats.status_code == 200
+        stats = res_stats.json()
+        assert "temperature" in stats["kpis"]
+        assert stats["kpis"]["temperature"]["latest"] == 25.84
+        assert stats["kpis"]["temperature"]["unit"] == "°C"
+    finally:
+        db.close()
+
+
