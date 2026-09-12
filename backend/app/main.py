@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from . import models, schemas
@@ -87,3 +87,55 @@ def get_ponds(farm_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db)
     if farm_id:
         query = query.filter(models.Pond.farm_id == farm_id)
     return query.all()
+
+from .services import execute_model_run
+
+class ModelRunRequest(schemas.BaseModel):
+    pond_id: uuid.UUID
+    period_start: datetime
+    period_end: datetime
+
+@app.post("/api/model/run", response_model=schemas.ModelRunResponse)
+def trigger_model_run(req: ModelRunRequest, db: Session = Depends(get_db)):
+    try:
+        m_run = execute_model_run(db, req.pond_id, req.period_start, req.period_end)
+        return m_run
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Model run failed: {str(e)}")
+
+@app.get("/api/model/biomass", response_model=List[schemas.BiomassEstimateResponse])
+def get_biomass_estimates(pond_id: uuid.UUID, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.BiomassEstimate).filter(models.BiomassEstimate.pond_id == pond_id)\
+        .order_by(desc(models.BiomassEstimate.timestamp)).limit(limit).all()
+
+@app.get("/api/model/carbon", response_model=List[schemas.CarbonEstimateResponse])
+def get_carbon_estimates(pond_id: uuid.UUID, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.CarbonEstimate).filter(models.CarbonEstimate.pond_id == pond_id)\
+        .order_by(desc(models.CarbonEstimate.period_end)).limit(limit).all()
+
+import asyncio
+from datetime import timedelta
+from sqlalchemy.orm import Session
+from .database import SessionLocal
+
+async def model_loop():
+    while True:
+        await asyncio.sleep(5)
+        try:
+            db = SessionLocal()
+            ponds = get_ponds(db=db)
+            if ponds:
+                end_time = datetime.now(timezone.utc)
+                start_time = end_time - timedelta(hours=1)
+                for p in ponds:
+                    execute_model_run(db, p.id, start_time, end_time)
+            db.close()
+        except Exception as e:
+            print("Model loop error:", e)
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(model_loop())

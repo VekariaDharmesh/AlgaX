@@ -21,3 +21,15 @@ export async function injectScenario(pondId: string, scenario: string) {
   if (!res.ok) throw new Error('Failed to inject scenario');
   return res.json();
 }
+
+export async function fetchBiomassEstimates(pondId: string) {
+  const res = await fetch(`${API_BASE_URL}/model/biomass?pond_id=${pondId}`);
+  if (!res.ok) throw new Error("Failed to fetch biomass estimates");
+  return res.json();
+}
+
+export async function fetchCarbonEstimates(pondId: string) {
+  const res = await fetch(`${API_BASE_URL}/model/carbon?pond_id=${pondId}`);
+  if (!res.ok) throw new Error("Failed to fetch carbon estimates");
+  return res.json();
+}

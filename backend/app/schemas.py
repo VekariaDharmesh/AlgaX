@@ -54,3 +54,55 @@ class FarmResponse(FarmBase):
     ponds: List[PondResponse] = []
     class Config:
         from_attributes = True
+
+class BiomassEstimateResponse(BaseModel):
+    id: UUID
+    pond_id: UUID
+    model_run_id: UUID
+    timestamp: datetime
+    biomass_g_per_l: float
+    light_factor: float
+    temp_factor: float
+    ph_factor: float
+    n_factor: float
+    growth_rate: float
+    method: str
+    confidence_score: float
+
+    class Config:
+        from_attributes = True
+
+class CarbonEstimateResponse(BaseModel):
+    id: UUID
+    pond_id: UUID
+    model_run_id: UUID
+    period_start: datetime
+    period_end: datetime
+    gross_co2_kg: float
+    retained_co2_kg: Optional[float]
+    operational_emissions_kg: Optional[float]
+    net_carbon_removed_kg: Optional[float]
+    realized_c_fraction: float
+    end_use: str
+    permanence_horizon_label: Optional[str]
+    confidence_score: float
+
+    class Config:
+        from_attributes = True
+
+class ModelRunResponse(BaseModel):
+    id: UUID
+    pond_id: UUID
+    model_version: str
+    period_start: datetime
+    period_end: datetime
+    parameters: dict
+    execution_timestamp: datetime
+    status: str
+    provenance: str
+
+    biomass_estimates: List[BiomassEstimateResponse] = []
+    carbon_estimates: List[CarbonEstimateResponse] = []
+
+    class Config:
+        from_attributes = True

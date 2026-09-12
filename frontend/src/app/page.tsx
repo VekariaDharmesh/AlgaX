@@ -7,7 +7,7 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 import { DEMO_ANOMALIES } from '@/lib/demo/anomalies';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
-import { fetchPonds, injectScenario } from '@/lib/api';
+import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates } from '@/lib/api';
 
 const verificationData = [
   { name: 'Modeled', value: 8, color: '#16a34a' },
@@ -20,6 +20,8 @@ export default function DashboardOverview() {
   const carbon = DEMO_CARBON_ACCOUNTING;
   
   const [telemetryData, setTelemetryData] = useState<{time: string, value: number}[]>([]);
+  const [biomassAvg, setBiomassAvg] = useState<number | null>(null);
+  const [grossCo2, setGrossCo2] = useState<number | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [activePondId, setActivePondId] = useState<string | null>(null);
 
@@ -39,6 +41,19 @@ export default function DashboardOverview() {
           const res = await fetch(`http://localhost:8000/api/telemetry?pond_id=${pondId}&sensor_type=temperature&limit=24`);
           const telemetry = await res.json();
           const temps = telemetry.reverse();
+          
+          // Fetch Phase 2 Model Estimates
+          try {
+            const bioData = await fetchBiomassEstimates(pondId);
+            const carData = await fetchCarbonEstimates(pondId);
+            
+            if (mounted) {
+              if (bioData && bioData.length > 0) setBiomassAvg(bioData[0].biomass_g_per_l);
+              if (carData && carData.length > 0) setGrossCo2(carData[0].gross_co2_kg);
+            }
+          } catch (e) {
+            console.error("Failed to load model estimates", e);
+          }
           
           if (mounted) {
             setTelemetryData(temps.map((t: {timestamp: string, value: number}) => ({
@@ -132,13 +147,13 @@ export default function DashboardOverview() {
                 <Leaf className="w-6 h-6 text-green-700" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Net Carbon Removed</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">1,188 <span className="text-lg">kg CO₂e</span></span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gross CO₂ Fixed</span>
+                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">{grossCo2 !== null ? grossCo2.toFixed(1) : '-'} <span className="text-lg">kg CO₂e</span></span>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-green-600 flex items-center">
-                ↑ 12%
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center">
+                MODELED
               </span>
               <span className="text-xs text-slate-500 font-medium">This reporting period</span>
             </div>
@@ -151,13 +166,13 @@ export default function DashboardOverview() {
                 <FlaskConical className="w-6 h-6 text-teal-600" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Biomass (Avg)</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">0.86 <span className="text-lg">g/L</span></span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Estimated Biomass</span>
+                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">{biomassAvg !== null ? biomassAvg.toFixed(2) : '-'} <span className="text-lg">g/L</span></span>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-green-600 flex items-center">
-                ↑ 5%
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 flex items-center">
+                MODELED
               </span>
               <span className="text-xs text-slate-500 font-medium">Across all ponds</span>
             </div>
