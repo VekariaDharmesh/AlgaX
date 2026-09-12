@@ -150,3 +150,49 @@ class CarbonEstimate(Base):
     confidence_score = Column(Float, nullable=False)
 
     model_run = relationship("ModelRun", back_populates="carbon_estimates")
+
+class AnomalyType(str, enum.Enum):
+    OUT_OF_RANGE = "OUT_OF_RANGE"
+    SUDDEN_SPIKE = "SUDDEN_SPIKE"
+    SUDDEN_DROP = "SUDDEN_DROP"
+    RATE_OF_CHANGE = "RATE_OF_CHANGE"
+    STALE_VALUE = "STALE_VALUE"
+    SENSOR_DROPOUT = "SENSOR_DROPOUT"
+    ENVIRONMENTAL = "ENVIRONMENTAL" # For 3.2
+
+class AnomalySeverity(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+class AnomalyStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+
+class Anomaly(Base):
+    __tablename__ = "anomaly"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=True)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensor.id"), nullable=True)
+    sensor_type = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False) # Event time
+    detected_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    anomaly_type = Column(Enum(AnomalyType), nullable=False)
+    severity = Column(Enum(AnomalySeverity), nullable=False)
+    confidence_score = Column(Float, nullable=False)
+    
+    observed_value = Column(Float, nullable=True)
+    expected_value = Column(Float, nullable=True)
+    deviation = Column(Float, nullable=True)
+    
+    description = Column(String, nullable=False)
+    source_provenance = Column(String, nullable=False)
+    status = Column(Enum(AnomalyStatus), nullable=False, default=AnomalyStatus.OPEN)
+    
+    # Phase 3.2/3.4 
+    limiting_factor = Column(String, nullable=True)
+    explanation = Column(JSON, nullable=True)

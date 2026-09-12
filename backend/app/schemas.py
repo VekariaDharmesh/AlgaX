@@ -106,3 +106,28 @@ class ModelRunResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AnomalyBase(BaseModel):
+    farm_id: Optional[UUID] = None
+    pond_id: UUID
+    sensor_id: Optional[UUID] = None
+    sensor_type: Optional[str] = None
+    timestamp: datetime
+    detected_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    anomaly_type: str
+    severity: str
+    confidence_score: float
+    observed_value: Optional[float] = None
+    expected_value: Optional[float] = None
+    deviation: Optional[float] = None
+    description: str
+    source_provenance: str
+    status: str
+    limiting_factor: Optional[str] = None
+    explanation: Optional[dict] = None
+
+class AnomalyResponse(AnomalyBase):
+    id: UUID
+    class Config:
+        from_attributes = True

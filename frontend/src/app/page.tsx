@@ -7,7 +7,7 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 import { DEMO_ANOMALIES } from '@/lib/demo/anomalies';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
-import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates } from '@/lib/api';
+import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies } from '@/lib/api';
 
 const verificationData = [
   { name: 'Modeled', value: 8, color: '#16a34a' },
@@ -22,6 +22,7 @@ export default function DashboardOverview() {
   const [telemetryData, setTelemetryData] = useState<{time: string, value: number}[]>([]);
   const [biomassAvg, setBiomassAvg] = useState<number | null>(null);
   const [grossCo2, setGrossCo2] = useState<number | null>(null);
+  const [anomalies, setAnomalies] = useState<any[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [activePondId, setActivePondId] = useState<string | null>(null);
 
@@ -51,8 +52,13 @@ export default function DashboardOverview() {
               if (bioData && bioData.length > 0) setBiomassAvg(bioData[0].biomass_g_per_l);
               if (carData && carData.length > 0) setGrossCo2(carData[0].gross_co2_kg);
             }
+            
+            const anomaliesData = await fetchAnomalies();
+            if (mounted) {
+              setAnomalies(anomaliesData);
+            }
           } catch (e) {
-            console.error("Failed to load model estimates", e);
+            console.error("Failed to load estimates or anomalies", e);
           }
           
           if (mounted) {
@@ -375,36 +381,35 @@ export default function DashboardOverview() {
           </div>
           
           <div className="space-y-4">
-            {DEMO_ANOMALIES.map((anomaly, index) => (
-              <div key={anomaly.id} className={`flex gap-3 pb-4 ${index !== DEMO_ANOMALIES.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  anomaly.severity === 'HIGH' ? 'bg-red-100 text-red-600' :
-                  anomaly.severity === 'MEDIUM' ? 'bg-orange-100 text-orange-500' :
-                  'bg-blue-100 text-blue-500'
-                }`}>
-                  <AlertCircle className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                        {anomaly.title}
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                          anomaly.severity === 'HIGH' ? 'bg-red-50 text-red-600' :
-                          anomaly.severity === 'MEDIUM' ? 'bg-orange-50 text-orange-600' :
-                          'bg-blue-50 text-blue-600'
-                        }`}>
-                          {anomaly.severity}
-                        </span>
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-0.5">{anomaly.pondName} · {anomaly.timeAgo}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-300 mt-1" />
+            {anomalies.length === 0 ? (
+              <p className="text-sm text-gray-500">No active sensor anomalies.</p>
+            ) : (
+              anomalies.map((anomaly: any, index: number) => (
+                <div key={anomaly.id} className={`flex gap-3 pb-4 ${index !== anomalies.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                  <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    anomaly.severity === 'CRITICAL' || anomaly.severity === 'HIGH' ? 'bg-red-100 text-red-600' :
+                    anomaly.severity === 'MEDIUM' ? 'bg-orange-100 text-orange-500' :
+                    'bg-blue-100 text-blue-500'
+                  }`}>
+                    <AlertCircle className="w-4 h-4" />
                   </div>
-                  <p className="text-xs text-gray-600 mt-1">{anomaly.description}</p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-sm text-gray-900">{anomaly.anomaly_type.replace(/_/g, ' ')}</h4>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                        anomaly.severity === 'CRITICAL' || anomaly.severity === 'HIGH' ? 'bg-red-50 text-red-600' :
+                        anomaly.severity === 'MEDIUM' ? 'bg-orange-50 text-orange-600' :
+                        'bg-blue-50 text-blue-600'
+                      }`}>
+                        {anomaly.severity}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">Confidence: {anomaly.confidence_score} · Sensor: {anomaly.sensor_type}</p>
+                    <p className="text-xs text-gray-600 mt-1">{anomaly.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

@@ -38,6 +38,11 @@ def ingest_reading(reading: schemas.SensorReadingCreate, db: Session = Depends(g
     db.add(db_reading)
     db.commit()
     db.refresh(db_reading)
+    
+    # Phase 3.1: Trigger Sensor Anomaly Detection
+    from .anomaly.service import run_sensor_anomaly_detection
+    run_sensor_anomaly_detection(db, db_reading)
+    
     return db_reading
 
 @app.get("/api/telemetry", response_model=List[schemas.SensorReadingResponse])
@@ -132,6 +137,11 @@ async def model_loop():
                 start_time = end_time - timedelta(hours=1)
                 for p in ponds:
                     execute_model_run(db, p.id, start_time, end_time)
+            
+            # Phase 3.1: Check for sensor dropouts
+            from .anomaly.service import check_for_dropouts
+            check_for_dropouts(db)
+            
             db.close()
         except Exception as e:
             print("Model loop error:", e)
@@ -139,3 +149,30 @@ async def model_loop():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(model_loop())
+
+@app.get("/api/anomalies", response_model=List[schemas.AnomalyResponse])
+def get_anomalies(
+    db: Session = Depends(get_db),
+    pond_id: Optional[uuid.UUID] = None,
+    status: Optional[str] = None,
+    limit: int = 50
+):
+    query = db.query(models.Anomaly)
+    if pond_id:
+        query = query.filter(models.Anomaly.pond_id == pond_id)
+    if status:
+        query = query.filter(models.Anomaly.status == status)
+        
+    return query.order_by(desc(models.Anomaly.timestamp)).limit(limit).all()
+
+@app.get("/api/ponds/{pond_id}/anomalies", response_model=List[schemas.AnomalyResponse])
+def get_pond_anomalies(
+    pond_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    status: Optional[str] = None,
+    limit: int = 50
+):
+    query = db.query(models.Anomaly).filter(models.Anomaly.pond_id == pond_id)
+    if status:
+        query = query.filter(models.Anomaly.status == status)
+    return query.order_by(desc(models.Anomaly.timestamp)).limit(limit).all()

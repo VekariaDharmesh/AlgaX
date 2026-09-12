@@ -33,3 +33,9 @@ export async function fetchCarbonEstimates(pondId: string) {
   if (!res.ok) throw new Error("Failed to fetch carbon estimates");
   return res.json();
 }
+
+export async function fetchAnomalies() {
+  const res = await fetch(`${API_BASE_URL}/anomalies?limit=5&status=OPEN`);
+  if (!res.ok) throw new Error("Failed to fetch anomalies");
+  return res.json();
+}
