@@ -232,3 +232,36 @@ class QualityAssessmentResponse(BaseModel):
     quality_classification: Optional[str] = None
     quality_flags: list = []
     quality_metrics: Optional[dict] = None
+
+class ImageryAnalysisResponse(BaseModel):
+    id: UUID
+    imagery_id: UUID
+    processing_id: UUID
+    pond_id: UUID
+    farm_id: UUID
+    source_type: str
+    analysis_version: str
+    roi_method: str
+    
+    mean_red: Optional[float] = None
+    mean_green: Optional[float] = None
+    mean_blue: Optional[float] = None
+    green_dominance: Optional[float] = None
+    green_pixel_fraction: Optional[float] = None
+    valid_pixel_fraction: Optional[float] = None
+    spatial_mean: Optional[float] = None
+    spatial_std: Optional[float] = None
+    grid_data: Optional[dict] = None
+    
+    analysis_status: str
+    
+    baseline_analysis_id: Optional[UUID] = None
+    absolute_change: Optional[float] = None
+    relative_change: Optional[float] = None
+    change_classification: Optional[str] = None
+    
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

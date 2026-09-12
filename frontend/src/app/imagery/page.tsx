@@ -38,6 +38,19 @@ interface ImageryProcessingResponse {
   };
 }
 
+interface ImageryAnalysisResponse {
+  id: string;
+  analysis_status: string;
+  green_dominance: number;
+  green_pixel_fraction: number;
+  spatial_mean: number;
+  spatial_std: number;
+  absolute_change: number | null;
+  relative_change: number | null;
+  change_classification: string | null;
+  grid_data: { row: number; col: number; green_fraction: number }[];
+}
+
 export default function ImageryPage() {
   const [imagery, setImagery] = useState<ImageryRecord[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -47,6 +60,8 @@ export default function ImageryPage() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [processingData, setProcessingData] = useState<ImageryProcessingResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [analysisData, setAnalysisData] = useState<ImageryAnalysisResponse | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Upload form state
   const [selectedFarm, setSelectedFarm] = useState("");
@@ -92,6 +107,15 @@ export default function ImageryPage() {
         })
         .then(data => setProcessingData(data))
         .catch(() => setProcessingData(null));
+
+      setAnalysisData(null);
+      fetch(`${API_BASE}/imagery/${previewId}/analysis`)
+        .then(res => {
+          if (res.ok) return res.json();
+          return null;
+        })
+        .then(data => setAnalysisData(data))
+        .catch(() => setAnalysisData(null));
     }
   }, [previewId]);
 
@@ -108,6 +132,26 @@ export default function ImageryPage() {
       console.error(e);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!previewId) return;
+    setIsAnalyzing(true);
+    try {
+      const res = await fetch(`${API_BASE}/imagery/${previewId}/analyze`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setAnalysisData(data);
+      } else {
+        const errData = await res.json();
+        alert(`Analysis failed: ${errData.detail}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Analysis failed.");
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -410,6 +454,74 @@ export default function ImageryPage() {
               ) : (
                 <div className="text-center text-blue-600/70 py-4 italic">
                   Image has not been processed yet. Click the button above to run Phase 4.2 preprocessing.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 p-4 bg-purple-50 border border-purple-100 rounded-lg text-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-purple-900">Phase 4.3 Visual & Temporal Analysis</h4>
+                <button 
+                  onClick={handleAnalyzeImage}
+                  disabled={isAnalyzing || !processingData || processingData.quality_classification === "UNSUITABLE"}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50"
+                  title={!processingData ? "Must run processing first" : processingData.quality_classification === "UNSUITABLE" ? "Image unsuitable for analysis" : ""}
+                >
+                  {isAnalyzing ? "Analyzing..." : analysisData ? "Re-Analyze Image" : "Run Visual Analysis"}
+                </button>
+              </div>
+
+              {analysisData ? (
+                <div className="grid grid-cols-2 gap-4 text-purple-900">
+                  <div>
+                    <span className="font-semibold block mb-1">Analysis Status</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      analysisData.analysis_status === "READY" ? "bg-green-100 text-green-700" :
+                      analysisData.analysis_status === "REVIEW" ? "bg-orange-100 text-orange-700" :
+                      "bg-red-100 text-red-700"
+                    }`}>
+                      {analysisData.analysis_status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold block">Visual Green Coverage</span>
+                    <span className="text-xl font-bold">
+                      {analysisData.green_pixel_fraction !== null ? (analysisData.green_pixel_fraction * 100).toFixed(1) : "N/A"}%
+                    </span>
+                    <span className="text-xs block text-purple-700/70">
+                      Mean Dominance: {analysisData.green_dominance?.toFixed(3) || "N/A"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold block">Spatial Distribution</span>
+                    <ul className="list-disc list-inside text-xs mt-1">
+                      <li>Spatial Mean: {analysisData.spatial_mean?.toFixed(3) || "N/A"}</li>
+                      <li>Spatial Std: {analysisData.spatial_std?.toFixed(3) || "N/A"}</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="font-semibold block">Temporal Change</span>
+                    {analysisData.change_classification ? (
+                      <div className="mt-1">
+                        <span className={`px-2 py-1 rounded text-xs font-bold mr-2 ${
+                          analysisData.change_classification === "INCREASE" ? "bg-green-100 text-green-700" :
+                          analysisData.change_classification === "DECREASE" ? "bg-red-100 text-red-700" :
+                          "bg-gray-200 text-gray-700"
+                        }`}>
+                          {analysisData.change_classification}
+                        </span>
+                        <span className="text-xs">
+                          {analysisData.absolute_change !== null ? (analysisData.absolute_change > 0 ? "+" : "") + (analysisData.absolute_change * 100).toFixed(1) + " pp" : ""}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-purple-700/70 text-xs italic">No comparable baseline found.</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-purple-600/70 py-4 italic">
+                  Visual analysis has not been performed yet. Click the button above to run Phase 4.3 analysis.
                 </div>
               )}
             </div>

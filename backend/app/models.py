@@ -334,3 +334,52 @@ class ImageryProcessing(Base):
     
     imagery_record = relationship("ImageryRecord", backref=backref("processings", cascade="all, delete-orphan"))
 
+
+class AnalysisStatus(str, enum.Enum):
+    READY = "READY"
+    REVIEW = "REVIEW"
+    BLOCKED = "BLOCKED"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+class TemporalChangeClassification(str, enum.Enum):
+    INCREASE = "INCREASE"
+    DECREASE = "DECREASE"
+    STABLE = "STABLE"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+class ImageryAnalysis(Base):
+    __tablename__ = "imagery_analysis"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    imagery_id = Column(UUID(as_uuid=True), ForeignKey("imagery_record.id"), nullable=False)
+    processing_id = Column(UUID(as_uuid=True), ForeignKey("imagery_processing.id"), nullable=False)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
+    source_type = Column(Enum(ImagerySourceType), nullable=False)
+    
+    analysis_version = Column(String, nullable=False)
+    roi_method = Column(String, nullable=False)
+    
+    mean_red = Column(Float, nullable=True)
+    mean_green = Column(Float, nullable=True)
+    mean_blue = Column(Float, nullable=True)
+    green_dominance = Column(Float, nullable=True)
+    green_pixel_fraction = Column(Float, nullable=True)
+    valid_pixel_fraction = Column(Float, nullable=True)
+    spatial_mean = Column(Float, nullable=True)
+    spatial_std = Column(Float, nullable=True)
+    grid_data = Column(JSON, nullable=True)
+    
+    analysis_status = Column(Enum(AnalysisStatus), nullable=False, default=AnalysisStatus.READY)
+    
+    baseline_analysis_id = Column(UUID(as_uuid=True), ForeignKey("imagery_analysis.id"), nullable=True)
+    absolute_change = Column(Float, nullable=True)
+    relative_change = Column(Float, nullable=True)
+    change_classification = Column(Enum(TemporalChangeClassification), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    
+    imagery_record = relationship("ImageryRecord", backref=backref("analyses", cascade="all, delete-orphan"))
+    processing_record = relationship("ImageryProcessing", backref=backref("analyses", cascade="all, delete-orphan"))
+    baseline_analysis = relationship("ImageryAnalysis", remote_side=[id], backref=backref("comparisons", cascade="all, delete-orphan"))

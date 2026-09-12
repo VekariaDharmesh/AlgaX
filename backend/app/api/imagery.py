@@ -184,3 +184,41 @@ def get_imagery_quality(record_id: uuid.UUID, db: Session = Depends(get_db)):
     if not processing:
         raise HTTPException(status_code=404, detail="Quality assessment not found (process the image first)")
     return processing
+
+
+from .. import services
+
+@router.post("/imagery/{record_id}/analyze", response_model=schemas.ImageryAnalysisResponse)
+def analyze_imagery_endpoint(record_id: uuid.UUID, db: Session = Depends(get_db)):
+    record = db.query(models.ImageryRecord).filter(models.ImageryRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Imagery record not found")
+        
+    processing = db.query(models.ImageryProcessing).filter(models.ImageryProcessing.imagery_id == record_id).order_by(desc(models.ImageryProcessing.created_at)).first()
+    if not processing:
+        raise HTTPException(status_code=400, detail="Image must be processed before analysis")
+        
+    try:
+        analysis = services.perform_visual_analysis(db, processing.id)
+        return analysis
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/imagery/{record_id}/analysis", response_model=schemas.ImageryAnalysisResponse)
+def get_imagery_analysis(record_id: uuid.UUID, db: Session = Depends(get_db)):
+    record = db.query(models.ImageryRecord).filter(models.ImageryRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Imagery record not found")
+        
+    analysis = db.query(models.ImageryAnalysis).filter(models.ImageryAnalysis.imagery_id == record_id).order_by(desc(models.ImageryAnalysis.created_at)).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis record not found")
+    return analysis
+
+@router.get("/ponds/{pond_id}/imagery/analysis", response_model=List[schemas.ImageryAnalysisResponse])
+def get_pond_imagery_analysis_trends(pond_id: uuid.UUID, limit: int = 50, db: Session = Depends(get_db)):
+    analyses = db.query(models.ImageryAnalysis).filter(
+        models.ImageryAnalysis.pond_id == pond_id
+    ).order_by(desc(models.ImageryAnalysis.created_at)).limit(limit).all()
+    return analyses
+

@@ -96,6 +96,13 @@ export default function DashboardOverview() {
     };
   }, []);
   
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Hero Banner */}
@@ -111,7 +118,7 @@ export default function DashboardOverview() {
         <div className="relative z-10 w-full px-8 flex justify-between items-start mb-8">
           <div>
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-              Good morning, Operator
+              {getGreeting()}, Operator
               {isLive && (
                 <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1 shadow-sm border border-blue-100">
                   <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
@@ -363,14 +370,17 @@ export default function DashboardOverview() {
           </div>
 
           <div className="h-48 w-full relative">
-            <div className="absolute top-0 left-0 text-[10px] text-gray-400 transform -rotate-90 origin-bottom-left -translate-y-8 translate-x-2">
-              Dissolved O₂ (mg/L)
-            </div>
             <ResponsiveContainer width="100%" height={192}>
-              <LineChart data={telemetryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={telemetryData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                 <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
-                <YAxis domain={[0, 12]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <YAxis 
+                  domain={[0, 12]} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fill: '#9ca3af' }} 
+                  label={{ value: 'Dissolved O₂ (mg/L)', angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: '#9ca3af', fontSize: 10 } }}
+                />
                 <Tooltip 
                   contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   labelStyle={{ display: 'none' }}
