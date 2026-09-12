@@ -194,4 +194,62 @@ def test_water_temperature_pipeline():
     finally:
         db.close()
 
+def test_metric_waveform_distinctness():
+    from seed import seed_database
+    seed_database(force=True)
+    db = SessionLocal()
+    try:
+        pond = db.query(models.Pond).first()
+        assert pond is not None
+
+        res_stats = client.get(f"/api/telemetry/stats?pond_id={pond.id}&hours=24")
+        assert res_stats.status_code == 200
+        kpis = res_stats.json()["kpis"]
+
+        assert "temperature" in kpis
+        assert "ph" in kpis
+        assert "light" in kpis
+        assert "nitrogen" in kpis
+        assert "dissolved_oxygen" in kpis
+        assert "turbidity" in kpis
+        assert "biomass" in kpis
+
+        # Verify distinct KPI profiles across metrics
+        assert kpis["light"]["min"] == 0.0
+        assert kpis["light"]["max"] > 700.0
+        assert kpis["temperature"]["min"] > 15.0 and kpis["temperature"]["max"] < 35.0
+        assert kpis["ph"]["min"] >= 7.0 and kpis["ph"]["max"] <= 9.0
+        assert kpis["nitrogen"]["min"] < kpis["nitrogen"]["max"]
+        assert kpis["biomass"]["min"] < kpis["biomass"]["max"]
+
+        # Fetch telemetry readings per metric
+        res_telemetry = client.get(f"/api/telemetry?pond_id={pond.id}&limit=500")
+        assert res_telemetry.status_code == 200
+        readings = res_telemetry.json()
+        assert len(readings) > 0
+
+        sensors = db.query(models.Sensor).filter(models.Sensor.pond_id == pond.id).all()
+        sensor_type_map = {str(s.id): s.type.value if hasattr(s.type, 'value') else str(s.type) for s in sensors}
+
+        metric_readings = {}
+        for r in readings:
+            stype = sensor_type_map.get(str(r["sensor_id"]))
+            if stype:
+                if stype not in metric_readings:
+                    metric_readings[stype] = []
+                metric_readings[stype].append(r["value"])
+
+        # Verify each metric has its own distinct array of values
+        assert len(metric_readings["temperature"]) > 0
+        assert len(metric_readings["light"]) > 0
+        assert len(metric_readings["nitrogen"]) > 0
+        assert len(metric_readings["dissolved_oxygen"]) > 0
+
+        # Assert waveforms are not identical across metrics
+        assert metric_readings["light"] != metric_readings["temperature"]
+        assert metric_readings["nitrogen"] != metric_readings["biomass"]
+        assert metric_readings["temperature"] != metric_readings["dissolved_oxygen"]
+    finally:
+        db.close()
+
 

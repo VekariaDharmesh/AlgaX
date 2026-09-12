@@ -17,7 +17,7 @@ def seed_demo_telemetry(
     db: Session = Depends(get_db)
 ):
     from ..seed import seed_database
-    seed_database()
+    seed_database(force=True)
     return {"status": "ok", "message": "Telemetry stream populated"}
 
 @router.get("/telemetry/stats")

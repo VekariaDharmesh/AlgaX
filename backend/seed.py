@@ -20,16 +20,21 @@ connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 Session = sessionmaker(bind=engine)
 
-def seed_database():
+def seed_database(force: bool = False):
     Base.metadata.create_all(bind=engine)
     session = Session()
     
     # Check if already seeded
     existing_farm = session.query(Farm).first()
-    if existing_farm and session.query(SensorReading).count() > 0:
+    if existing_farm and session.query(SensorReading).count() > 0 and not force:
         print("Database already seeded with telemetry.")
         session.close()
         return
+
+    if force:
+        print("Force clearing old telemetry readings for fresh seeding...")
+        session.query(SensorReading).delete()
+        session.commit()
 
     print("Seeding Genesis Algae Farm with Telemetry...")
     if not existing_farm:
@@ -84,11 +89,41 @@ def seed_database():
     }
 
     for s in all_sensors:
-        base_val = base_values.get(s.type, 20.0)
         for i in range(48):
             ts = now - datetime.timedelta(minutes=i * 30)
-            var = math.sin(i / 3.0) * (base_val * 0.08)
-            val = round(max(0.1, base_val + var), 2)
+            hour = ts.hour + ts.minute / 60.0
+            hours_elapsed = 24.0 - (i * 0.5)
+
+            if s.type == SensorType.light:
+                if 6.0 <= hour <= 18.0:
+                    val = round(math.sin((hour - 6.0) / 12.0 * math.pi) * 850.0, 1)
+                else:
+                    val = 0.0
+            elif s.type == SensorType.temperature:
+                val = round(24.0 + math.sin((hour - 8.0) / 24.0 * 2.0 * math.pi) * 4.5, 2)
+            elif s.type == SensorType.dissolved_oxygen:
+                if 6.0 <= hour <= 18.0:
+                    val = round(6.5 + math.sin((hour - 6.0) / 12.0 * math.pi) * 3.2, 2)
+                else:
+                    val = round(max(4.5, 6.5 - math.sin((hour - 18.0) / 12.0 * math.pi) * 1.2), 2)
+            elif s.type == SensorType.ph:
+                if 6.0 <= hour <= 18.0:
+                    val = round(7.4 + math.sin((hour - 6.0) / 12.0 * math.pi) * 1.0, 2)
+                else:
+                    val = 7.4
+            elif s.type == SensorType.nitrogen:
+                val = round(max(1.0, 18.0 - (hours_elapsed / 24.0) * 5.5 + math.sin(hour / 24.0 * 2.0 * math.pi) * 0.4), 2)
+            elif s.type == SensorType.biomass:
+                val = round(0.55 + (hours_elapsed / 24.0) * 0.58 + math.sin(hour / 12.0 * math.pi) * 0.03, 2)
+            elif s.type == SensorType.turbidity:
+                bio = 0.55 + (hours_elapsed / 24.0) * 0.58
+                val = round(bio * 115.0 + math.sin(hour / 6.0) * 2.0, 1)
+            elif s.type == SensorType.conductivity:
+                val = round(1250.0 + math.sin(hour / 24.0 * 2.0 * math.pi) * 35.0, 1)
+            elif s.type == SensorType.water_level:
+                val = round(1.85 + math.cos(hour / 24.0 * 2.0 * math.pi) * 0.05, 2)
+            else:
+                val = 20.0
             
             reading = SensorReading(
                 sensor_id=s.id,

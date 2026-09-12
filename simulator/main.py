@@ -116,10 +116,14 @@ class Simulator:
 
     async def run(self):
         self.is_running = True
-        self.load_config()
         
         async with httpx.AsyncClient() as client:
             while self.is_running:
+                if not self.ponds:
+                    self.load_config()
+                    if not self.ponds:
+                        await asyncio.sleep(3.0)
+                        continue
                 for pond_id, state in self.ponds.items():
                     env = await self.step_pond(state)
                     
