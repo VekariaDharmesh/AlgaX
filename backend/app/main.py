@@ -238,7 +238,8 @@ def get_anomaly(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @app.get("/api/anomalies/{anomaly_id}/explanation", response_model=schemas.AnomalyExplanationResponse)
 def get_anomaly_explanation(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
-    explanation = db.query(models.AnomalyExplanation).filter(models.AnomalyExplanation.anomaly_id == anomaly_id).first()
+    from .anomaly.explanation.service import get_explanation_by_anomaly
+    explanation = get_explanation_by_anomaly(db, str(anomaly_id))
     if not explanation:
         raise HTTPException(status_code=404, detail="Explanation not found for this anomaly")
     return explanation
@@ -259,4 +260,21 @@ def update_anomaly_status(anomaly_id: uuid.UUID, status_update: schemas.AnomalyS
         return anomaly
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid status value")
+
+@app.get("/api/explanations", response_model=List[schemas.AnomalyExplanationResponse])
+def get_explanations(
+    db: Session = Depends(get_db),
+    pond_id: Optional[uuid.UUID] = None,
+    farm_id: Optional[uuid.UUID] = None,
+    evidence_strength: Optional[models.EvidenceStrength] = None,
+    limit: int = 100,
+):
+    from .anomaly.explanation.service import get_explanations as _get_explanations
+    return _get_explanations(
+        db=db,
+        pond_id=str(pond_id) if pond_id else None,
+        farm_id=str(farm_id) if farm_id else None,
+        evidence_strength=evidence_strength,
+        limit=limit,
+    )
 
