@@ -112,7 +112,7 @@ function FarmsPondsContent() {
           </div>
           <div className="bg-white border border-slate-200/90 px-3.5 py-2 rounded-2xl shadow-2xs">
             <div className="text-[10px] font-bold uppercase text-slate-400">Cultivation Ponds</div>
-            <div className="text-sm font-black text-emerald-700 font-mono">6 Units</div>
+            <div className="text-sm font-black text-emerald-700 font-mono">{DEMO_PONDS.length} Units</div>
           </div>
           <div className="bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl shadow-2xs">
             <div className="text-[10px] font-bold uppercase text-emerald-700">Total Volume</div>
@@ -156,7 +156,7 @@ function FarmsPondsContent() {
           }`}
         >
           <Droplets className="w-4 h-4 text-sky-600" />
-          <span>Cultivation Ponds (6)</span>
+          <span>Cultivation Ponds ({DEMO_PONDS.length})</span>
         </button>
 
         <button
@@ -323,9 +323,9 @@ function FarmsPondsContent() {
               <div>
                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                   <Droplets className="w-5 h-5 text-sky-600" />
-                  Ponds Partition: Cultivation Units & Raceways (6)
+                  Ponds Partition: Cultivation Units & Raceways ({activeFarmPonds.length})
                 </h2>
-                <p className="text-xs text-slate-500">Live kinetics, biomass concentration (g/L), nutrient availability, and sensor status.</p>
+                <p className="text-xs text-slate-500">Live kinetics, biomass concentration (g/L), nutrient availability, and sensor status for {activeFarm.name}.</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -338,9 +338,9 @@ function FarmsPondsContent() {
               </div>
             </div>
 
-            {/* Ponds Grid (6 Indian Ponds) */}
+            {/* Ponds Grid (Active Farm Ponds Only) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {DEMO_PONDS.map((pond) => (
+              {activeFarmPonds.map((pond) => (
                 <div 
                   key={pond.id} 
                   className={`group bg-white rounded-2xl border overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between ${

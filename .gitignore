@@ -6,8 +6,13 @@ __pycache__/
 *$py.class
 .pytest_cache/
 *.db
+*.db-journal
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+test_*.db
+.coverage
+htmlcov/
 
 # Storage & Uploads
 backend/storage/*
@@ -19,6 +24,7 @@ backend/storage/*
 .env*.local
 .DS_Store
 **/.DS_Store
+*.log
 
 # Frontend & Node
 frontend/.next/
@@ -31,3 +37,4 @@ package-lock.json
 
 # Test diagnostics & artifacts
 diagnostic_output.json
+pytest_output*.txt

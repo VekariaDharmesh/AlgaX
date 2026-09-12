@@ -267,7 +267,7 @@ export default function DashboardOverview() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {DEMO_PONDS.map(pond => (
+            {DEMO_PONDS.slice(0, 3).map(pond => (
               <Link href={`/ponds/${pond.id}`} key={pond.id} className="border border-gray-200/90 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-md transition-all block group bg-white">
                 <div className="h-28 bg-gray-900 relative overflow-hidden">
                   <img src={pond.imageUrl} alt={pond.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />

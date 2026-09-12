@@ -22,7 +22,8 @@ from app.models import Base
 target_metadata = Base.metadata
 
 def get_url():
-    return os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/algax")
+    from app.database import DATABASE_URL
+    return DATABASE_URL
 
 
 # other values from the config, defined by the needs of env.py,

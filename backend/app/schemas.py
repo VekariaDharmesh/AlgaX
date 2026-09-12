@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -23,8 +23,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: UUID
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserMeResponse(UserResponse):
     permitted_roles: List[UserRole] = []
@@ -44,8 +43,7 @@ class SensorReadingCreate(BaseModel):
 
 class SensorReadingResponse(SensorReadingCreate):
     id: UUID
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SensorBase(BaseModel):
     pond_id: UUID
@@ -58,8 +56,7 @@ class SensorBase(BaseModel):
 
 class SensorResponse(SensorBase):
     id: UUID
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PondBase(BaseModel):
     farm_id: UUID
@@ -68,12 +65,24 @@ class PondBase(BaseModel):
     species: Optional[str] = None
     status: PondStatus = PondStatus.active
 
+class PondCreate(BaseModel):
+    farm_id: UUID
+    name: str
+    volume_liters: Optional[float] = None
+    species: Optional[str] = None
+    status: Optional[PondStatus] = PondStatus.active
+
+class PondUpdate(BaseModel):
+    name: Optional[str] = None
+    volume_liters: Optional[float] = None
+    species: Optional[str] = None
+    status: Optional[PondStatus] = None
+
 class PondResponse(PondBase):
     id: UUID
     created_at: datetime
     sensors: List[SensorResponse] = []
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class FarmBase(BaseModel):
     name: str
@@ -84,8 +93,7 @@ class FarmResponse(FarmBase):
     id: UUID
     created_at: datetime
     ponds: List[PondResponse] = []
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class BiomassEstimateResponse(BaseModel):
     id: UUID
@@ -101,8 +109,7 @@ class BiomassEstimateResponse(BaseModel):
     method: str
     confidence_score: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CarbonEstimateResponse(BaseModel):
     id: UUID
@@ -119,8 +126,7 @@ class CarbonEstimateResponse(BaseModel):
     permanence_horizon_label: Optional[str]
     confidence_score: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ModelRunResponse(BaseModel):
     id: UUID
@@ -136,8 +142,7 @@ class ModelRunResponse(BaseModel):
     biomass_estimates: List[BiomassEstimateResponse] = []
     carbon_estimates: List[CarbonEstimateResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AnomalyBase(BaseModel):
     farm_id: Optional[UUID] = None
@@ -162,8 +167,7 @@ class AnomalyBase(BaseModel):
 class AnomalyResponse(AnomalyBase):
     id: UUID
     priority_score: int = 0
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AnomalyExplanationBase(BaseModel):
     anomaly_id: UUID
@@ -188,8 +192,7 @@ class AnomalyExplanationBase(BaseModel):
 class AnomalyExplanationResponse(AnomalyExplanationBase):
     id: UUID
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AnomalyResponseWithExplanation(AnomalyResponse):
     explanation_record: Optional[AnomalyExplanationResponse] = None
@@ -226,8 +229,7 @@ class ImageryRecordResponse(ImageryRecordBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ImageryProcessingCreate(BaseModel):
     processing_version: str
@@ -257,8 +259,7 @@ class ImageryProcessingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class QualityAssessmentResponse(BaseModel):
     quality_classification: Optional[str] = None
@@ -295,8 +296,7 @@ class ImageryAnalysisResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CrossValidationRunResponse(BaseModel):
     id: UUID
@@ -318,8 +318,7 @@ class CrossValidationRunResponse(BaseModel):
     engine_version: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class EvidencePackageBase(BaseModel):
     reporting_period_start: datetime
@@ -352,8 +351,7 @@ class EvidencePackageResponse(EvidencePackageBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ReviewActionCreate(BaseModel):
     action: str
@@ -367,8 +365,7 @@ class ReviewActionResponse(BaseModel):
     note: Optional[str] = None
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Real-Time Weather Schemas
 class HourlyForecast(BaseModel):
@@ -446,8 +443,7 @@ class HarvestBiomassFateResponse(HarvestBiomassFateBase):
     id: UUID
     harvest_event_id: UUID
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HarvestEventBase(BaseModel):
     farm_id: UUID
@@ -486,8 +482,7 @@ class HarvestEventResponse(HarvestEventBase):
     updated_at: datetime
     biomass_fates: List[HarvestBiomassFateResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HarvestOverviewKPIs(BaseModel):
     current_biomass_g_l: Optional[float] = None
@@ -551,8 +546,7 @@ class SensorCalibrationResponse(SensorCalibrationBase):
     pond_id: Optional[UUID] = None
     pond_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CalibrationCalculationRequest(BaseModel):
     calibration_method: CalibrationMethod = CalibrationMethod.ZERO_POINT

@@ -8,6 +8,7 @@ from sqlalchemy import desc, func
 from .. import models, schemas
 from ..database import get_db
 from ..model_engine import calculate_carbon_metrics
+from ..auth import get_current_user, check_farm_isolation, require_farm_operator
 
 router = APIRouter()
 
@@ -18,8 +19,23 @@ def get_harvests(
     status: Optional[models.HarvestStatus] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.HarvestEvent).options(
         joinedload(models.HarvestEvent.biomass_fates),
         joinedload(models.HarvestEvent.pond),
@@ -50,8 +66,23 @@ def get_harvests(
 def get_harvest_overview(
     farm_id: Optional[uuid.UUID] = None,
     pond_id: Optional[uuid.UUID] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.HarvestEvent)
     if farm_id:
         query = query.filter(models.HarvestEvent.farm_id == farm_id)
@@ -82,6 +113,7 @@ def get_harvest_overview(
             current_biomass_g_l = latest_b.biomass_g_per_l
             vol = (pond.volume_liters if pond and pond.volume_liters else 100000.0)
             harvestable_biomass_kg = (current_biomass_g_l * vol) / 1000.0
+    elif farm_id:
         pond_ids = [p.id for p in db.query(models.Pond).filter(models.Pond.farm_id == farm_id).all()]
         if pond_ids:
             latest_b_list = db.query(models.BiomassEstimate)\
@@ -166,6 +198,8 @@ def create_harvest_event(
     db: Session = Depends(get_db),
     operator: models.User = Depends(require_farm_operator)
 ):
+    check_farm_isolation(operator, event_in.farm_id)
+
     pond = db.query(models.Pond).filter(models.Pond.id == event_in.pond_id).first()
     if not pond:
         raise HTTPException(status_code=404, detail="Pond not found")

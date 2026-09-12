@@ -937,10 +937,9 @@ export default function HarvestsPage() {
                     onChange={(e) => setPlanPond(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
                   >
-                    <option value="Pond A">Pond A (Operational - 12.5 ha)</option>
-                    <option value="Pond B">Pond B (Operational - 10.0 ha)</option>
-                    <option value="Pond C">Pond C (Operational - 8.2 ha)</option>
-                    <option value="Pond D">Pond D (Standby - 12.5 ha)</option>
+                    {activeFarmProfile.ponds.map((pName: string) => (
+                      <option key={pName} value={pName}>{pName}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1060,9 +1059,9 @@ export default function HarvestsPage() {
                     onChange={(e) => setRecordPond(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-emerald-500/20"
                   >
-                    <option value="Pond A">Pond A</option>
-                    <option value="Pond B">Pond B</option>
-                    <option value="Pond C">Pond C</option>
+                    {activeFarmProfile.ponds.map((pName: string) => (
+                      <option key={pName} value={pName}>{pName}</option>
+                    ))}
                   </select>
                 </div>
 

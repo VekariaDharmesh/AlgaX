@@ -8,6 +8,8 @@ from sqlalchemy import desc, func, and_
 from .. import models, schemas
 from ..database import get_db
 
+from ..auth import get_current_user, check_farm_isolation
+
 router = APIRouter()
 
 @router.post("/telemetry/seed-demo")
@@ -25,20 +27,38 @@ def get_telemetry_stats(
     pond_id: Optional[uuid.UUID] = None,
     farm_id: Optional[uuid.UUID] = None,
     hours: int = 24,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
     now = datetime.now(timezone.utc)
     start_time = now - timedelta(hours=hours)
 
     # 1. Resolve Target Scope (Farm & Pond)
-    if pond_id:
+    if pond_id and farm_id:
+        selected_pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not selected_pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        selected_farm = selected_pond.farm
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
         selected_pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
-        selected_farm = selected_pond.farm if selected_pond else None
+        if not selected_pond:
+            raise HTTPException(status_code=404, detail="Pond not found")
+        selected_farm = selected_pond.farm
+        check_farm_isolation(user, selected_pond.farm_id)
     elif farm_id:
         selected_farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
-        selected_pond = None
+        if not selected_farm:
+            raise HTTPException(status_code=404, detail="Farm not found")
+        check_farm_isolation(user, farm_id)
+        selected_pond = selected_farm.ponds[0] if selected_farm.ponds else None
+        if selected_pond:
+            pond_id = selected_pond.id
     else:
-        selected_farm = db.query(models.Farm).first()
+        if user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+            selected_farm = db.query(models.Farm).filter(models.Farm.id == user.assigned_farm_id).first()
+        else:
+            selected_farm = db.query(models.Farm).first()
         selected_pond = selected_farm.ponds[0] if selected_farm and selected_farm.ponds else None
         if selected_pond:
             pond_id = selected_pond.id

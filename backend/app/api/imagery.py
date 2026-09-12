@@ -13,6 +13,7 @@ from PIL import Image, UnidentifiedImageError
 from .. import models, schemas
 from ..database import get_db
 from ..processors import imagery_processor
+from ..auth import get_current_user, check_farm_isolation, require_farm_operator
 
 router = APIRouter()
 
@@ -29,12 +30,15 @@ async def upload_imagery(
     source_type: str = Form(...),
     capture_timestamp: Optional[datetime] = Form(None),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_farm_operator)
 ):
     # Validate Farm/Pond
     farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
     if not farm:
         raise HTTPException(status_code=404, detail="Farm not found")
+
+    check_farm_isolation(user, farm_id)
         
     pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
     if not pond or pond.farm_id != farm_id:
@@ -125,8 +129,23 @@ def list_imagery(
     pond_id: Optional[uuid.UUID] = None,
     source_type: Optional[str] = None,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.ImageryRecord)
     if farm_id:
         query = query.filter(models.ImageryRecord.farm_id == farm_id)
@@ -216,7 +235,20 @@ def get_imagery_analysis(record_id: uuid.UUID, db: Session = Depends(get_db)):
     return analysis
 
 @router.get("/ponds/{pond_id}/imagery/analysis", response_model=List[schemas.ImageryAnalysisResponse])
-def get_pond_imagery_analysis_trends(pond_id: uuid.UUID, limit: int = 50, db: Session = Depends(get_db)):
+def get_pond_imagery_analysis_trends(
+    pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+    check_farm_isolation(user, pond.farm_id)
+
     analyses = db.query(models.ImageryAnalysis).filter(
         models.ImageryAnalysis.pond_id == pond_id
     ).order_by(desc(models.ImageryAnalysis.created_at)).limit(limit).all()

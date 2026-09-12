@@ -14,7 +14,17 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("simulator")
 
-app = FastAPI(title="Simulator Control API")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(sim.run())
+    try:
+        yield
+    finally:
+        task.cancel()
+
+app = FastAPI(title="Simulator Control API", lifespan=lifespan)
 
 # Fetch config from Backend
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
@@ -192,6 +202,4 @@ async def inject_scenario(req: ScenarioReq):
         
     return {"status": "ok", "scenario": req.scenario}
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(sim.run())
+

@@ -1,17 +1,56 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+import asyncio
+from contextlib import asynccontextmanager
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import desc, and_
+
 from . import models, schemas
-from .database import get_db, engine
+from .database import get_db, engine, SessionLocal
+from .api import imagery, cross_validation, evidence, weather, telemetry, harvest, calibration, users, auth_routes
+from .auth import ensure_default_users, require_farm_operator, get_current_user, check_farm_isolation
+from .simulation import router as simulation_router, simulation_manager, run_simulation_loop
+
+import os
+import sys
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AlgaX API", version="0.4.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Ensure default users and seed database if empty
+    with Session(engine) as db:
+        ensure_default_users(db)
+    
+    is_test = "pytest" in sys.modules or os.environ.get("TESTING") == "1"
+    model_task = None
+    sim_task = None
+
+    if not is_test:
+        try:
+            from ..seed import seed_database
+            await asyncio.to_thread(seed_database)
+        except Exception as e:
+            print("Auto-seed note:", e)
+        
+        # Launch background continuous worker tasks in production/dev
+        model_task = asyncio.create_task(model_loop())
+        sim_task = asyncio.create_task(run_simulation_loop())
+    
+    try:
+        yield
+    finally:
+        # Shutdown cleanly
+        if model_task:
+            model_task.cancel()
+        if sim_task:
+            sim_task.cancel()
+
+app = FastAPI(title="AlgaX API", version="0.4.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,10 +59,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from .api import imagery, cross_validation, evidence, weather, telemetry, harvest, calibration, users, auth_routes
-from .auth import ensure_default_users, require_farm_operator
-from .simulation import router as simulation_router, simulation_manager, run_simulation_loop
 
 app.include_router(auth_routes.router, prefix="/api", tags=["auth"])
 app.include_router(users.router, prefix="/api", tags=["users"])
@@ -36,11 +71,6 @@ app.include_router(telemetry.router, prefix="/api", tags=["telemetry"])
 app.include_router(harvest.router, prefix="/api", tags=["harvest"])
 app.include_router(calibration.router, prefix="/api", tags=["calibration"])
 app.include_router(simulation_router, prefix="/api", tags=["simulation"])
-
-@app.on_event("startup")
-def on_startup():
-    with Session(engine) as db:
-        ensure_default_users(db)
 
 @app.get("/health")
 def health_check():
@@ -104,8 +134,23 @@ def get_telemetry(
     limit: int = Query(200, ge=1, le=2000),
     page: int = Query(1, ge=1),
     downsample: bool = Query(False),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     offset = (page - 1) * limit
     if sensor_type:
         query = db.query(models.SensorReading).join(models.Sensor, models.SensorReading.sensor_id == models.Sensor.id)\
@@ -155,8 +200,23 @@ def get_telemetry(
 def get_sensors(
     pond_id: Optional[uuid.UUID] = None,
     farm_id: Optional[uuid.UUID] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.Sensor)
     if pond_id:
         query = query.filter(models.Sensor.pond_id == pond_id)
@@ -172,7 +232,11 @@ class ScenarioRequest(schemas.BaseModel):
     scenario: str
 
 @app.post("/api/demo/inject-scenario")
-def inject_scenario(req: ScenarioRequest, db: Session = Depends(get_db)):
+def inject_scenario(req: ScenarioRequest, db: Session = Depends(get_db), user: models.User = Depends(require_farm_operator)):
+    pond = db.query(models.Pond).filter(models.Pond.id == req.pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    check_farm_isolation(user, pond.farm_id)
     try:
         updated_state = simulation_manager.inject_scenario(req.pond_id, req.scenario)
         simulation_manager.step_pond(db, req.pond_id)
@@ -180,15 +244,118 @@ def inject_scenario(req: ScenarioRequest, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Simulator control failed: {str(e)}")
 @app.get("/api/farms", response_model=List[schemas.FarmResponse])
-def get_farms(db: Session = Depends(get_db)):
-    return db.query(models.Farm).options(joinedload(models.Farm.ponds).joinedload(models.Pond.sensors)).all()
+def get_farms(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    query = db.query(models.Farm).options(joinedload(models.Farm.ponds).joinedload(models.Pond.sensors))
+    if user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        query = query.filter(models.Farm.id == user.assigned_farm_id)
+    return query.all()
+
+@app.get("/api/farms/{farm_id}", response_model=schemas.FarmResponse)
+def get_farm(farm_id: uuid.UUID, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    farm = db.query(models.Farm).options(joinedload(models.Farm.ponds).joinedload(models.Pond.sensors)).filter(models.Farm.id == farm_id).first()
+    if not farm:
+        raise HTTPException(status_code=404, detail="Farm not found")
+    check_farm_isolation(user, farm.id)
+    return farm
 
 @app.get("/api/ponds", response_model=List[schemas.PondResponse])
-def get_ponds(farm_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db)):
+def get_ponds(farm_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    check_farm_isolation(user, farm_id)
     query = db.query(models.Pond).options(joinedload(models.Pond.sensors))
     if farm_id:
         query = query.filter(models.Pond.farm_id == farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        query = query.filter(models.Pond.farm_id == user.assigned_farm_id)
     return query.all()
+
+@app.get("/api/ponds/{pond_id}", response_model=schemas.PondResponse)
+def get_pond(
+    pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    pond = db.query(models.Pond).options(joinedload(models.Pond.sensors)).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=404, detail="Pond does not belong to the specified farm")
+    check_farm_isolation(user, pond.farm_id)
+    return pond
+
+@app.post("/api/ponds", response_model=schemas.PondResponse, status_code=201)
+def create_pond(
+    pond_in: schemas.PondCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_farm_operator)
+):
+    farm = db.query(models.Farm).filter(models.Farm.id == pond_in.farm_id).first()
+    if not farm:
+        raise HTTPException(status_code=404, detail="Target farm not found")
+    check_farm_isolation(user, pond_in.farm_id)
+
+    pond = models.Pond(
+        farm_id=pond_in.farm_id,
+        name=pond_in.name,
+        volume_liters=pond_in.volume_liters,
+        species=pond_in.species,
+        status=pond_in.status or models.PondStatus.active
+    )
+    db.add(pond)
+    db.commit()
+    db.refresh(pond)
+    return pond
+
+@app.put("/api/ponds/{pond_id}", response_model=schemas.PondResponse)
+def update_pond(
+    pond_id: uuid.UUID,
+    pond_in: schemas.PondUpdate,
+    farm_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_farm_operator)
+):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=403, detail="Cross-farm modification rejected: Pond belongs to another farm")
+    check_farm_isolation(user, pond.farm_id)
+
+    if pond_in.name is not None:
+        pond.name = pond_in.name
+    if pond_in.volume_liters is not None:
+        pond.volume_liters = pond_in.volume_liters
+    if pond_in.species is not None:
+        pond.species = pond_in.species
+    if pond_in.status is not None:
+        pond.status = pond_in.status
+
+    db.commit()
+    db.refresh(pond)
+    return pond
+
+@app.delete("/api/ponds/{pond_id}")
+def delete_pond(
+    pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_farm_operator)
+):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=403, detail="Cross-farm deletion rejected: Pond belongs to another farm")
+    check_farm_isolation(user, pond.farm_id)
+
+    # Remove associated sensors & readings before deleting pond
+    sensors = db.query(models.Sensor).filter(models.Sensor.pond_id == pond.id).all()
+    for s in sensors:
+        db.query(models.SensorReading).filter(models.SensorReading.sensor_id == s.id).delete()
+        db.delete(s)
+    db.delete(pond)
+    db.commit()
+    return {"status": "ok", "message": f"Pond {pond_id} deleted successfully"}
 
 from .services import execute_model_run
 
@@ -198,7 +365,11 @@ class ModelRunRequest(schemas.BaseModel):
     period_end: datetime
 
 @app.post("/api/model/run", response_model=schemas.ModelRunResponse)
-def trigger_model_run(req: ModelRunRequest, db: Session = Depends(get_db)):
+def trigger_model_run(req: ModelRunRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    pond = db.query(models.Pond).filter(models.Pond.id == req.pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    check_farm_isolation(user, pond.farm_id)
     try:
         m_run = execute_model_run(db, req.pond_id, req.period_start, req.period_end)
         return m_run
@@ -209,12 +380,36 @@ def trigger_model_run(req: ModelRunRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Model run failed: {str(e)}")
 
 @app.get("/api/model/biomass", response_model=List[schemas.BiomassEstimateResponse])
-def get_biomass_estimates(pond_id: uuid.UUID, limit: int = 100, db: Session = Depends(get_db)):
+def get_biomass_estimates(
+    pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+    check_farm_isolation(user, pond.farm_id)
     return db.query(models.BiomassEstimate).filter(models.BiomassEstimate.pond_id == pond_id)\
         .order_by(desc(models.BiomassEstimate.timestamp)).limit(limit).all()
 
 @app.get("/api/model/carbon", response_model=List[schemas.CarbonEstimateResponse])
-def get_carbon_estimates(pond_id: uuid.UUID, limit: int = 100, db: Session = Depends(get_db)):
+def get_carbon_estimates(
+    pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+    check_farm_isolation(user, pond.farm_id)
     return db.query(models.CarbonEstimate).filter(models.CarbonEstimate.pond_id == pond_id)\
         .order_by(desc(models.CarbonEstimate.period_end)).limit(limit).all()
 
@@ -255,17 +450,7 @@ async def model_loop():
         except Exception as e:
             print("Model loop error:", e)
 
-@app.on_event("startup")
-async def startup_event():
-    try:
-        from ..seed import seed_database
-        await asyncio.to_thread(seed_database)
-    except Exception as e:
-        print("Auto-seed on startup note:", e)
-    asyncio.create_task(model_loop())
-    asyncio.create_task(run_simulation_loop())
 
-from sqlalchemy.orm import joinedload
 
 def calculate_priority_score(anomaly: models.Anomaly) -> int:
     score = 0
@@ -299,13 +484,32 @@ def calculate_priority_score(anomaly: models.Anomaly) -> int:
 def get_anomalies(
     db: Session = Depends(get_db),
     pond_id: Optional[uuid.UUID] = None,
+    farm_id: Optional[uuid.UUID] = None,
     status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 50
+    page_size: int = 50,
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.Anomaly).options(joinedload(models.Anomaly.explanation_record))
     if pond_id:
         query = query.filter(models.Anomaly.pond_id == pond_id)
+    elif farm_id:
+        query = query.join(models.Pond, models.Anomaly.pond_id == models.Pond.id).filter(models.Pond.farm_id == farm_id)
+
     if status:
         query = query.filter(models.Anomaly.status == status)
         
@@ -326,10 +530,18 @@ def get_anomalies(
 @app.get("/api/ponds/{pond_id}/anomalies", response_model=List[schemas.AnomalyResponse])
 def get_pond_anomalies(
     pond_id: uuid.UUID,
+    farm_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
     status: Optional[str] = None,
-    limit: int = 50
+    limit: int = 50,
+    user: models.User = Depends(get_current_user)
 ):
+    pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+    if not pond:
+        raise HTTPException(status_code=404, detail="Pond not found")
+    if farm_id and pond.farm_id != farm_id:
+        raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+    check_farm_isolation(user, pond.farm_id)
     query = db.query(models.Anomaly).filter(models.Anomaly.pond_id == pond_id)
     if status:
         query = query.filter(models.Anomaly.status == status)
@@ -346,7 +558,7 @@ def get_anomaly(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
 @app.get("/api/anomalies/{anomaly_id}/explanation", response_model=schemas.AnomalyExplanationResponse)
 def get_anomaly_explanation(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
     from .anomaly.explanation.service import get_explanation_by_anomaly
-    explanation = get_explanation_by_anomaly(db, str(anomaly_id))
+    explanation = get_explanation_by_anomaly(db, anomaly_id)
     if not explanation:
         raise HTTPException(status_code=404, detail="Explanation not found for this anomaly")
     return explanation
@@ -358,7 +570,8 @@ def update_anomaly_status(anomaly_id: uuid.UUID, status_update: schemas.AnomalyS
         raise HTTPException(status_code=404, detail="Anomaly not found")
         
     try:
-        anomaly.status = models.AnomalyStatus(status_update.status)
+        status_val = status_update.status.upper() if isinstance(status_update.status, str) else status_update.status
+        anomaly.status = models.AnomalyStatus(status_val)
         if anomaly.status == models.AnomalyStatus.RESOLVED:
             anomaly.resolved_at = datetime.now(timezone.utc)
         db.commit()

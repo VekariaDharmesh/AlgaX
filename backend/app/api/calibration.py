@@ -7,6 +7,7 @@ from sqlalchemy import desc, func
 
 from .. import models, schemas
 from ..database import get_db
+from ..auth import get_current_user, check_farm_isolation
 
 router = APIRouter()
 
@@ -64,11 +65,27 @@ def calculate_calibration(payload: schemas.CalibrationCalculationRequest):
 def get_calibrations(
     sensor_id: Optional[uuid.UUID] = None,
     pond_id: Optional[uuid.UUID] = None,
+    farm_id: Optional[uuid.UUID] = None,
     status: Optional[models.CalibrationStatus] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.SensorCalibrationRecord).options(
         joinedload(models.SensorCalibrationRecord.sensor).joinedload(models.Sensor.pond)
     )
@@ -79,6 +96,8 @@ def get_calibrations(
         query = query.filter(models.SensorCalibrationRecord.status == status)
     if pond_id:
         query = query.join(models.Sensor).filter(models.Sensor.pond_id == pond_id)
+    elif farm_id:
+        query = query.join(models.Sensor).join(models.Pond).filter(models.Pond.farm_id == farm_id)
 
     total = query.count()
     records = query.order_by(desc(models.SensorCalibrationRecord.calibrated_at))\
@@ -108,8 +127,23 @@ def get_calibrations(
 def get_calibration_overview(
     farm_id: Optional[uuid.UUID] = None,
     pond_id: Optional[uuid.UUID] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     sensor_query = db.query(models.Sensor).options(joinedload(models.Sensor.pond))
     if pond_id:
         sensor_query = sensor_query.filter(models.Sensor.pond_id == pond_id)
@@ -164,8 +198,23 @@ def get_calibration_overview(
 def get_sensors_calibration_status(
     pond_id: Optional[uuid.UUID] = None,
     farm_id: Optional[uuid.UUID] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
 ):
+    if pond_id and farm_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id, models.Pond.farm_id == farm_id).first()
+        if not pond:
+            raise HTTPException(status_code=404, detail="Pond does not belong to specified farm")
+        check_farm_isolation(user, farm_id)
+    elif pond_id:
+        pond = db.query(models.Pond).filter(models.Pond.id == pond_id).first()
+        if pond:
+            check_farm_isolation(user, pond.farm_id)
+    elif farm_id:
+        check_farm_isolation(user, farm_id)
+    elif user.role == models.UserRole.FARM_OPERATOR and user.assigned_farm_id:
+        farm_id = user.assigned_farm_id
+
     query = db.query(models.Sensor).options(joinedload(models.Sensor.pond))
     if pond_id:
         query = query.filter(models.Sensor.pond_id == pond_id)

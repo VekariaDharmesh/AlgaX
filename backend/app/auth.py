@@ -122,13 +122,16 @@ require_farm_operator = RoleChecker([models.UserRole.FARM_OPERATOR, models.UserR
 require_verifier_auditor = RoleChecker([models.UserRole.VERIFIER_AUDITOR, models.UserRole.PLATFORM_ADMIN])
 require_platform_admin = RoleChecker([models.UserRole.PLATFORM_ADMIN])
 
-def check_farm_isolation(user: models.User, farm_id: Optional[uuid.UUID]):
+def check_farm_isolation(user: Optional[models.User], farm_id: Optional[uuid.UUID]):
     """
     Enforces farm-level isolation:
     - Platform Admin: unscoped access across all facilities.
     - Farm Operator: strictly scoped to assigned farm.
     - Verifier / Auditor: scoped to assigned farm if configured.
     """
+    if not isinstance(user, models.User):
+        return
+
     if not farm_id or user.role == models.UserRole.PLATFORM_ADMIN:
         return
 
