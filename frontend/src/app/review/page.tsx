@@ -225,8 +225,8 @@ export default function ReviewWorkspacePage() {
                     Review State: {pkg.review_state || 'NOT_STARTED'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Period: <strong>{new Date(pkg.reporting_period_start).toLocaleDateString()}</strong> to <strong>{new Date(pkg.reporting_period_end).toLocaleDateString()}</strong>
+                <p className="text-xs text-slate-500 mt-1" suppressHydrationWarning>
+                  Period: <strong>{pkg.reporting_period_start?.slice(0,10) || new Date(pkg.reporting_period_start).toLocaleDateString()}</strong> to <strong>{pkg.reporting_period_end?.slice(0,10) || new Date(pkg.reporting_period_end).toLocaleDateString()}</strong>
                 </p>
                 {pkg.sealed_at && (
                   <p className="text-xs text-indigo-600 mt-0.5 font-medium">
