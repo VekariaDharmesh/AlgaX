@@ -246,26 +246,26 @@ export default function FarmsPage() {
             </span>
           </div>
 
-          {/* Pond Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Pond Cards Grid (6 Indian Ponds) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {DEMO_PONDS.map((pond) => (
               <div 
                 key={pond.id} 
-                className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between"
+                className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between"
               >
                 {/* Pond Image */}
-                <div className="relative h-36 w-full overflow-hidden bg-slate-900">
+                <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                   <Image 
                     src={pond.imageUrl} 
                     alt={pond.name} 
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-85"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-90"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
                   
                   {/* Status Badge */}
                   <div className="absolute top-2.5 right-2.5">
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1 shadow ${
+                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full backdrop-blur-md flex items-center gap-1 shadow ${
                       pond.status === 'Healthy' 
                         ? 'bg-emerald-500/90 text-white' 
                         : 'bg-amber-500/90 text-white'
@@ -277,20 +277,24 @@ export default function FarmsPage() {
 
                   {/* Pond Type Badge */}
                   <div className="absolute top-2.5 left-2.5">
-                    <span className="bg-slate-900/80 backdrop-blur-md text-slate-200 font-semibold text-[10px] px-2 py-0.5 rounded-md border border-slate-700">
+                    <span className="bg-slate-900/80 backdrop-blur-md text-slate-200 font-semibold text-[10px] px-2.5 py-0.5 rounded-md border border-slate-700">
                       {pond.pondType}
                     </span>
                   </div>
 
                   {/* Pond Name on Image */}
-                  <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white">
-                    <h4 className="font-black text-sm leading-tight">{pond.name}</h4>
-                    <p className="text-[11px] text-emerald-300 italic font-medium truncate">{pond.species}</p>
+                  <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                    <h4 className="font-black text-base leading-tight drop-shadow">{pond.name}</h4>
+                    <p className="text-[11px] text-emerald-300 italic font-medium truncate drop-shadow">{pond.species} ({pond.speciesCommon})</p>
                   </div>
                 </div>
 
                 {/* Pond Details & Telemetry Metrics */}
-                <div className="p-3.5 space-y-3">
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                    {pond.description}
+                  </p>
+
                   {/* 2x3 Metric Grid */}
                   <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center text-xs">
                     <div>
@@ -311,7 +315,7 @@ export default function FarmsPage() {
                     </div>
                     <div className="pt-1.5 border-t border-slate-200/60">
                       <div className="text-[9px] text-slate-400 uppercase font-bold">CO₂ Rate</div>
-                      <div className="text-xs font-black text-emerald-700 font-mono">{pond.co2InjectionRate}</div>
+                      <div className="text-xs font-black text-emerald-700 font-mono">{pond.co2InjectionRate} kg/h</div>
                     </div>
                     <div className="pt-1.5 border-t border-slate-200/60">
                       <div className="text-[9px] text-slate-400 uppercase font-bold">Growth</div>
@@ -321,75 +325,18 @@ export default function FarmsPage() {
 
                   {/* Footer Action */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-mono text-[10px]">{(pond.volumeLiters).toLocaleString()} L</span>
+                    <span className="text-slate-500 font-mono text-[11px] font-bold">{(pond.volumeLiters).toLocaleString()} Liters</span>
                     <Link
-                      href={`/ponds`}
-                      className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 text-[11px]"
+                      href={`/ponds/${pond.id}`}
+                      className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 text-xs"
                     >
-                      Pond Data <ArrowRight className="w-3 h-3" />
+                      Inspect Pond <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* 4. All 6 Registered Indian Facilities Grid */}
-      <div className="space-y-4 pt-2">
-        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <Globe className="w-4 h-4 text-emerald-600" />
-          All Registered Indian Facilities ({DEMO_FARMS.length})
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {DEMO_FARMS.map((f) => (
-            <div 
-              key={f.id} 
-              onClick={() => setActiveFarmId(f.id)}
-              className={`rounded-2xl border transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
-                activeFarmId === f.id 
-                  ? 'bg-emerald-50/40 border-emerald-400 shadow-md ring-2 ring-emerald-500/20' 
-                  : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
-              }`}
-            >
-              {/* Facility Thumbnail */}
-              <div className="relative h-32 w-full overflow-hidden bg-slate-950">
-                <Image 
-                  src={f.imageUrl} 
-                  alt={f.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-90"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-white/90 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                    {f.coordinates.lat}°N, {f.coordinates.lng}°E
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-300 bg-slate-950/70 backdrop-blur-md border border-emerald-500/30 px-2 py-0.5 rounded">
-                    ACTIVE MRV
-                  </span>
-                </div>
-                <div className="absolute bottom-2 left-3 right-3 text-white">
-                  <h4 className="font-black text-sm drop-shadow">{f.name}</h4>
-                  <p className="text-[11px] text-slate-200 drop-shadow truncate">📍 {f.location}</p>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">{f.description}</p>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="font-mono text-[11px] text-slate-800 font-bold">
-                    {f.annualCapacity}
-                  </span>
-                  <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs group-hover:translate-x-0.5 transition-transform">
-                    {activeFarmId === f.id ? 'Viewing Facility' : 'Select Facility'} <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 

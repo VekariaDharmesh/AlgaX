@@ -102,7 +102,7 @@ export default function PondsPage() {
             {/* Image Header with Badge Overlay */}
             <div className="h-52 w-full relative bg-slate-900 overflow-hidden">
               <img 
-                src={`/images/ponds/${pond.id}.jpg`} 
+                src={pond.imageUrl || `/images/ponds/${pond.id}.jpg`} 
                 alt={`${pond.name} view`} 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-95" 
               />

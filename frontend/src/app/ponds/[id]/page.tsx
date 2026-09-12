@@ -54,7 +54,7 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
       <div className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-lg border border-slate-200">
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
           <img 
-            src={`/images/ponds/${pond.id}.jpg`} 
+            src={pond.imageUrl || `/images/ponds/${pond.id}.jpg`} 
             alt={pond.name} 
             className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700" 
           />
