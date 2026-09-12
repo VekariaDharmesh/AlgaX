@@ -85,46 +85,46 @@ const DEFAULT_HARVEST_RECORDS: HarvestItem[] = [
     id: 'HV-2026-013',
     date: 'Sep 10, 2026',
     rawDate: '2026-09-10T10:24:00Z',
-    pond: 'Pond B',
-    pondId: 'pond-b',
+    pond: 'Pond Sabarmati',
+    pondId: 'pond-sabarmati',
     biomassKg: 980,
     method: 'Centrifuge',
     status: 'Completed',
     carbonLink: 'Verified',
-    operator: 'Marcus Vance',
-    batchCode: 'ALGX-26-0910-B',
+    operator: 'Dharmesh V.',
+    batchCode: 'ALGX-26-0910-SAB',
     notes: 'Optimal density achieved. Continuous centrifuge extraction with 96.2% dewatering yield.',
     fates: [
-      { category: 'BIOPLASTICS', kg: 588, pct: 60, destination: 'EcoPlast Polymers Ltd.' },
-      { category: 'BIOCHAR', kg: 392, pct: 40, destination: 'TerraSoil Carbon Sinks' }
+      { category: 'BIOPLASTICS', kg: 588, pct: 60, destination: 'Gujarat BioPolymers Ltd.' },
+      { category: 'BIOCHAR', kg: 392, pct: 40, destination: 'Kutch Soil Carbon Sinks' }
     ]
   },
   {
     id: 'HV-2026-012',
     date: 'Sep 05, 2026',
     rawDate: '2026-09-05T08:15:00Z',
-    pond: 'Pond A',
-    pondId: 'pond-a',
+    pond: 'Pond Narmada',
+    pondId: 'pond-narmada',
     biomassKg: 750,
     method: 'Filtration',
     status: 'Pending',
     carbonLink: 'Pending',
     operator: 'Elena Rostova',
-    batchCode: 'ALGX-26-0905-A',
+    batchCode: 'ALGX-26-0905-NAR',
     notes: 'Fine mesh membrane filtration batch. Awaiting laboratory moisture & ash verification.'
   },
   {
     id: 'HV-2026-011',
     date: 'Aug 28, 2026',
     rawDate: '2026-08-28T14:40:00Z',
-    pond: 'Pond A',
-    pondId: 'pond-a',
+    pond: 'Pond Narmada',
+    pondId: 'pond-narmada',
     biomassKg: 1200,
     method: 'Dewatering',
     status: 'Completed',
     carbonLink: 'Verified',
-    operator: 'Marcus Vance',
-    batchCode: 'ALGX-26-0828-A',
+    operator: 'Dharmesh V.',
+    batchCode: 'ALGX-26-0828-NAR',
     notes: 'Large volume raceway skim. Full moisture removal verified with calibrated gravimetric scale.',
     fates: [
       { category: 'BIOCHAR', kg: 1200, pct: 100, destination: 'CarbonLock Pyrolysis Hub' }
@@ -134,31 +134,31 @@ const DEFAULT_HARVEST_RECORDS: HarvestItem[] = [
     id: 'HV-2026-010',
     date: 'Aug 20, 2026',
     rawDate: '2026-08-20T11:05:00Z',
-    pond: 'Pond C',
-    pondId: 'pond-c',
+    pond: 'Pond Tapi',
+    pondId: 'pond-tapi',
     biomassKg: 640,
     method: 'Centrifuge',
     status: 'Completed',
     carbonLink: 'Verified',
     operator: 'Sarah Chen',
-    batchCode: 'ALGX-26-0820-C',
+    batchCode: 'ALGX-26-0820-TAP',
     notes: 'Raceway C cycle flush. High lipid content fraction isolated for durable biopolymer synthesis.',
     fates: [
-      { category: 'BIOPLASTICS', kg: 640, pct: 100, destination: 'BioStructural Materials Corp.' }
+      { category: 'BIOPLASTICS', kg: 640, pct: 100, destination: 'BioStructural Materials India' }
     ]
   },
   {
     id: 'HV-2026-009',
     date: 'Aug 12, 2026',
     rawDate: '2026-08-12T09:30:00Z',
-    pond: 'Pond A',
-    pondId: 'pond-a',
+    pond: 'Pond Narmada',
+    pondId: 'pond-narmada',
     biomassKg: 980,
     method: 'Filtration',
     status: 'Cancelled',
     carbonLink: 'Not Linked',
     operator: 'David Kim',
-    batchCode: 'ALGX-26-0812-A',
+    batchCode: 'ALGX-26-0812-NAR',
     notes: 'Aborted due to unexpected temperature anomaly & paddle wheel maintenance cycle.'
   }
 ];
@@ -166,8 +166,8 @@ const DEFAULT_HARVEST_RECORDS: HarvestItem[] = [
 export default function HarvestsPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [ponds, setPonds] = useState<Pond[]>([]);
-  const [selectedFarm, setSelectedFarm] = useState('Genesis Algae Farm');
-  const [selectedPond, setSelectedPond] = useState('Pond A');
+  const [selectedFarm, setSelectedFarm] = useState('Kutch Bio-Raceway Facility');
+  const [selectedPond, setSelectedPond] = useState('Pond Narmada');
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
   const [showPondDropdown, setShowPondDropdown] = useState(false);
 
@@ -190,7 +190,7 @@ export default function HarvestsPage() {
   const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
 
   // Form states for Plan Harvest
-  const [planPond, setPlanPond] = useState('Pond A');
+  const [planPond, setPlanPond] = useState('Pond Narmada');
   const [planDate, setPlanDate] = useState('2026-09-18');
   const [planMethod, setPlanMethod] = useState('Centrifuge');
   const [planBiomassKg, setPlanBiomassKg] = useState(850);
@@ -198,7 +198,7 @@ export default function HarvestsPage() {
   const [planNotes, setPlanNotes] = useState('');
 
   // Form states for Record Harvest
-  const [recordPond, setRecordPond] = useState('Pond A');
+  const [recordPond, setRecordPond] = useState('Pond Narmada');
   const [recordDate, setRecordDate] = useState('2026-09-12');
   const [recordMethod, setRecordMethod] = useState('Centrifuge');
   const [recordActualKg, setRecordActualKg] = useState(1020);
@@ -326,8 +326,15 @@ export default function HarvestsPage() {
             </button>
 
             {showFarmDropdown && (
-              <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                {['Genesis Algae Farm', 'GreenRiver Algae Facility', 'Mojave Bio-Raceway Hub'].map(f => (
+              <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {[
+                  'Kutch Bio-Raceway Facility',
+                  'Rameswaram Coastal Algae Hub',
+                  'Sambhar Salt Lake Bio-Culture Site',
+                  'Kochi Blue-Carbon Marine Facility',
+                  'Chilika Lagoon Bio-Sequestration Hub',
+                  'Bhavnagar Marine Algae Centre'
+                ].map(f => (
                   <button
                     key={f}
                     onClick={() => {
@@ -360,8 +367,15 @@ export default function HarvestsPage() {
             </button>
 
             {showPondDropdown && (
-              <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                {['Pond A', 'Pond B', 'Pond C', 'Pond D'].map(p => (
+              <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {[
+                  'Pond Narmada',
+                  'Pond Sabarmati',
+                  'Pond Tapi',
+                  'Pond Mahi',
+                  'Pond Kaveri',
+                  'Pond Mahanadi'
+                ].map(p => (
                   <button
                     key={p}
                     onClick={() => {

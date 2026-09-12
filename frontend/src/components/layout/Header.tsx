@@ -74,7 +74,7 @@ export function Header() {
         {/* Farm Context */}
         <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-1.5 hover:bg-gray-50 transition-all text-xs font-medium text-gray-700">
           <Droplets className="w-4 h-4 text-emerald-600" />
-          <span>GreenRiver Algae Facility</span>
+          <span>Kutch Bio-Raceway Facility</span>
         </div>
 
         {/* Real-time Indicator */}

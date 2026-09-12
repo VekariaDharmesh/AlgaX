@@ -200,7 +200,7 @@ export default function CarbonAccountingPage() {
       setShowExportModal(false);
       // Create instant simulated download trigger
       const blob = new Blob([
-        `AlgaX Carbon MRV Audit Report\nFacility: GreenRiver Algae Facility\nPeriod: ${dateRange}\nNet Carbon Removed: ${netRemovedVal} ${unitLabel}\nGross Fixed: ${grossFixedVal} ${unitLabel}\nEnd-Use Retained: ${endUseRetainedVal} ${unitLabel}\nOperational Footprint: -${operationalFootprintVal} ${unit === 't' ? 't CO2e' : 'kg CO2e'}\nCarbon Fraction: ${assumptions.carbonFraction}\nGrid Factor: ${assumptions.gridEmissionFactor} kg CO2e/kWh\nGenerated: ${new Date().toISOString()}\n`
+        `AlgaX Carbon MRV Audit Report\nFacility: Kutch Bio-Raceway Facility (Gujarat, India)\nPeriod: ${dateRange}\nNet Carbon Removed: ${netRemovedVal} ${unitLabel}\nGross Fixed: ${grossFixedVal} ${unitLabel}\nEnd-Use Retained: ${endUseRetainedVal} ${unitLabel}\nOperational Footprint: -${operationalFootprintVal} ${unit === 't' ? 't CO2e' : 'kg CO2e'}\nCarbon Fraction: ${assumptions.carbonFraction}\nGrid Factor: ${assumptions.gridEmissionFactor} kg CO2e/kWh\nGenerated: ${new Date().toISOString()}\n`
       ], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -589,33 +589,33 @@ export default function CarbonAccountingPage() {
             {/* Aerial Site Image with Interactive Pond Badges */}
             <div className="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-900 mt-4 group">
               <img 
-                src="/images/farm-hero.jpg" 
-                alt="GreenRiver Algae Facility Satellite" 
+                src="/farm_aerial.jpg" 
+                alt="Kutch Bio-Raceway Facility Satellite" 
                 className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
 
-              {/* Pond A Overlay */}
+              {/* Pond Narmada Overlay */}
               <div className="absolute top-4 left-6">
                 <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond A • 0.42 t CO₂e
+                  Pond Narmada • 0.42 t CO₂e
                 </span>
               </div>
 
-              {/* Pond B Overlay */}
+              {/* Pond Sabarmati Overlay */}
               <div className="absolute bottom-4 left-4">
                 <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond B • 0.51 t CO₂e
+                  Pond Sabarmati • 0.51 t CO₂e
                 </span>
               </div>
 
-              {/* Pond C Overlay */}
+              {/* Pond Tapi Overlay */}
               <div className="absolute bottom-4 right-4">
                 <span className="bg-slate-950/85 backdrop-blur-md text-white font-mono text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Pond C • 0.26 t CO₂e
+                  Pond Tapi • 0.26 t CO₂e
                 </span>
               </div>
             </div>
@@ -918,7 +918,7 @@ export default function CarbonAccountingPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Map className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">GreenRiver Algae Facility Satellite Topography</h3>
+                <h3 className="text-base font-bold text-slate-900">Kutch Bio-Raceway Facility Satellite Topography</h3>
               </div>
               <button 
                 onClick={() => setShowMapModal(false)}
@@ -930,31 +930,31 @@ export default function CarbonAccountingPage() {
 
             <div className="relative h-80 w-full rounded-2xl overflow-hidden bg-slate-900">
               <img 
-                src="/images/farm-hero.jpg" 
-                alt="GreenRiver Aerial Map" 
+                src="/farm_aerial.jpg" 
+                alt="Kutch Aerial Map" 
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
               
               <div className="absolute top-6 left-6">
                 <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Raceway Pond Alpha (0.42 t CO₂e)
+                  ● Pond Narmada (0.42 t CO₂e)
                 </span>
               </div>
               <div className="absolute top-28 left-16">
                 <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Raceway Pond Bravo (0.51 t CO₂e)
+                  ● Pond Sabarmati (0.51 t CO₂e)
                 </span>
               </div>
               <div className="absolute bottom-8 right-8">
                 <span className="bg-slate-950/90 text-emerald-400 font-mono text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow">
-                  ● Photobioreactor Unit C (0.26 t CO₂e)
+                  ● Pond Tapi (0.26 t CO₂e)
                 </span>
               </div>
             </div>
 
             <div className="flex justify-between items-center text-xs text-slate-500 pt-2">
-              <span>Coordinates: 32.85°N, 115.57°W • Imperial Valley, CA</span>
+              <span>Coordinates: 23.733°N, 69.859°E • Kutch, Gujarat, India</span>
               <button
                 onClick={() => setShowMapModal(false)}
                 className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold shadow-xs"

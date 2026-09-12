@@ -26,7 +26,7 @@ export default function SimulationControlPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Genesis Algae Farm</h2>
+            <h2 className="text-lg font-bold text-gray-900">Kutch Bio-Raceway Facility</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-gray-500">Status:</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase ${

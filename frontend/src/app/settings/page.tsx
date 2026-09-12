@@ -12,9 +12,9 @@ export default function SettingsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SettingsSection title="Farm">
-          <SettingsField label="Farm name" value="GreenRiver Farm" />
-          <SettingsField label="Location" value="Imperial Valley, CA" />
-          <SettingsField label="Pond configuration" value="3 Active Raceways" />
+          <SettingsField label="Farm name" value="Kutch Bio-Raceway Facility" />
+          <SettingsField label="Location" value="Kutch, Gujarat, India" />
+          <SettingsField label="Pond configuration" value="4 Active Raceways (Narmada, Sabarmati, Tapi, Mahi)" />
         </SettingsSection>
 
         <SettingsSection title="Sensors">
