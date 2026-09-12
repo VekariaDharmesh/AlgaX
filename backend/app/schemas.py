@@ -171,3 +171,28 @@ class PaginatedAnomalyResponse(BaseModel):
 
 class AnomalyStatusUpdate(BaseModel):
     status: str
+
+class ImageryRecordBase(BaseModel):
+    farm_id: UUID
+    pond_id: UUID
+    source_type: str
+    capture_timestamp: Optional[datetime] = None
+    ingestion_timestamp: Optional[datetime] = None
+    filename: str
+    mime_type: str
+    file_size_bytes: int
+    storage_reference: str
+    sha256_hash: str
+    width_px: Optional[int] = None
+    height_px: Optional[int] = None
+    resolution_meters: Optional[float] = None
+    processing_status: str
+    provenance: dict
+
+class ImageryRecordResponse(ImageryRecordBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True

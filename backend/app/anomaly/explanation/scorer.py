@@ -57,6 +57,11 @@ def _calculate_data_quality_penalty(sensor_anomalies: List[Dict]) -> Tuple[float
 
 def _calculate_biological_alignment(bio_type: str, family: str) -> Tuple[float, List[str]]:
     notes: List[str] = []
+    
+    if bio_type == "GROWTH_ACCELERATION":
+        notes.append(f"Biological alignment penalty: limitation factors do not typically explain acceleration")
+        return 0.1, notes
+        
     alignment = BIO_LOGICAL_ALIGNMENT.get(bio_type, set())
     if family in alignment:
         notes.append(f"Biological alignment: {family} is aligned with {bio_type}")

@@ -172,4 +172,4 @@ def test_multi_factor_explanation():
     assert len(explanation["contributing_factors_json"]) == 2
     assert explanation["primary_factor"] == "TEMPERATURE"
     assert "Temperature limitation is the strongest contributing factor" in explanation["summary"]
-    assert "Secondary contributors include nitrogen" in explanation["summary"]
+    assert "Secondary contributors include: nitrogen" in explanation["summary"]

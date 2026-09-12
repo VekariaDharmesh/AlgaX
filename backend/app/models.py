@@ -252,3 +252,36 @@ class AnomalyExplanation(Base):
 
     anomaly = relationship("Anomaly", backref=backref("explanation_record", uselist=False))
 
+class ImagerySourceType(str, enum.Enum):
+    SIMULATED = "SIMULATED"
+    DRONE = "DRONE"
+    SATELLITE = "SATELLITE"
+
+class ImageryProcessingStatus(str, enum.Enum):
+    INGESTED = "INGESTED"
+
+class ImageryRecord(Base):
+    __tablename__ = "imagery_record"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_id = Column(UUID(as_uuid=True), ForeignKey("farm.id"), nullable=False)
+    pond_id = Column(UUID(as_uuid=True), ForeignKey("pond.id"), nullable=False)
+    source_type = Column(Enum(ImagerySourceType), nullable=False)
+    capture_timestamp = Column(DateTime(timezone=True), nullable=True)
+    ingestion_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    
+    filename = Column(String, nullable=False)
+    mime_type = Column(String, nullable=False)
+    file_size_bytes = Column(Float, nullable=False)
+    storage_reference = Column(String, nullable=False)
+    sha256_hash = Column(String, nullable=False)
+    width_px = Column(Float, nullable=True)
+    height_px = Column(Float, nullable=True)
+    resolution_meters = Column(Float, nullable=True)
+    
+    processing_status = Column(Enum(ImageryProcessingStatus), default=ImageryProcessingStatus.INGESTED)
+    provenance = Column(JSON, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+

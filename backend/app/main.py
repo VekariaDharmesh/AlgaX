@@ -19,6 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from .api import imagery
+app.include_router(imagery.router, prefix="/api", tags=["imagery"])
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
