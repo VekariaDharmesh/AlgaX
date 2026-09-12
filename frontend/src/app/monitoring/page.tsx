@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   fetchFarms,
   fetchPonds,
@@ -45,10 +45,13 @@ export default function TelemetryPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Map sensor ID -> { type, unit }
-  const sensorsMap: Record<string, { type: string; unit: string }> = {};
-  sensors.forEach((s) => {
-    sensorsMap[s.id] = { type: s.type, unit: s.unit };
-  });
+  const sensorsMap = useMemo(() => {
+    const map: Record<string, { type: string; unit: string }> = {};
+    sensors.forEach((s) => {
+      map[s.id] = { type: s.type, unit: s.unit };
+    });
+    return map;
+  }, [sensors]);
 
   // Initial Load: Farms & Ponds
   useEffect(() => {
@@ -89,7 +92,7 @@ export default function TelemetryPage() {
     try {
       const [statsData, readingsData, sensorsData] = await Promise.all([
         fetchTelemetryStats(selectedPondId || undefined, selectedFarmId || undefined, selectedHours).catch(() => null),
-        fetchTelemetry(selectedPondId || undefined, selectedFarmId || undefined, undefined, 200).catch(() => []),
+        fetchTelemetry(selectedPondId || undefined, selectedFarmId || undefined, undefined, 100).catch(() => []),
         fetchSensors(selectedPondId || undefined, selectedFarmId || undefined).catch(() => []),
       ]);
 
@@ -115,7 +118,7 @@ export default function TelemetryPage() {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       loadTelemetryData();
-    }, 5000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [autoRefresh, loadTelemetryData]);
 

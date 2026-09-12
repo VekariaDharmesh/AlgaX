@@ -133,7 +133,7 @@ export function TelemetryChartsSection({ readings, sensorsMap, kpis, anomalies =
                         dataKey="val"
                         stroke={cfg.color}
                         strokeWidth={2.5}
-                        dot={{ r: 2, fill: cfg.color }}
+                        dot={false}
                         activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
                       />
 

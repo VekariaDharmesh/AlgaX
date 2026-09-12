@@ -25,65 +25,71 @@ export default function CarbonAccountingPage() {
         <div className="p-8">
           <h2 className="text-lg font-bold text-gray-900 mb-6">Carbon Waterfall</h2>
           
-          <div className="relative">
-            {/* Step 1: Gross */}
-            <div className="flex items-start gap-6">
-              <div className="w-48 pt-1 shrink-0">
+          <div className="space-y-1">
+            {/* Step 1: Gross CO₂ Fixed */}
+            <div className="flex items-center gap-6">
+              <div className="w-48 shrink-0">
                 <h3 className="font-bold text-gray-900">Gross CO₂ Fixed</h3>
                 <p className="text-xs text-gray-500">Biological sequestration</p>
               </div>
-              <div className="flex-1 border-b border-gray-100 pb-6 relative">
+              <div className="flex-1">
                 <div className="h-10 bg-green-500 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: '100%' }}>
-                  <span className="font-bold text-white">{formatCo2(carbon.grossFixedKg).fullFormatted}</span>
+                  <span className="font-bold text-white whitespace-nowrap">{formatCo2(carbon.grossFixedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>
 
-            <div className="absolute left-[13rem] -mt-3 text-gray-300"><ArrowDown className="w-5 h-5" /></div>
+            <div className="pl-48 ml-6"><ArrowDown className="w-5 h-5 text-gray-300" /></div>
 
-            {/* Step 2: Retained */}
-            <div className="flex items-start gap-6 mt-6">
-              <div className="w-48 pt-1 shrink-0">
+            {/* Step 2: End-Use Retained */}
+            <div className="flex items-center gap-6">
+              <div className="w-48 shrink-0">
                 <h3 className="font-bold text-gray-900">End-Use Retained</h3>
                 <p className="text-xs text-gray-500">After bioplastic processing (60% permanence horizon)</p>
               </div>
-              <div className="flex-1 border-b border-gray-100 pb-6">
+              <div className="flex-1">
                 <div className="h-10 bg-green-400 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: `${(carbon.endUseRetainedKg / carbon.grossFixedKg) * 100}%` }}>
-                  <span className="font-bold text-white">{formatCo2(carbon.endUseRetainedKg).fullFormatted}</span>
+                  <span className="font-bold text-white whitespace-nowrap">{formatCo2(carbon.endUseRetainedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>
 
-            <div className="absolute left-[13rem] -mt-3 text-gray-300"><ArrowDown className="w-5 h-5" /></div>
+            <div className="pl-48 ml-6"><ArrowDown className="w-5 h-5 text-gray-300" /></div>
 
-            {/* Step 3: Footprint */}
-            <div className="flex items-start gap-6 mt-6">
-              <div className="w-48 pt-1 shrink-0">
+            {/* Step 3: Operational Footprint (deduction) */}
+            <div className="flex items-center gap-6">
+              <div className="w-48 shrink-0">
                 <h3 className="font-bold text-gray-900">Operational Footprint</h3>
                 <p className="text-xs text-gray-500">Scope 1/2 Deductions</p>
               </div>
-              <div className="flex-1 border-b border-gray-100 pb-6">
-                {/* Visual offset to show deduction */}
-                <div className="flex w-full">
-                  <div style={{ width: `${((carbon.endUseRetainedKg - carbon.operationalFootprintKg) / carbon.grossFixedKg) * 100}%` }}></div>
-                  <div className="h-10 bg-gray-400 rounded shadow-sm flex items-center justify-center px-4 min-w-[80px]" style={{ width: `${(carbon.operationalFootprintKg / carbon.grossFixedKg) * 100}%` }}>
-                    <span className="font-bold text-white">-{formatCo2(carbon.operationalFootprintKg).fullFormatted}</span>
-                  </div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  {/* Spacer: aligns the deduction bar at the right edge of the "net" portion */}
+                  <div className="shrink-0" style={{ width: `${(carbon.netRemovedKg / carbon.grossFixedKg) * 100}%` }}></div>
+                  {/* Deduction bar */}
+                  <div
+                    className="h-10 bg-rose-400 rounded shadow-sm shrink-0"
+                    style={{ width: `${Math.max((carbon.operationalFootprintKg / carbon.grossFixedKg) * 100, 3)}%` }}
+                  ></div>
+                  {/* Label outside the bar */}
+                  <span className="font-bold text-rose-600 ml-3 whitespace-nowrap text-sm">
+                    -{formatCo2(carbon.operationalFootprintKg).fullFormatted}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="absolute left-[13rem] -mt-3 text-gray-300"><ArrowDown className="w-5 h-5" /></div>
+            <div className="pl-48 ml-6"><ArrowDown className="w-5 h-5 text-gray-300" /></div>
 
-            {/* Step 4: Net */}
-            <div className="flex items-start gap-6 mt-6">
-              <div className="w-48 pt-1 shrink-0">
+            {/* Step 4: Net Carbon Removed */}
+            <div className="flex items-center gap-6">
+              <div className="w-48 shrink-0">
                 <h3 className="font-bold text-green-800">Net Carbon Removed</h3>
                 <p className="text-xs text-green-600">Final modeled amount</p>
               </div>
-              <div className="flex-1 pb-2">
+              <div className="flex-1">
                 <div className="h-10 bg-green-800 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: `${(carbon.netRemovedKg / carbon.grossFixedKg) * 100}%` }}>
-                  <span className="font-bold text-white">{formatCo2(carbon.netRemovedKg).fullFormatted}</span>
+                  <span className="font-bold text-white whitespace-nowrap">{formatCo2(carbon.netRemovedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>

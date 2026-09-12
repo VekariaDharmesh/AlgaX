@@ -22,6 +22,7 @@ export default function DashboardOverview() {
   const carbon = DEMO_CARBON_ACCOUNTING;
   
   const [telemetryData, setTelemetryData] = useState<{time: string, value: number}[]>([]);
+
   const [biomassAvg, setBiomassAvg] = useState<number | null>(null);
   const [grossCo2, setGrossCo2] = useState<number | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,6 +75,8 @@ export default function DashboardOverview() {
             fetchCarbonEstimates(pondId).catch(() => []),
             fetchAnomalies(1, 20).catch(() => ({ items: [] }))
           ]);
+
+
 
           if (!mounted) return;
 

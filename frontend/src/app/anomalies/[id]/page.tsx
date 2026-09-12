@@ -28,7 +28,7 @@ export default function AnomalyDetailPage() {
     };
     loadData();
     // Refresh every 10 seconds
-    const interval = setInterval(loadData, 10000);
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [anomalyId]);
 
