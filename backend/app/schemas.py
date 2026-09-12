@@ -129,6 +129,7 @@ class AnomalyBase(BaseModel):
 
 class AnomalyResponse(AnomalyBase):
     id: UUID
+    priority_score: int = 0
     class Config:
         from_attributes = True
 
@@ -161,3 +162,12 @@ class AnomalyExplanationResponse(AnomalyExplanationBase):
 class AnomalyResponseWithExplanation(AnomalyResponse):
     explanation_record: Optional[AnomalyExplanationResponse] = None
 
+class PaginatedAnomalyResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    has_next: bool
+    items: List[AnomalyResponseWithExplanation]
+
+class AnomalyStatusUpdate(BaseModel):
+    status: str

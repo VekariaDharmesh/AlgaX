@@ -46,7 +46,7 @@ def score_factors(correlated_data: Dict[str, Any]) -> Tuple[Dict[str, float], Di
             pass
         elif bio_type == "GROWTH_ACCELERATION":
             # If growth accelerated, severe limitation doesn't make sense as a cause
-            # It might be caused by a recovery of limitation, but that's complex.
+            # It might be associated with a recovery of limitation, but that's complex.
             # We penalize limitation factors trying to explain acceleration.
             alignment_multiplier = 0.1
             

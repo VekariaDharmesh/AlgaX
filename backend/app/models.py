@@ -2,7 +2,7 @@ import uuid
 import datetime
 import enum
 from sqlalchemy import Column, String, Float, Boolean, ForeignKey, DateTime, Enum, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
 
@@ -182,6 +182,8 @@ class AnomalySeverity(str, enum.Enum):
 
 class AnomalyStatus(str, enum.Enum):
     OPEN = "OPEN"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    INVESTIGATING = "INVESTIGATING"
     RESOLVED = "RESOLVED"
 
 class Anomaly(Base):
@@ -248,5 +250,5 @@ class AnomalyExplanation(Base):
     
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
-    anomaly = relationship("Anomaly", backref="explanation_record")
+    anomaly = relationship("Anomaly", backref=backref("explanation_record", uselist=False))
 

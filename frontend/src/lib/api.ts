@@ -34,9 +34,29 @@ export async function fetchCarbonEstimates(pondId: string) {
   return res.json();
 }
 
-export async function fetchAnomalies() {
-  const res = await fetch(`${API_BASE_URL}/anomalies?limit=5&status=OPEN`);
+export async function fetchAnomalies(page: number = 1, pageSize: number = 50, status?: string) {
+  let url = `${API_BASE_URL}/anomalies?page=${page}&page_size=${pageSize}`;
+  if (status) {
+    url += `&status=${status}`;
+  }
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch anomalies");
+  return res.json();
+}
+
+export async function fetchAnomaly(anomalyId: string) {
+  const res = await fetch(`${API_BASE_URL}/anomalies/${anomalyId}`);
+  if (!res.ok) throw new Error("Failed to fetch anomaly");
+  return res.json();
+}
+
+export async function updateAnomalyStatus(anomalyId: string, status: string) {
+  const res = await fetch(`${API_BASE_URL}/anomalies/${anomalyId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error("Failed to update anomaly status");
   return res.json();
 }
 

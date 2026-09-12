@@ -50,30 +50,6 @@ export default function EvidencePage() {
           </div>
         </div>
 
-        {/* Imagery */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="border-b border-gray-200 p-4 bg-gray-50 flex items-center gap-3">
-            <ImageIcon className="w-5 h-5 text-gray-500" />
-            <h2 className="font-bold text-gray-900">Imagery Analysis</h2>
-          </div>
-          <div className="p-6 flex flex-col md:flex-row gap-6">
-            <div className="w-full md:w-1/3 bg-gray-200 rounded-lg min-h-[160px] flex flex-col items-center justify-center text-gray-400 relative">
-              <ImageIcon className="w-8 h-8 opacity-50 mb-2" />
-              <span className="text-xs uppercase tracking-wider font-bold">Drone Pass</span>
-              <div className="absolute inset-0 bg-green-500 opacity-20 mix-blend-multiply rounded-lg"></div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-bold text-gray-900 mb-4">Visual Model Confirmation</h3>
-              <div className="grid grid-cols-2 gap-y-4 text-sm">
-                <div><span className="block text-gray-500 text-xs mb-1">Greenness Index</span><span className="font-medium text-green-700">0.74</span></div>
-                <div><span className="block text-gray-500 text-xs mb-1">Coverage</span><span className="font-medium">92%</span></div>
-                <div><span className="block text-gray-500 text-xs mb-1">Imagery Signal</span><span className="font-medium">0.82 g/L</span></div>
-                <div><span className="block text-gray-500 text-xs mb-1">Model Comparison</span><span className="font-medium text-blue-600">Within 3.4% error margin</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Model Output */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200 p-4 bg-gray-50 flex items-center gap-3">

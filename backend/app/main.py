@@ -158,20 +158,63 @@ async def model_loop():
 async def startup_event():
     asyncio.create_task(model_loop())
 
-@app.get("/api/anomalies", response_model=List[schemas.AnomalyResponse])
+from sqlalchemy.orm import joinedload
+
+def calculate_priority_score(anomaly: models.Anomaly) -> int:
+    score = 0
+    # Base score on domain
+    if anomaly.source_provenance == "biological_engine":
+        score += 50
+    elif anomaly.source_provenance == "environmental_engine":
+        score += 30
+    else:
+        score += 10
+        
+    # Modifier for severity
+    if anomaly.severity.value == "CRITICAL":
+        score += 40
+    elif anomaly.severity.value == "HIGH":
+        score += 20
+    elif anomaly.severity.value == "MEDIUM":
+        score += 10
+        
+    # Status modifier
+    if anomaly.status.value == "OPEN":
+        score += 10
+    elif anomaly.status.value == "INVESTIGATING":
+        score += 5
+    elif anomaly.status.value == "RESOLVED":
+        score -= 20
+        
+    return max(0, min(100, score))
+
+@app.get("/api/anomalies", response_model=schemas.PaginatedAnomalyResponse)
 def get_anomalies(
     db: Session = Depends(get_db),
     pond_id: Optional[uuid.UUID] = None,
     status: Optional[str] = None,
-    limit: int = 50
+    page: int = 1,
+    page_size: int = 50
 ):
-    query = db.query(models.Anomaly)
+    query = db.query(models.Anomaly).options(joinedload(models.Anomaly.explanation_record))
     if pond_id:
         query = query.filter(models.Anomaly.pond_id == pond_id)
     if status:
         query = query.filter(models.Anomaly.status == status)
         
-    return query.order_by(desc(models.Anomaly.timestamp)).limit(limit).all()
+    total = query.count()
+    items = query.order_by(desc(models.Anomaly.timestamp)).offset((page - 1) * page_size).limit(page_size).all()
+    
+    for item in items:
+        item.priority_score = calculate_priority_score(item)
+        
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "has_next": (page * page_size) < total,
+        "items": items
+    }
 
 @app.get("/api/ponds/{pond_id}/anomalies", response_model=List[schemas.AnomalyResponse])
 def get_pond_anomalies(
@@ -185,10 +228,35 @@ def get_pond_anomalies(
         query = query.filter(models.Anomaly.status == status)
     return query.order_by(desc(models.Anomaly.timestamp)).limit(limit).all()
 
+@app.get("/api/anomalies/{anomaly_id}", response_model=schemas.AnomalyResponseWithExplanation)
+def get_anomaly(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
+    anomaly = db.query(models.Anomaly).options(joinedload(models.Anomaly.explanation_record)).filter(models.Anomaly.id == anomaly_id).first()
+    if not anomaly:
+        raise HTTPException(status_code=404, detail="Anomaly not found")
+    anomaly.priority_score = calculate_priority_score(anomaly)
+    return anomaly
+
 @app.get("/api/anomalies/{anomaly_id}/explanation", response_model=schemas.AnomalyExplanationResponse)
 def get_anomaly_explanation(anomaly_id: uuid.UUID, db: Session = Depends(get_db)):
     explanation = db.query(models.AnomalyExplanation).filter(models.AnomalyExplanation.anomaly_id == anomaly_id).first()
     if not explanation:
         raise HTTPException(status_code=404, detail="Explanation not found for this anomaly")
     return explanation
+
+@app.patch("/api/anomalies/{anomaly_id}/status", response_model=schemas.AnomalyResponse)
+def update_anomaly_status(anomaly_id: uuid.UUID, status_update: schemas.AnomalyStatusUpdate, db: Session = Depends(get_db)):
+    anomaly = db.query(models.Anomaly).filter(models.Anomaly.id == anomaly_id).first()
+    if not anomaly:
+        raise HTTPException(status_code=404, detail="Anomaly not found")
+        
+    try:
+        anomaly.status = models.AnomalyStatus(status_update.status)
+        if anomaly.status == models.AnomalyStatus.RESOLVED:
+            anomaly.resolved_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(anomaly)
+        anomaly.priority_score = calculate_priority_score(anomaly)
+        return anomaly
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid status value")
 

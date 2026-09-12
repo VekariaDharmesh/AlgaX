@@ -33,7 +33,6 @@ const navItems = [
     items: [
       { name: 'Telemetry', href: '/monitoring', icon: Activity },
       { name: 'Anomalies', href: '/anomalies', icon: AlertCircle, badge: 2 },
-      { name: 'Imagery', href: '/imagery', icon: ImageIcon },
     ]
   },
   {
