@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowDown, AlertCircle, Info } from 'lucide-react';
 import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
+import { formatCo2 } from '@/lib/formatters';
 
 export default function CarbonAccountingPage() {
   const carbon = DEMO_CARBON_ACCOUNTING;
@@ -17,7 +18,7 @@ export default function CarbonAccountingPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="bg-green-800 p-6 text-white text-center">
           <span className="text-sm font-semibold uppercase tracking-wider text-green-200 mb-1 block">Net Carbon Removed</span>
-          <div className="text-5xl font-bold">{carbon.netRemovedKg.toLocaleString()} <span className="text-2xl text-green-100">kg CO₂e</span></div>
+          <div className="text-5xl font-bold">{formatCo2(carbon.netRemovedKg).value} <span className="text-2xl text-green-100">{formatCo2(carbon.netRemovedKg).unit}</span></div>
           <p className="text-sm text-green-100 mt-2">Modeled durable removal after all operational deductions.</p>
         </div>
         
@@ -33,7 +34,7 @@ export default function CarbonAccountingPage() {
               </div>
               <div className="flex-1 border-b border-gray-100 pb-6 relative">
                 <div className="h-10 bg-green-500 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: '100%' }}>
-                  <span className="font-bold text-white">{carbon.grossFixedKg.toLocaleString()} kg</span>
+                  <span className="font-bold text-white">{formatCo2(carbon.grossFixedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>
@@ -48,7 +49,7 @@ export default function CarbonAccountingPage() {
               </div>
               <div className="flex-1 border-b border-gray-100 pb-6">
                 <div className="h-10 bg-green-400 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: `${(carbon.endUseRetainedKg / carbon.grossFixedKg) * 100}%` }}>
-                  <span className="font-bold text-white">{carbon.endUseRetainedKg.toLocaleString()} kg</span>
+                  <span className="font-bold text-white">{formatCo2(carbon.endUseRetainedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>
@@ -66,7 +67,7 @@ export default function CarbonAccountingPage() {
                 <div className="flex w-full">
                   <div style={{ width: `${((carbon.endUseRetainedKg - carbon.operationalFootprintKg) / carbon.grossFixedKg) * 100}%` }}></div>
                   <div className="h-10 bg-gray-400 rounded shadow-sm flex items-center justify-center px-4 min-w-[80px]" style={{ width: `${(carbon.operationalFootprintKg / carbon.grossFixedKg) * 100}%` }}>
-                    <span className="font-bold text-white">-{carbon.operationalFootprintKg} kg</span>
+                    <span className="font-bold text-white">-{formatCo2(carbon.operationalFootprintKg).fullFormatted}</span>
                   </div>
                 </div>
               </div>
@@ -82,7 +83,7 @@ export default function CarbonAccountingPage() {
               </div>
               <div className="flex-1 pb-2">
                 <div className="h-10 bg-green-800 rounded-r shadow-sm flex items-center justify-end px-4" style={{ width: `${(carbon.netRemovedKg / carbon.grossFixedKg) * 100}%` }}>
-                  <span className="font-bold text-white">{carbon.netRemovedKg.toLocaleString()} kg</span>
+                  <span className="font-bold text-white">{formatCo2(carbon.netRemovedKg).fullFormatted}</span>
                 </div>
               </div>
             </div>

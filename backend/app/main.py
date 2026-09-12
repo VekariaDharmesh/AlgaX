@@ -21,11 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .api import imagery, cross_validation, evidence
+from .api import imagery, cross_validation, evidence, weather
 
 app.include_router(imagery.router, prefix="/api", tags=["imagery"])
 app.include_router(cross_validation.router, prefix="/api", tags=["cross-validation"])
 app.include_router(evidence.router, prefix="/api", tags=["evidence"])
+app.include_router(evidence.router, prefix="/api/v1", tags=["evidence-v1"])
+app.include_router(weather.router, prefix="/api", tags=["weather"])
 
 @app.get("/health")
 def health_check():

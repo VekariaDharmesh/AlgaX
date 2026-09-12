@@ -433,6 +433,7 @@ class PackageStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     READY_FOR_REVIEW = "READY_FOR_REVIEW"
     INCOMPLETE = "INCOMPLETE"
+    SEALED = "SEALED"
 
 class CompletenessClassification(str, enum.Enum):
     COMPLETE = "COMPLETE"
@@ -477,6 +478,8 @@ class EvidencePackage(Base):
     limitations_json = Column(JSON, nullable=False, default=list)
     
     canonical_hash = Column(String, nullable=True)
+    sealed_at = Column(DateTime(timezone=True), nullable=True)
+    sealed_by = Column(String, nullable=True)
     contains_simulated_data = Column(Boolean, nullable=False, default=False)
     
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc))

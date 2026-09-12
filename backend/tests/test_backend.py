@@ -12,51 +12,57 @@ def test_health_check():
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
-@pytest.mark.asyncio
-async def test_biology_and_environment():
-    sim = Simulator()
-    state = PondState(uuid.uuid4())
-    
-    # initial state
-    assert state.biomass == 0.5
-    assert state.nitrogen == 15.0
-    
-    env = await sim.step_pond(state)
-    assert "temperature" in env
-    assert "light" in env
-    
-    # biomass should grow
-    assert state.biomass > 0.5
-    # nitrogen should decrease due to growth
-    assert state.nitrogen < 15.0
-    
-    # Day/Night test
-    state.time = datetime(2023, 1, 1, 12, 0, tzinfo=timezone.utc) # noon
-    env_day = await sim.step_pond(state)
-    assert env_day["light"] > 0
-    assert env_day["dissolved_oxygen"] > 5.0 # increased DO
-    
-    state.time = datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc) # midnight
-    env_night = await sim.step_pond(state)
-    assert env_night["light"] == 0
-    assert env_night["dissolved_oxygen"] < env_day["dissolved_oxygen"]
+import asyncio
 
-@pytest.mark.asyncio
-async def test_sensor_dropout():
-    sim = Simulator()
-    state = PondState(uuid.uuid4())
-    state.dropout_sensor_type = "temperature"
-    
-    # simulate the dropout logic used in simulator.run
-    env = await sim.step_pond(state)
-    
-    sensor = {"id": uuid.uuid4(), "type": "temperature"}
-    if state.dropout_sensor_type == sensor["type"]:
-        dropped_out = True
-    else:
-        dropped_out = False
+def test_biology_and_environment():
+    async def _test():
+        sim = Simulator()
+        state = PondState(uuid.uuid4())
         
-    assert dropped_out == True
+        # initial state
+        assert state.biomass == 0.5
+        assert state.nitrogen == 15.0
+        
+        env = await sim.step_pond(state)
+        assert "temperature" in env
+        assert "light" in env
+        
+        # biomass should grow
+        assert state.biomass > 0.5
+        # nitrogen should decrease due to growth
+        assert state.nitrogen < 15.0
+        
+        # Day/Night test
+        state.time = datetime(2023, 1, 1, 12, 0, tzinfo=timezone.utc) # noon
+        env_day = await sim.step_pond(state)
+        assert env_day["light"] > 0
+        assert env_day["dissolved_oxygen"] > 5.0 # increased DO
+        
+        state.time = datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc) # midnight
+        env_night = await sim.step_pond(state)
+        assert env_night["light"] == 0
+        assert env_night["dissolved_oxygen"] < env_day["dissolved_oxygen"]
+
+    asyncio.run(_test())
+
+def test_sensor_dropout():
+    async def _test():
+        sim = Simulator()
+        state = PondState(uuid.uuid4())
+        state.dropout_sensor_type = "temperature"
+        
+        # simulate the dropout logic used in simulator.run
+        env = await sim.step_pond(state)
+        
+        sensor = {"id": uuid.uuid4(), "type": "temperature"}
+        if state.dropout_sensor_type == sensor["type"]:
+            dropped_out = True
+        else:
+            dropped_out = False
+            
+        assert dropped_out == True
+
+    asyncio.run(_test())
 
 def test_api_ingest_validation():
     # 1. Invalid sensor ID

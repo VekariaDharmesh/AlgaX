@@ -8,6 +8,8 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Link from 'next/link';
 import { fetchPonds, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
+import RealTimeWeatherWidget from '@/components/weather/RealTimeWeatherWidget';
+import { formatCo2, formatBiomass } from '@/lib/formatters';
 
 const verificationData = [
   { name: 'Modeled', value: 8, color: '#16a34a' },
@@ -152,15 +154,8 @@ export default function DashboardOverview() {
             )}
           </div>
           
-          {/* Weather Widget */}
-          <div className="bg-white/60 backdrop-blur-md border border-white/60 p-4 rounded-xl shadow-sm flex items-center gap-4 min-w-[200px]">
-            <Sun className="w-10 h-10 text-yellow-500 drop-shadow-sm" />
-            <div className="flex flex-col">
-              <span className="text-2xl font-extrabold text-slate-900 leading-none">28°C</span>
-              <span className="text-xs font-semibold text-slate-700 mt-1.5">Gandhinagar, India</span>
-              <span className="text-[11px] font-medium text-slate-600">Clear Sky</span>
-            </div>
-          </div>
+          {/* Real-Time Weather Widget */}
+          <RealTimeWeatherWidget initialLocation="Gandhinagar, India" />
         </div>
       </div>
 
@@ -175,7 +170,9 @@ export default function DashboardOverview() {
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gross CO₂ Fixed</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">{grossCo2 !== null ? grossCo2.toFixed(1) : '-'} <span className="text-lg">kg CO₂e</span></span>
+                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">
+                  {formatCo2(grossCo2).value} <span className="text-lg font-bold text-slate-600">{formatCo2(grossCo2).unit}</span>
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -194,7 +191,9 @@ export default function DashboardOverview() {
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Estimated Biomass</span>
-                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">{biomassAvg !== null ? biomassAvg.toFixed(2) : '-'} <span className="text-lg">g/L</span></span>
+                <span className="text-2xl font-extrabold text-slate-900 mt-0.5">
+                  {formatBiomass(biomassAvg).value} <span className="text-lg font-bold text-slate-600">{formatBiomass(biomassAvg).unit}</span>
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2">

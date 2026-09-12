@@ -314,6 +314,8 @@ class EvidencePackageResponse(EvidencePackageBase):
     limitations_json: list
     
     canonical_hash: Optional[str] = None
+    sealed_at: Optional[datetime] = None
+    sealed_by: Optional[str] = None
     contains_simulated_data: bool
     created_at: datetime
     updated_at: datetime
@@ -335,3 +337,62 @@ class ReviewActionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# Real-Time Weather Schemas
+class HourlyForecast(BaseModel):
+    time: str
+    temperature_2m: float
+    shortwave_radiation: Optional[float] = 0.0
+    precipitation: Optional[float] = 0.0
+    weather_code: int = 0
+
+class AlgaeWeatherImpact(BaseModel):
+    solar_irradiance_w_m2: float
+    photosynthesis_score: float
+    thermal_stress_rating: str
+    evaporation_risk: str
+    growth_condition_summary: str
+
+class WeatherCurrentResponse(BaseModel):
+    location_name: str
+    latitude: float
+    longitude: float
+    temperature_c: float
+    apparent_temperature_c: float
+    relative_humidity: float
+    wind_speed_kmh: float
+    wind_direction_deg: float
+    precipitation_mm: float
+    weather_code: int
+    weather_description: str
+    is_day: bool
+    solar_irradiance_w_m2: float
+    algae_impact: AlgaeWeatherImpact
+    hourly_forecast: List[HourlyForecast] = []
+    updated_at: str
+
+class WeatherSearchItem(BaseModel):
+    name: str
+    latitude: float
+    longitude: float
+    country: Optional[str] = None
+    admin1: Optional[str] = None
+
+# Phase 6 Reporting & Verification Schemas
+class HashVerificationResponse(BaseModel):
+    package_id: UUID
+    integrity_match: bool
+    stored_hash: str
+    recomputed_hash: str
+    status: str
+    message: str
+    verified_at: datetime
+    sealed_at: Optional[datetime] = None
+    sealed_by: Optional[str] = None
+
+class CanonicalJsonBundleResponse(BaseModel):
+    package_id: UUID
+    canonical_hash: str
+    payload: dict
+
+

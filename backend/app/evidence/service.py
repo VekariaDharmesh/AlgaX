@@ -120,22 +120,6 @@ def generate_evidence_package(
     has_sim = any(r.source_type == models.SourceType.simulated for r in readings) or \
               any(i.source_type == models.ImagerySourceType.SIMULATED for i in imagery)
               
-    payload = {
-        "farm_id": str(farm_id),
-        "pond_id": str(pond_id),
-        "reporting_period_start": start_date.isoformat(),
-        "reporting_period_end": end_date.isoformat(),
-        "sensor_evidence": sensor_ev,
-        "model_evidence": model_ev,
-        "carbon_evidence": carbon_ev,
-        "anomaly_evidence": anomaly_ev,
-        "imagery_evidence": imagery_ev,
-        "cross_validation_evidence": cv_ev
-    }
-    
-    canonical_str = json.dumps(payload, sort_keys=True)
-    canonical_hash = hashlib.sha256(canonical_str.encode('utf-8')).hexdigest()
-    
     pkg = models.EvidencePackage(
         farm_id=farm_id,
         pond_id=pond_id,
@@ -151,12 +135,39 @@ def generate_evidence_package(
         imagery_evidence_json=imagery_ev,
         cross_validation_evidence_json=cv_ev,
         limitations_json=limitations,
-        canonical_hash=canonical_hash,
         contains_simulated_data=has_sim
     )
+
+    from .verifier import build_canonical_payload, compute_canonical_hash
+    payload = build_canonical_payload(pkg)
+    pkg.canonical_hash = compute_canonical_hash(payload)
     
     db.add(pkg)
     db.commit()
     db.refresh(pkg)
     
     return pkg
+
+def seal_evidence_package(
+    db: Session,
+    package_id: uuid.UUID,
+    actor: str = "auditor@algax.com"
+) -> models.EvidencePackage:
+    pkg = db.query(models.EvidencePackage).filter(models.EvidencePackage.id == package_id).first()
+    if not pkg:
+        raise ValueError("Evidence Package not found")
+        
+    if pkg.completeness == models.CompletenessClassification.INSUFFICIENT_EVIDENCE:
+        raise ValueError("Cannot seal evidence package with INSUFFICIENT_EVIDENCE classification")
+
+    from .verifier import build_canonical_payload, compute_canonical_hash
+    payload = build_canonical_payload(pkg)
+    pkg.canonical_hash = compute_canonical_hash(payload)
+    pkg.status = models.PackageStatus.SEALED
+    pkg.sealed_at = datetime.now(timezone.utc)
+    pkg.sealed_by = actor
+    
+    db.commit()
+    db.refresh(pkg)
+    return pkg
+

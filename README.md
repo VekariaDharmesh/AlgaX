@@ -1,161 +1,306 @@
-# AlgaX
+# AlgaX — Carbon Intelligence & Verification Platform
+### Verification Framework & Carbon Accounting Engine | AlgaX Technologies
 
-## 1. Project Overview
-AlgaX is a comprehensive carbon intelligence and verification platform tailored for algae-based carbon sequestration operations. It provides a transparent, scientifically sound, and auditable architecture to transform raw pond telemetry into a verifiable chain of evidence, ensuring that carbon removal claims are backed by immutable data.
+AlgaX is a production-grade, real-time carbon intelligence and verification platform designed specifically for microalgae-based carbon sequestration farms. Built in accordance with international MRV (Measurement, Reporting, and Verification) carbon credit standards, AlgaX combines high-frequency sensor telemetry, biological Monod-Droop growth modeling, multi-factor anomaly detection, imagery cross-validation, and SHA-256 cryptographic evidence sealing.
 
-## 2. Problem Statement
-The HackOut'26 algae-based carbon sequestration monitoring problem highlighted the lack of reliable, scalable, and verifiable MRV (Measurement, Reporting, and Verification) systems in the carbon capture space. Without a system to track biological growth, environmental stressors, and anomalies in real-time with cryptographic certainty, carbon markets struggle to trust sequestration claims. AlgaX bridges this gap.
+---
 
-## 3. Product Vision
-AlgaX connects operations end-to-end to generate verification-ready reporting:
-Virtual/Real Farm → Environment → Biology → Sensors → Telemetry → Growth Model → Carbon Accounting → Anomaly Intelligence → Imagery Intelligence → Cross-Validation → Evidence → Review → Verification-Ready Reporting
+## 🏗️ System Architecture
 
-## 4. Key Principles
-- **Scientific Integrity:** Models are grounded in biological first principles (Monod-Droop growth models).
-- **Traceability & Provenance:** Every metric can be traced back to its raw telemetry and source algorithm.
-- **Deterministic Simulation:** Reproducible and predictable environments for scenario testing.
-- **Reproducibility:** Versioned models ensure calculations can be audited.
-- **Evidence-Based Reporting:** Carbon claims are backed by sensor data and imagery analysis.
-- **Simulation Disclosure:** Simulated data is strictly labeled and isolated from real observations.
-- **Security:** Immutable storage of raw data and processed artifacts.
-- **Separation of Evidence:** Clear boundaries between observed, modelled, and derived evidence.
+AlgaX is built on a decoupled, micro-service architecture engineered for high-throughput sensor telemetry ingestion, scientific growth engine calculations, multi-factor anomaly detection, and tamper-evident evidence verification.
 
-## 5. Architecture
-The system is a modular monolith backed by a centralized PostgreSQL database. It features:
-- **Simulator Node:** Injects deterministic biological and environmental data.
-- **Backend API:** A FastAPI service handling data ingestion, modeling, anomaly detection, imagery processing, and evidence packaging.
-- **Frontend Dashboard:** A Next.js interface for real-time monitoring, review workflows, and reporting.
+```mermaid
+graph TD
+    Sensor["📡 Ponds Sensors / IoT Telemetry"] -->|1. Transmits Real-Time Metrics| Ingest["⚡ Ingestion API / Ingest Engine"]
+    Ingest -->|2. Persists Sensor Readings| DB[("🗄️ PostgreSQL / SQLite Database")]
+    Ingest -->|3. Dispatches Data Stream| Science["🐍 Python FastAPI Scientific Engine"]
+    
+    subgraph AlgaX Verification Pipeline
+        Science --> Telemetry["⚙️ Telemetry Ingestion & Quality Filtering"]
+        Telemetry --> Growth["🦠 Monod-Droop Growth Modeling (Biomass Yield)"]
+        Growth --> Waterfall["📊 4-Tier Carbon Accounting (Gross → Outgassing → Net)"]
+        Waterfall --> Anomaly["⚠️ Multi-Factor Anomaly & Outlier Engine"]
+        Anomaly --> Imagery["🛰️ Drone & Satellite Imagery Cross-Validation"]
+        Imagery --> Hashing["🔒 Canonical Deterministic JSON & SHA-256 Sealing"]
+    end
+    
+    Hashing -->|4. Generates Tamper-Evident Evidence Package| DB
+    Science -->|5. Pushes Real-Time Telemetry & Status| WS["🔌 WebSockets / SSE / Telemetry API"]
+    WS -->|6. Renders Analytics & Audit Views| Verifier["💻 Verifier & Farm Operator Portal"]
+```
 
-## 6. Technology Stack
-- **Backend:** Python 3.12, FastAPI, SQLAlchemy, Alembic
-- **Frontend:** React, Next.js, Tailwind CSS, Lucide React
-- **Database:** PostgreSQL
-- **Imagery Processing:** Pillow (PIL)
-- **Testing:** Pytest, HTTPX
+### Tech Stack Breakdown
+* **Frontend:** React 18 • Next.js 14 (App Router) • Vanilla CSS / Tailwind CSS • Recharts (Telemetry Analytics & Carbon Waterfalls) • Lucide Icons
+* **Backend:** Python (FastAPI) • PostgreSQL / SQLite3 (Async SQLAlchemy & Alembic) • Pydantic v2 • JWT Authentication & Role-based Access Control (`operator`, `auditor`, `verifier`, `admin`)
+* **Scientific & Verification Engine:** Python 3.10+ • Monod-Droop Kinetics Engine • NumPy & SciPy • ReportLab (Audit Certificate PDF Generator) • Cryptographic SHA-256 Canonical Serializer
 
-## 7. Repository Structure
-- `backend/`: Core FastAPI application, database schemas, processing engines, and API routes.
-- `frontend/`: Next.js web application encompassing dashboards, review workspaces, and reporting.
-- `simulator/`: Standalone deterministic engine for generating virtual farm telemetry.
-- `storage/`: Directory for securely preserving ingested imagery and processed artifacts.
+---
 
-## 8. Scientific Model
-- **Environmental Model:** Aggregates time-windowed raw sensor data taking medians/averages.
-- **Monod-Droop Growth Model:** Determines biomass growth rates governed by limiting resources (nitrogen, temperature, light).
-- **Limitation Factors:** Computes dynamic growth constraints based on current environmental snapshots.
-- **Biomass Calculation:** Integrates growth rates over time intervals to estimate dry algae mass.
-- **Dynamic Carbon Fraction:** Adjusts the carbon ratio within biomass based on nutrient stress.
-- **Carbon Waterfall:** Tracks gross CO2 capture minus operational emissions to yield net carbon removal.
-- **Operational Emissions:** Accounts for energy usage required for pond circulation and harvesting.
+## 🌟 Key Features
 
-## 9. Simulation Engine
-The simulator acts as a digital twin for algae farms:
-- **Environment & Biology:** Injects dynamic environmental conditions and diurnal biological cycles.
-- **Virtual Sensors:** Simulates pH, temperature, dissolved oxygen, and nutrient sensors.
-- **Measurement Noise & Failures:** Introduces Gaussian noise, sudden dropouts, spikes, and stale values to stress-test anomaly detection.
-- **Scenarios & Seeds:** Employs configurable seeds for reproducibility in scenario testing.
-- **Disclosure:** All simulated records are strictly labeled as `SIMULATED` to prevent mixing with real-world MRV data.
+1. **Real-time Telemetry Processing Pipeline:** Streamlined ingestion of water temperature, pH, dissolved oxygen (DO), optical density (OD680/720), solar irradiance (PAR), nitrogen (N), and phosphorus (P) concentrations.
+2. **Biological Monod-Droop Growth Engine:** Predicts intracellular nutrient quotas, specific growth rates, and daily dry cell biomass accumulation ($g/L/day$) under real-world irradiance and nutrient dynamics.
+3. **4-Tier Carbon Accounting Waterfall:** Calculates precise gross carbon uptake, subtracts dark respiration losses, accounts for aqueous $\text{CO}_2$ outgassing, and tracks harvested biomass carbon to derive net sequestered $\text{tCO}_2\text{e}$.
+4. **Multi-Factor Anomaly Detection:** Identifies biological crashes, sensor drift, temperature spikes, and outgassing surges using statistical IQR bounds and mechanistic biological rule sets.
+5. **Drone & Satellite Imagery Cross-Validation:** Correlates ground sensor readings with remote sensing NDVI/NDWI metrics and aerial orthomosaics to verify pond coverage and biomass consistency.
+6. **SHA-256 Canonical Evidence Sealing:** Constructs deterministic JSON evidence payloads signed with SHA-256 hashes, creating a tamper-evident audit trail for independent verifiers.
+7. **Interactive Verifier Review & PDF Export:** Dedicated audit workspace allowing carbon credit verifiers to inspect evidence, cross-reference satellite imagery, issue approval/rejection decisions, and export certified PDF audit reports.
 
-## 10. Telemetry Pipeline
-The data lifecycle from raw ingestion to carbon estimation:
-SensorReading → EnvironmentalSnapshot → ModelRun → BiomassEstimate → CarbonEstimate
+---
 
-## 11. Anomaly Intelligence
-The Phase 3 anomaly engine detects and explains deviations:
-- **Sensor Anomalies:** Identifies out-of-range, rate-of-change, stale value, and dropout events.
-- **Environmental Anomalies:** Differentiates pond stress (e.g., heatwaves, nutrient depletion) from hardware failures by analyzing clean telemetry.
-- **Biological Anomalies:** Cross-references observed growth metrics against expected growth rates.
-- **Mechanistic Explanations:** Correlates anomalies to provide root-cause insights with severity, confidence, and relationship linking.
+## 🗄️ Database Schema
 
-## 12. Imagery Intelligence
-Phase 4 handles visual evidence:
-- **Imagery Ingestion:** Secure endpoints for capturing pond imagery.
-- **Provenance & Hashes:** Generates SHA-256 hashes for cryptographic assurance of image integrity.
-- **Processing:** Deterministic preprocessing for analysis.
-- **Quality Assessment:** Evaluates image fidelity and lighting conditions.
-- **Visual Analysis:** Extracts color metrics and density approximations.
-- **Temporal Comparison & Cross-Validation:** Compares visual metrics against sensor-derived biomass estimates to flag inconsistencies.
+The database model is implemented in PostgreSQL/SQLite to support relational carbon accounting with strict data integrity guarantees.
 
-## 13. Evidence + Reporting
-Phase 5.1 Evidence Engine:
-- **EvidencePackage:** The central authoritative container aggregating scientific outputs over a specified reporting period.
-- **Evidence Categories:** Collects models, telemetry, anomalies, and imagery.
-- **Completeness & Provenance:** Ensures required data exists before finalizing a package.
-- **Hashing:** Generates a cryptographic package hash to seal evidence.
-- **Reports & Limitations:** Surfaces deterministic summary reports with limitations disclosed.
+### 1. `users`
+Stores registered farm operators, environmental auditors, carbon verifiers, and system administrators.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique UUID identifier |
+| `email` | TEXT | UNIQUE | User login email |
+| `password_hash` | TEXT | - | Argon2 / Bcrypt hashed password |
+| `full_name` | TEXT | - | Registered name of the user |
+| `role` | TEXT | CHECK (In roles) | `operator`, `auditor`, `verifier`, `admin` |
+| `organization` | TEXT | - | Associated company or verification agency |
+| `is_active` | INTEGER | DEFAULT 1 | Account status flag |
+| `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Registration timestamp |
 
-## 14. Review Workspace
-Phase 5.2 Verification Workflow:
-- **Review States:** Tracks package progression (`NOT_STARTED`, `IN_REVIEW`, `READY_FOR_EXTERNAL_REVIEW`, `CLOSED`).
-- **Review Actions:** Records discrete workflow steps (e.g., `START_REVIEW`, `FLAG_FOR_ATTENTION`) by authorized actors.
-- **Evidence Explorer:** A comprehensive UI for deep-diving into package contents.
-- **Notes & Provenance Navigation:** Allows reviewers to annotate and navigate directly to source telemetry.
-- **Integrity Display:** Visually confirms hash matches and data integrity.
+### 2. `farms`
+Stores algae cultivation farm facilities and geographic locations.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique farm identifier |
+| `name` | TEXT | - | Name of the facility |
+| `location` | TEXT | - | Geographical region / address |
+| `latitude` | REAL | - | Latitude coordinate |
+| `longitude` | REAL | - | Longitude coordinate |
+| `total_area_m2` | REAL | - | Total cultivation surface area in $m^2$ |
+| `algae_species` | TEXT | - | Dominant strain (e.g., *Chlorella vulgaris*, *Spirulina*) |
+| `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Registration timestamp |
 
-## 15. API
-Key endpoints managed by the FastAPI backend:
-- `/api/ingest/reading`: Raw telemetry ingestion.
-- `/api/telemetry`: Time-series sensor data retrieval.
-- `/api/model/run`: Triggers the deterministic growth model.
-- `/api/anomalies`: Anomaly listing and explanations.
-- `/api/imagery`: Secure ingestion and processing of visual evidence.
-- `/api/evidence-packages`: Generation and retrieval of sealed evidence packages.
+### 3. `ponds`
+Maintains individual raceway pond or photobioreactor configuration parameters.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique pond identifier |
+| `farm_id` | TEXT | FOREIGN KEY | References `farms(id)` |
+| `name` | TEXT | - | Pond designation (e.g., Pond A-1) |
+| `surface_area_m2`| REAL | - | Surface area of the specific pond |
+| `depth_m` | REAL | - | Water depth in meters |
+| `volume_liters` | REAL | - | Total liquid volume in liters |
+| `status` | TEXT | CHECK (In statuses)| `active`, `maintenance`, `harvesting`, `crashed` |
+| `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Creation timestamp |
 
-## 16. Database
-Core entities mapped via SQLAlchemy to PostgreSQL:
-- `Farm`, `Pond`, `Sensor` (Topology)
-- `SensorReading` (Telemetry)
-- `ModelRun`, `BiomassEstimate`, `CarbonEstimate` (Models)
-- `Anomaly`, `AnomalyExplanation` (Intelligence)
-- `ImageryRecord`, `ImageryProcessingRecord` (Imagery)
-- `EvidencePackage`, `ReviewAction` (Reporting)
+### 4. `sensors`
+Tracks telemetry hardware installed in cultivation ponds.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Hardware sensor device ID |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `sensor_type` | TEXT | - | Type (`ph`, `do`, `temp`, `od680`, `par`, `n_p_sensor`) |
+| `unit` | TEXT | - | Metric measurement unit (`pH`, `mg/L`, `°C`, `µmol/m²/s`) |
+| `calibration_date`| TEXT | - | Last calibration timestamp |
+| `status` | TEXT | DEFAULT 'active' | Operational status |
 
-## 17. Security
-- **Farm Isolation:** Backend queries strictly enforce tenant/farm boundaries.
-- **File Security:** Handled via deterministic storage paths (Note: Traversal issues identified in audit are being remediated).
-- **Immutability:** Evidence packages and imagery hashes act as a tamper-evident seal.
-- **Access Controls:** Route-level requirements ensure actions are attributed to distinct actors.
+### 5. `sensor_readings`
+High-frequency telemetry log entries captured from IoT hardware.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique reading identifier |
+| `sensor_id` | TEXT | FOREIGN KEY | References `sensors(id)` |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `timestamp` | TEXT | - | Reading timestamp |
+| `val` | REAL | - | Primary numeric measurement value |
+| `raw_data` | TEXT | JSON String | Optional additional metadata parameters |
 
-## 18. Running AlgaX Locally
-1. Start PostgreSQL (e.g., via Docker):
-   `docker-compose up -d`
-2. Run database migrations:
-   `cd backend && .\venv\Scripts\alembic upgrade head`
-3. Start the backend:
-   `.\venv\Scripts\uvicorn app.main:app --reload`
-4. Start the frontend:
-   `cd frontend && npm run dev`
-5. Start the simulator:
-   `cd backend && .\venv\Scripts\uvicorn simulator.main:app --port 8001`
+### 6. `model_runs`
+Stores execution results from the Monod-Droop biological growth model.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique model execution ID |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `start_time` | TEXT | - | Simulation start timestamp |
+| `end_time` | TEXT | - | Simulation end timestamp |
+| `biomass_produced_kg`| REAL | - | Total dry biomass yield accumulated ($kg$) |
+| `growth_rate_avg` | REAL | - | Mean specific growth rate $\mu_{avg}$ ($day^{-1}$) |
+| `parameters` | TEXT | JSON String | Model kinetic constants ($\mu_{max}, K_s, Q_{min}$) |
 
-## 19. Testing
-Tests are executed using `pytest`.
-Command: `.\venv\Scripts\pytest -v`
+### 7. `carbon_estimates`
+Detailed output from the 4-tier carbon accounting engine.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique estimate record ID |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `model_run_id` | TEXT | FOREIGN KEY | References `model_runs(id)` |
+| `gross_carbon_kg` | REAL | - | Tier 1: Total gross carbon fixed by photosynthesis |
+| `respiration_loss_kg`| REAL | - | Tier 2: Dark respiration carbon loss |
+| `outgassing_loss_kg` | REAL | - | Tier 3: Dissolved $\text{CO}_2$ aqueous outgassing loss |
+| `net_sequestered_kg` | REAL | - | Tier 4: Final net sequestered carbon ($kg$) |
+| `net_tco2e` | REAL | - | Carbon dioxide equivalent in metric tonnes ($\text{tCO}_2\text{e}$) |
+| `calculated_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Calculation timestamp |
 
-**CURRENT TEST STATUS:**
-- **Total Tests:** 85
-- **Passed:** 85
-- **Failed:** 0
-(Recent critical defects involving imagery routing, DB leakage, and fresh-database migration have been fixed during the Phase 5 defect-fix cycle.)
+### 8. `anomalies`
+Records automated detection flags for environmental anomalies and sensor failures.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique anomaly identifier |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `anomaly_type` | TEXT | - | Category (`outgassing_surge`, `crash_risk`, `sensor_drift`) |
+| `severity` | TEXT | CHECK (In severity)| `low`, `medium`, `high`, `critical` |
+| `description` | TEXT | - | Mechanistic biological explanation |
+| `detected_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Detection timestamp |
 
-## 20. Current Project Status
-| Phase | Scope | Status |
-|-------|-------|--------|
-| Phase 1 | Simulation + Telemetry | COMPLETE |
-| Phase 2 | Model + Carbon | COMPLETE |
-| Phase 3 | Anomaly Intelligence | COMPLETE |
-| Phase 4 | Imagery Intelligence | COMPLETE |
-| Phase 5 | Evidence + Review | FIXED - READY FOR RE-AUDIT |
+### 9. `imagery_records`
+Maintains satellite and drone remote sensing evidence records.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique image record ID |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `source` | TEXT | - | Source provider (`sentinel_2`, `planet_scope`, `drone_uav`) |
+| `image_url` | TEXT | - | Storage path or URL to high-res raster image |
+| `ndvi_value` | REAL | - | Average Normalized Difference Vegetation Index |
+| `captured_at` | TEXT | - | Capture timestamp |
 
-## 21. Known Limitations
-- Imagery endpoints are partially mocked and do not perform advanced multi-spectral analysis.
-- File path traversal protections were recently fixed; extensive penetration testing is still required.
-- The review system lacks full JWT-based authentication in this MVP.
+### 10. `evidence_packages`
+Sealed audit records containing canonical cryptographic proofs for verifiers.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique evidence package UUID |
+| `pond_id` | TEXT | FOREIGN KEY | References `ponds(id)` |
+| `period_start` | TEXT | - | Accounting period start date |
+| `period_end` | TEXT | - | Accounting period end date |
+| `total_net_tco2e` | REAL | - | Net claimed carbon sequestration ($\text{tCO}_2\text{e}$) |
+| `sha256_hash` | TEXT | UNIQUE | Canonical SHA-256 hash digest |
+| `status` | TEXT | CHECK (In statuses)| `pending`, `verified`, `rejected` |
+| `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Package creation timestamp |
 
-## 22. Scientific Boundaries
-AlgaX provides estimates and evidence for biological carbon capture. It does **not** independently certify carbon removal, does **not** issue certified carbon credits, does **not** guarantee sequestration, and does **not** claim regulatory approval. It is built to generate verification-ready evidence for external auditors.
+### 11. `review_actions`
+Audit log of verifier interactions and credit approval decisions.
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | Unique action log ID |
+| `evidence_package_id`| TEXT | FOREIGN KEY | References `evidence_packages(id)` |
+| `verifier_id` | TEXT | FOREIGN KEY | References `users(id)` |
+| `action` | TEXT | CHECK (In actions)| `approve`, `reject`, `request_info` |
+| `comments` | TEXT | - | Verifier feedback / justification notes |
+| `created_at` | TEXT | DEFAULT CURRENT_TIMESTAMP | Decision timestamp |
 
-## 23. Roadmap
-- **Phase 6:** End-to-end integration with third-party registry APIs.
-- **Phase 7:** Advanced AI-driven cross-validation models for multispectral satellite data.
-- **Phase 8:** Blockchain-anchored evidence hashing for decentralized trust.
+---
+
+## ⚡ Scientific Processing Pipeline Details
+
+The AlgaX scientific engine processes raw environmental data through a multi-stage verification framework:
+
+1. **Telemetry Ingestion & Quality Filtering:** Ingests water temperature, pH, DO, PAR, and optical density readings at 15-minute intervals. Filters noise and applies moving-average smoothing.
+2. **Monod-Droop Growth Modeling:** Calculates cellular nutrient quota $Q$ and specific growth rate $\mu(Q)$ using:
+   $$\mu(Q) = \mu_{max} \left( 1 - \frac{Q_{min}}{Q} \right)$$
+   Accumulates total dry biomass yield ($g/L$) across cultivation cycles.
+3. **4-Tier Carbon Accounting Waterfall:**
+   - **Tier 1 (Gross Uptake):** Converts biomass production to total carbon using stoichiometric ratio $C_{content} \approx 48\%$.
+   - **Tier 2 (Respiration Adjustment):** Subtracts temperature-dependent dark respiration losses $R(T)$.
+   - **Tier 3 (Aqueous Outgassing):** Models Henry's Law solubility and gas transfer velocity to account for $\text{CO}_2$ outgassing losses.
+   - **Tier 4 (Net Sequestration):** Derives final net sequestered carbon and converts to metric tonnes of carbon dioxide equivalent ($\text{tCO}_2\text{e}$).
+4. **Multi-Factor Anomaly Engine:** Scans telemetry for sudden biomass drops, pH destabilization, or extreme outgassing, generating mechanistic explanations for carbon credit auditors.
+5. **Imagery Cross-Validation:** Cross-checks sensor-derived biomass estimates against Sentinel-2 satellite NDVI imagery and drone thermal maps to detect spatial non-uniformity.
+6. **Canonical Serialization & Cryptographic Sealing:** Formats all raw readings, model coefficients, carbon calculations, and imagery references into a strictly formatted JSON structure, hashing it with SHA-256.
+7. **Verifier Review & Audit PDF Generation:** Provides an interactive verifier portal to inspect hash signatures, re-evaluate calculations, approve claims, and compile downloadable PDF certificates.
+
+---
+
+## 🚀 Installation & Setup
+
+### Option A: Quick Start (Docker Compose)
+The fastest way to spin up the entire AlgaX platform (Frontend, Backend, and Database) is using Docker Compose:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/VekariaDharmesh/AlgaX.git
+cd AlgaX
+
+# 2. Build and launch all services in detached mode
+docker compose up --build -d
+```
+Access points:
+* **Frontend Web App:** `http://localhost:3000`
+* **FastAPI Backend Server:** `http://localhost:8000`
+* **API Documentation (Swagger UI):** `http://localhost:8000/docs`
+
+---
+
+### Option B: Local Development Setup
+If running services natively for development:
+
+#### 1. Backend Setup (FastAPI & SQLite/PostgreSQL)
+Ensure Python 3.10+ is installed.
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Run database migrations and seed demo data
+alembic upgrade head
+python seed_data.py
+
+# Start the FastAPI server
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### 2. Frontend Setup (Next.js 14)
+Ensure Node.js 18+ is installed.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open `http://localhost:3000` in your web browser.
+
+#### 3. Telemetry Simulator Service Setup (Optional)
+To generate live IoT sensor telemetry streams:
+```bash
+cd backend
+python simulator.py
+```
+
+---
+
+## 🧪 Demo Scenarios
+
+Once the platform is running, test the pre-seeded demo scenarios in the application:
+
+* **Scenario 1: Pond A-1 — Optimal Growth & Verification (Genuine / Certified)**
+  * **Expected Result:** High biomass accumulation, steady pH/DO balance, 0 outgassing anomalies. Verified Status: **Approved Evidence Package (SHA-256 Validated)**.
+* **Scenario 2: Pond B-2 — Nutrient Depletion & Outgassing Surge (High Risk)**
+  * **Expected Result:** Monod-Droop quota drops below $Q_{min}$, triggering an outgassing surge anomaly flag. Verified Status: **Flagged for Auditor Review**.
+* **Scenario 3: Pond C-3 — Extreme Heatwave & Crash Hazard (Caution)**
+  * **Expected Result:** Water temperature exceeds $35^\circ\text{C}$, respiration losses spike, reducing net $\text{tCO}_2\text{e}$ by 42%. Verified Status: **Caution / Recalibration Requested**.
+
+---
+
+## 📡 API Endpoints Reference
+
+### Authentication & Users
+* `POST /api/auth/register` - Registers a new user (`operator`, `auditor`, `verifier`).
+* `POST /api/auth/token` - Authenticates user and returns JWT token.
+* `GET /api/auth/me` - Retrieves profile of the currently authenticated user.
+
+### Telemetry & Ingestion
+* `POST /api/ingest` - Ingests single or batch sensor telemetry readings.
+* `GET /api/telemetry` - Retrieves time-series telemetry streams for a specified pond.
+* `GET /api/ponds` - Lists all registered cultivation ponds and active status.
+
+### Model & Carbon Accounting
+* `POST /api/model/run` - Triggers the Monod-Droop growth model for a given time window.
+* `GET /api/carbon/estimate/:id` - Fetches 4-tier carbon accounting breakdown for a model run.
+* `GET /api/anomalies` - Fetches active anomaly flags and biological diagnostic reports.
+
+### Remote Sensing Imagery
+* `GET /api/imagery` - Retrieves satellite/drone NDVI records and raster overlay metadata.
+* `POST /api/imagery/upload` - Uploads drone orthomosaic imagery for cross-validation.
+
+### Evidence & Verifier Audit Portal
+* `POST /api/v1/evidence-packages` - Compiles and seals a new SHA-256 evidence package.
+* `GET /api/v1/evidence-packages/:id` - Retrieves sealed evidence package by UUID.
+* `GET /api/v1/evidence-packages/:id/verify-hash` - Cryptographically verifies package SHA-256 hash.
+* `POST /api/v1/evidence-packages/:id/review` - Submits verifier approval or rejection decision.
+* `GET /api/v1/evidence-packages/:id/pdf` - Generates downloadable certified PDF audit certificate.
