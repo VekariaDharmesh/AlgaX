@@ -1,9 +1,33 @@
+# Python & Environments
 venv/
+backend/venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
 *.db
+*.sqlite
+*.sqlite3
+
+# Storage & Uploads
+backend/storage/*
+!backend/storage/.gitkeep
+!backend/storage/imagery/.gitkeep
+
+# Environment & OS
 .env
+.env*.local
 .DS_Store
-plan.md 
-rules.md
-backend/storage/
+**/.DS_Store
+
+# Frontend & Node
+frontend/.next/
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
+
+# Root lockfile (frontend has its own package-lock.json)
+package-lock.json
+
+# Test diagnostics & artifacts
+diagnostic_output.json
