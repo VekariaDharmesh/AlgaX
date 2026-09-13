@@ -1,4 +1,3 @@
-import { DEMO_FARMS, FarmDetails } from './ponds';
 
 export interface FarmHarvestProfile {
   farmId: string;

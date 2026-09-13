@@ -96,10 +96,8 @@ const STORAGE_KEY = 'algax_active_role';
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<UserRole>('PLATFORM_ADMIN');
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     try {
       const savedRole = localStorage.getItem(STORAGE_KEY) as UserRole | null;
       if (savedRole && (savedRole === 'FARM_OPERATOR' || savedRole === 'VERIFIER_AUDITOR' || savedRole === 'PLATFORM_ADMIN')) {

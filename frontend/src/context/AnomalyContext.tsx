@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAnomalies, updateAnomalyStatus } from '@/lib/api';
 
 export interface AnomalyItem {
@@ -43,8 +43,21 @@ export function AnomalyProvider({ children }: { children: React.ReactNode }) {
   const [criticalCount, setCriticalCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeToast, setActiveToast] = useState<AnomalyItem | null>(null);
-  const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
-  const [initialLoaded, setInitialLoaded] = useState<boolean>(false);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadedRef = useRef<boolean>(false);
+  const dismissedIdsRef = useRef<Set<string>>(new Set());
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setActiveToast((prev) => {
+      if (prev) dismissedIdsRef.current.add(prev.id);
+      return null;
+    });
+  }, []);
 
   const refreshAnomalies = useCallback(async () => {
     try {
@@ -60,32 +73,25 @@ export function AnomalyProvider({ children }: { children: React.ReactNode }) {
       const criticals = sorted.filter(a => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;
       setCriticalCount(criticals);
 
-      // Check for newly spawned critical/high anomalies for live toast alert
-      if (initialLoaded) {
-        const newCritical = sorted.find(a => !knownIds.has(a.id) && (a.severity === 'CRITICAL' || a.severity === 'HIGH'));
-        if (newCritical) {
-          setActiveToast(newCritical);
-        }
-      }
 
-      setKnownIds(new Set(sorted.map(a => a.id)));
-      if (!initialLoaded) setInitialLoaded(true);
+
+      knownIdsRef.current = new Set(sorted.map(a => a.id));
+      if (!initialLoadedRef.current) initialLoadedRef.current = true;
     } catch (err) {
       console.warn('Error fetching anomaly notifications:', err);
     } finally {
       setLoading(false);
     }
-  }, [initialLoaded, knownIds]);
+  }, []);
 
   useEffect(() => {
     refreshAnomalies();
     const interval = setInterval(refreshAnomalies, 8000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
   }, [refreshAnomalies]);
-
-  const dismissToast = () => {
-    setActiveToast(null);
-  };
 
   const acknowledgeAnomaly = async (id: string) => {
     try {
