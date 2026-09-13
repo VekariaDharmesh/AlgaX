@@ -32,7 +32,10 @@ async def lifespan(app: FastAPI):
 
     if not is_test:
         try:
-            from ..seed import seed_database
+            try:
+                from seed import seed_database
+            except ImportError:
+                from ..seed import seed_database
             await asyncio.to_thread(seed_database)
         except Exception as e:
             print("Auto-seed note:", e)

@@ -1,0 +1,38 @@
+services:
+  # -------------------------------------------------------------
+  # AlgaX Backend API Service (FastAPI + Uvicorn)
+  # -------------------------------------------------------------
+  - type: web
+    name: algax-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: USE_POSTGRES
+        value: "false"
+
+  # -------------------------------------------------------------
+  # AlgaX Frontend Web Application (Next.js 16)
+  # -------------------------------------------------------------
+  - type: web
+    name: algax-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: algax-backend
+          property: host

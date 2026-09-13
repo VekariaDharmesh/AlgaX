@@ -1,4 +1,9 @@
-export const API_BASE_URL = 'http://localhost:8000/api';
+const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = envApiUrl
+  ? (envApiUrl.startsWith('http://') || envApiUrl.startsWith('https://')
+      ? (envApiUrl.endsWith('/api') ? envApiUrl : `${envApiUrl.replace(/\/$/, '')}/api`)
+      : `https://${envApiUrl.replace(/\/$/, '')}${envApiUrl.endsWith('/api') ? '' : '/api'}`)
+  : 'http://localhost:8000/api';
 
 export interface Farm {
   id: string;

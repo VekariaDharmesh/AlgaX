@@ -12,6 +12,7 @@ import {
   Sensor,
   SensorReading,
   TelemetryStatsResponse,
+  API_BASE_URL,
 } from '@/lib/api';
 import { TelemetryHeader } from '@/components/telemetry/TelemetryHeader';
 import { TelemetryStatusBanner } from '@/components/telemetry/TelemetryStatusBanner';
@@ -183,7 +184,7 @@ export default function TelemetryPage() {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  await fetch('http://localhost:8000/api/telemetry/seed-demo', { method: 'POST' }).catch(() => null);
+                  await fetch(`${API_BASE_URL}/telemetry/seed-demo`, { method: 'POST' }).catch(() => null);
                   await loadTelemetryData();
                 } catch (e) {
                   console.error(e);

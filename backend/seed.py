@@ -8,6 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from app.models import Base, Farm, Pond, Sensor, SensorType, SensorReading, QualityFlag, SourceType
 
 db_url = os.environ.get("DATABASE_URL")
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 if not db_url or ("postgresql" in db_url and not os.environ.get("USE_POSTGRES")):
     if os.path.exists("backend/algax.db"):
         db_url = "sqlite:///./backend/algax.db"
