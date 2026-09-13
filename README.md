@@ -5,6 +5,13 @@ AlgaX is a production-grade, real-time carbon intelligence and verification plat
 
 ---
 
+## 🌐 Live Application & Video Walkthrough
+
+- 🔗 **Live Deployment (Vercel):** [https://frontend-i7b3bijnz-vekariadharmeshs-projects.vercel.app/settings](https://frontend-i7b3bijnz-vekariadharmeshs-projects.vercel.app/settings)
+- 📺 **Video Demonstration (YouTube):** [https://youtu.be/vhfJ1HGEWMY](https://youtu.be/vhfJ1HGEWMY)
+
+---
+
 ## 🔬 Core Product Philosophy: Data → Science → Verification → Evidence
 
 Rather than treating features as disjoint SaaS dashboard widgets, AlgaX structures all operations around a rigorous **Scientific MRV Verification Pipeline**:
@@ -259,7 +266,8 @@ npm install
 # Start Next.js development server
 npm run dev
 ```
-*Web application available at: `http://localhost:3000`*
+*Local web application available at: `http://localhost:3000`*
+*Live production deployment: [https://frontend-i7b3bijnz-vekariadharmeshs-projects.vercel.app/settings](https://frontend-i7b3bijnz-vekariadharmeshs-projects.vercel.app/settings)*
 
 ### 4. Running Backend Verification Tests
 ```bash
