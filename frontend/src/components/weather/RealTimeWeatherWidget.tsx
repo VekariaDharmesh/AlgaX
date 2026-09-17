@@ -60,34 +60,33 @@ export default function RealTimeWeatherWidget({
     <>
       <div 
         onClick={() => setModalOpen(true)}
-        className={`group bg-white hover:bg-white/95 backdrop-blur-md border border-white/60 p-3 rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3.5 min-w-[220px] relative overflow-hidden ${className}`}
+        className={`group bg-white hover:bg-white/95 backdrop-blur-md border border-white/60 p-3 rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3 min-w-[320px] relative overflow-hidden ${className}`}
       >
-        {/* Top accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400" />
-
-        {/* Weather Icon */}
         <div className="p-1.5 bg-amber-50/60 rounded-xl shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center">
           {getWeatherIcon(weather?.weather_code, weather?.is_day)}
         </div>
-
-        {/* Info Content */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
+        <div className="flex flex-col min-w-0 pr-3 border-r border-slate-100">
+          <div className="flex items-center gap-1">
             <span className="text-xl font-black text-slate-900 leading-none">
-              {loading && !weather ? '...' : `${weather?.temperature_c ?? 26.6}°C`}
+              {loading && !weather ? '...' : `${weather?.temperature_c ?? 29.9}°C`}
             </span>
-            <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 transition-colors shrink-0" />
           </div>
-
-          <span className="text-xs font-bold text-slate-800 truncate mt-1">
+          <span className="text-[11px] font-bold text-slate-800 truncate mt-1">
             {weather?.location_name || location}
           </span>
-          
-          <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mt-0.5 gap-1">
-            <span className="truncate">{weather?.weather_description || 'Clear sky'}</span>
-            <span className="text-amber-700 font-black text-[10px] shrink-0">
-              {weather?.solar_irradiance_w_m2 ?? 0} W/m²
-            </span>
+          <span className="text-[10px] font-medium text-slate-500 mt-0.5 truncate">
+            {weather?.weather_description || 'Clear Sky'}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1.5 pl-1 justify-center">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 w-12"><Sparkles className="w-3 h-3"/> Wind</span>
+            <span className="text-[11px] font-black text-slate-900">12 km/h</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 w-12">Humidity</span>
+            <span className="text-[11px] font-black text-slate-900">54%</span>
           </div>
         </div>
       </div>

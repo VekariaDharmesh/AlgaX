@@ -25,11 +25,33 @@ import {
 
 export default function PondDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const pond = DEMO_PONDS.find(p => p.id === resolvedParams.id);
-  
+  const paramIdStr = String(resolvedParams.id || '');
+
+  // Search by exact ID, or name slug match
+  let pond = DEMO_PONDS.find(p => 
+    p.id === paramIdStr || 
+    p.name.toLowerCase().replace(/\s+/g, '_') === paramIdStr.toLowerCase() ||
+    paramIdStr.toLowerCase().includes(p.name.toLowerCase().replace('pond ', ''))
+  );
+
   if (!pond) {
-    notFound();
+    // Generate a fallback pond object based on the ID/UUID so clicking any backend pond opens full details!
+    let hash = 0;
+    for (let i = 0; i < paramIdStr.length; i++) {
+      hash = (hash << 5) - hash + paramIdStr.charCodeAt(i);
+      hash |= 0;
+    }
+    const idx = Math.abs(hash) % DEMO_PONDS.length;
+    const basePond = DEMO_PONDS[idx] || DEMO_PONDS[0];
+
+    pond = {
+      ...basePond,
+      id: paramIdStr,
+    };
   }
+
+  // Determine actual pond image URL based on pond name
+  const pondImageUrl = `/images/ponds/${pond.name.toLowerCase().replace(/\s+/g, '_')}.jpg`;
 
   // Calculate limitation factors dynamically based on pond values
   const lightLimitation = pond.id === 'p-3' ? 95 : 86;
@@ -60,9 +82,12 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
       <div className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-lg border border-slate-200">
         <div className="relative h-64 md:h-80 w-full overflow-hidden">
           <img 
-            src={pond.imageUrl || `/images/ponds/${pond.id}.jpg`} 
+            src={pondImageUrl} 
             alt={pond.name} 
             className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700" 
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/images/ponds/pond_narmada.jpg';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
           

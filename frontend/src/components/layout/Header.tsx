@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -70,8 +70,23 @@ const navSections: NavSection[] = [
 ];
 
 export function Header() {
-  const currentDate = 'Sep 12, 2026';
-  const currentTime = '10:24 AM';
+  const [currentDate, setCurrentDate] = useState('...');
+  const [currentTime, setCurrentTime] = useState('...');
+
+  useEffect(() => {
+    // Run immediately
+    const now = new Date();
+    setCurrentDate(now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+    setCurrentTime(now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }));
+    
+    // Update every second
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentDate(now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      setCurrentTime(now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   const { role, setRole, availableRoles } = useRole();
   const { openAnomalies, openCount, criticalCount, acknowledgeAnomaly } = useAnomalyNotification();
   const pathname = usePathname();
@@ -188,30 +203,6 @@ export function Header() {
 
       {/* RIGHT: Controls */}
       <div className="flex items-center gap-3 lg:gap-5">
-        
-        {/* Search Bar */}
-        <div className="hidden xl:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-1.5 w-64 text-slate-400 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-          <Search className="w-4 h-4 shrink-0" />
-          <input 
-            type="text" 
-            placeholder="Search facilities, data, reports..." 
-            className="bg-transparent border-none outline-none text-xs w-full text-slate-700 placeholder:text-slate-400 font-medium"
-          />
-        </div>
-
-        {/* Farm Context */}
-        <div className="hidden md:flex items-center gap-1.5 bg-emerald-50/50 border border-emerald-100 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-emerald-50 transition-colors">
-          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Kutch Bio-Raceway Facility</span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-        </div>
-
-        {/* LIVE Indicator */}
-        <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-[10px] font-black text-emerald-700 tracking-widest uppercase">LIVE</span>
-        </div>
-
         {/* Date / Time */}
         <div className="hidden sm:flex flex-col items-end justify-center text-[10px] font-semibold text-slate-500 leading-tight">
           <span>{currentDate}</span>
