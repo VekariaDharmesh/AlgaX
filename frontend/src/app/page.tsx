@@ -245,45 +245,45 @@ export default function DashboardOverview() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Carbon Accounting */}
-        <div className="bg-white rounded-[24px] border border-slate-100 p-6 col-span-1 lg:col-span-1 shadow-sm flex flex-col h-[500px] overflow-hidden">
+        <div className="bg-white rounded-[24px] border border-slate-100 p-4 sm:p-5 col-span-1 lg:col-span-1 shadow-sm flex flex-col h-[500px] overflow-hidden">
           
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-[14px] bg-[#eefcf3] flex items-center justify-center shrink-0">
-                <Leaf className="w-6 h-6 text-[#059669]" />
+              <div className="w-9 h-9 rounded-xl bg-[#eefcf3] flex items-center justify-center shrink-0">
+                <Leaf className="w-4.5 h-4.5 text-[#059669]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Carbon Accounting</h2>
+                  <h2 className="text-[17px] font-bold text-slate-900 tracking-tight leading-tight">Carbon Accounting</h2>
                   <Info className="w-4 h-4 text-slate-400" />
                 </div>
-                <p className="text-[13px] font-medium text-slate-500 mt-0.5">Track carbon capture, retention and net impact from algae cultivation.</p>
+                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Track carbon capture, retention and net impact.</p>
               </div>
             </div>
             
-            <button className="flex items-center gap-2 bg-[#f8fafc] hover:bg-slate-100 transition-colors border border-slate-100 px-4 py-2.5 rounded-xl shrink-0">
+            <button className="flex items-center gap-2 bg-[#f8fafc] hover:bg-slate-100 transition-colors border border-slate-100 px-2.5 py-1.5 rounded-lg shrink-0 text-xs">
               <Calendar className="w-4 h-4 text-[#059669]" />
-              <span className="text-[14px] font-medium text-slate-700">This Reporting Period</span>
+              <span className="text-[12px] font-medium text-slate-700">This Reporting Period</span>
               <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
             </button>
           </div>
 
           <div className="flex-1 flex flex-col justify-between space-y-1.5 min-h-0">
             {/* Gross CO2 Fixed */}
-            <div className="bg-[#f8fafc] rounded-[16px] px-4 py-2">
-              <div className="flex items-start justify-between mb-1.5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#eefcf3] flex items-center justify-center shrink-0">
-                    <Leaf className="w-5 h-5 text-[#059669]" />
+            <div className="bg-[#f8fafc] rounded-[12px] px-3 py-1.5">
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#eefcf3] flex items-center justify-center shrink-0">
+                    <Leaf className="w-4 h-4 text-[#059669]" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-slate-900 leading-tight">Gross CO₂ Fixed</h3>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">Total carbon captured by algae growth</p>
+                    <h3 className="text-[13px] font-bold text-slate-900 leading-tight">Gross CO₂ Fixed</h3>
+                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Total carbon captured by algae growth</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[20px] font-black text-slate-900 tracking-tight">2,140 kg</span>
+                  <span className="text-[15px] font-black text-slate-900 tracking-tight">2,140 kg</span>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[10px] font-bold text-[#059669] bg-[#eefcf3] px-1.5 py-0.5 rounded">↑ +12%</span>
                     <span className="text-[10px] font-medium text-slate-400">vs last period</span>
@@ -291,27 +291,27 @@ export default function DashboardOverview() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-3.5 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
+                <div className="h-2 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
                   <div className="h-full bg-[#2f8c47] rounded-full" style={{ width: '86%' }}></div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500 shrink-0 w-20 text-right">86% of target</span>
+                <span className="text-[10px] font-medium text-slate-500 shrink-0 w-20 text-right">86% of target</span>
               </div>
             </div>
 
             {/* End-use Retained */}
-            <div className="bg-[#f8fafc] rounded-[16px] px-4 py-2">
-              <div className="flex items-start justify-between mb-1.5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#eefcf3] flex items-center justify-center shrink-0">
-                    <Layers className="w-5 h-5 text-[#059669]" />
+            <div className="bg-[#f8fafc] rounded-[12px] px-3 py-1.5">
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#eefcf3] flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4 text-[#059669]" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-slate-900 leading-tight">End-use Retained</h3>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">Carbon retained after processing</p>
+                    <h3 className="text-[13px] font-bold text-slate-900 leading-tight">End-use Retained</h3>
+                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Carbon retained after processing</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[20px] font-black text-slate-900 tracking-tight">1,284 kg</span>
+                  <span className="text-[15px] font-black text-slate-900 tracking-tight">1,284 kg</span>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[10px] font-bold text-[#059669] bg-[#eefcf3] px-1.5 py-0.5 rounded">↑ +8%</span>
                     <span className="text-[10px] font-medium text-slate-400">vs last period</span>
@@ -319,27 +319,27 @@ export default function DashboardOverview() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-3.5 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
+                <div className="h-2 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
                   <div className="h-full bg-[#94c865] rounded-full" style={{ width: '68%' }}></div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500 shrink-0 w-24 text-right">68% of fixed carbon</span>
+                <span className="text-[10px] font-medium text-slate-500 shrink-0 w-24 text-right">68% of fixed carbon</span>
               </div>
             </div>
 
             {/* Operational Footprint */}
-            <div className="bg-[#f8fafc] rounded-[16px] px-4 py-2">
-              <div className="flex items-start justify-between mb-1.5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/60">
-                    <Factory className="w-5 h-5 text-slate-600" />
+            <div className="bg-[#f8fafc] rounded-[12px] px-3 py-1.5">
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/60">
+                    <Factory className="w-4 h-4 text-slate-600" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-slate-900 leading-tight">Operational Footprint</h3>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">Emissions from energy, fertilizer, etc.</p>
+                    <h3 className="text-[13px] font-bold text-slate-900 leading-tight">Operational Footprint</h3>
+                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Emissions from energy, fertilizer, etc.</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[20px] font-black text-slate-900 tracking-tight">96 kg</span>
+                  <span className="text-[15px] font-black text-slate-900 tracking-tight">96 kg</span>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[10px] font-bold text-[#059669] bg-[#eefcf3] px-1.5 py-0.5 rounded">↓ -15%</span>
                     <span className="text-[10px] font-medium text-slate-400">vs last period</span>
@@ -347,27 +347,27 @@ export default function DashboardOverview() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-3.5 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
+                <div className="h-2 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
                   <div className="h-full bg-[#8692a6] rounded-full" style={{ width: '8%' }}></div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500 shrink-0 w-24 text-right">4% of fixed carbon</span>
+                <span className="text-[10px] font-medium text-slate-500 shrink-0 w-24 text-right">4% of fixed carbon</span>
               </div>
             </div>
 
             {/* Net Carbon Removed */}
-            <div className="bg-[#f8fafc] rounded-[16px] px-4 py-2">
-              <div className="flex items-start justify-between mb-1.5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#eefcf3] flex items-center justify-center shrink-0">
-                    <Sprout className="w-5 h-5 text-[#2f8c47]" />
+            <div className="bg-[#f8fafc] rounded-[12px] px-3 py-1.5">
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#eefcf3] flex items-center justify-center shrink-0">
+                    <Sprout className="w-4 h-4 text-[#2f8c47]" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-[#2f8c47] leading-tight">Net Carbon Removed</h3>
-                    <p className="text-[12px] font-medium text-slate-500 mt-0.5">Total modeled carbon removal</p>
+                    <h3 className="text-[13px] font-bold text-[#2f8c47] leading-tight">Net Carbon Removed</h3>
+                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Total modeled carbon removal</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[20px] font-black text-slate-900 tracking-tight">1,188 kg</span>
+                  <span className="text-[15px] font-black text-slate-900 tracking-tight">1,188 kg</span>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[10px] font-bold text-[#059669] bg-[#eefcf3] px-1.5 py-0.5 rounded">↑ +10%</span>
                     <span className="text-[10px] font-medium text-slate-400">vs last period</span>
@@ -375,28 +375,28 @@ export default function DashboardOverview() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="h-3.5 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
+                <div className="h-2 flex-1 bg-slate-200/60 rounded-full overflow-hidden">
                   <div className="h-full bg-[#496537] rounded-full" style={{ width: '56%' }}></div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500 shrink-0 w-24 text-right">56% of total capture</span>
+                <span className="text-[10px] font-medium text-slate-500 shrink-0 w-24 text-right">56% of total capture</span>
               </div>
             </div>
             
             {/* Footer Summary Card */}
-            <div className="bg-[#f4faf2] border border-[#d1fae5] rounded-[16px] px-4 py-2 flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-1">
+            <div className="bg-[#f4faf2] border border-[#d1fae5] rounded-[12px] px-3 py-1.5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-1">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-[#eefcf3] border border-[#a7f3d0] flex items-center justify-center shrink-0 relative">
-                  <Sprout className="w-5 h-5 text-[#059669]" />
+                  <Sprout className="w-4 h-4 text-[#059669]" />
                   <Sparkles className="w-3.5 h-3.5 text-[#059669] absolute -top-1 -right-1" />
                 </div>
                 <div>
-                  <h4 className="text-[14px] font-bold text-slate-900 leading-tight">Positive climate impact</h4>
-                  <p className="text-[12px] font-medium text-slate-600 mt-0.5">You've removed 1,188 kg of CO₂ from the atmosphere this period.</p>
+                  <h4 className="text-[12px] font-bold text-slate-900 leading-tight">Positive climate impact</h4>
+                  <p className="text-[10px] font-medium text-slate-600 mt-0.5">1,188 kg of CO₂ removed this period.</p>
                 </div>
               </div>
-              <button className="flex items-center justify-center gap-2 bg-white border border-slate-200/80 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors shadow-sm shrink-0 whitespace-nowrap">
+              <button className="flex items-center justify-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition-colors shadow-sm shrink-0 whitespace-nowrap">
                 <BarChart2 className="w-4 h-4 text-[#059669]" />
-                <span className="text-[13px] font-bold text-slate-900">View Detailed Report</span>
+                <span className="text-[11px] font-bold text-slate-900">View Detailed Report</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 -rotate-90 ml-1" />
               </button>
             </div>
@@ -407,9 +407,9 @@ export default function DashboardOverview() {
         <div className="bg-white rounded-[24px] border border-slate-100 p-6 col-span-1 lg:col-span-2 shadow-sm flex flex-col h-[500px]">
           <div className="flex items-center justify-between mb-6 shrink-0">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-[14px] bg-[#eefcf3] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#eefcf3] flex items-center justify-center shrink-0">
                 <div className="relative">
-                  <Leaf className="w-5 h-5 text-[#059669] absolute -left-1.5 -top-1" />
+                  <Leaf className="w-4 h-4 text-[#059669] absolute -left-1.5 -top-1" />
                   <Droplet className="w-5 h-5 text-blue-500 absolute left-1.5 top-0" />
                 </div>
               </div>
@@ -418,7 +418,7 @@ export default function DashboardOverview() {
                 <p className="text-[13px] font-medium text-slate-500 mt-0.5">Live kinetics and biometrics across {allPonds.length || 16} registered Indian cultivation units.</p>
               </div>
             </div>
-            <Link href="/farms?tab=ponds" className="hidden sm:flex items-center gap-2 bg-[#eefcf3] hover:bg-[#d1fae5] transition-colors px-4 py-2.5 rounded-xl shrink-0">
+            <Link href="/farms?tab=ponds" className="hidden sm:flex items-center gap-2 bg-[#eefcf3] hover:bg-[#d1fae5] transition-colors px-2.5 py-1.5 rounded-lg shrink-0 text-xs">
               <span className="text-[14px] font-bold text-[#065f46]">View All in Farms & Ponds</span>
               <ArrowRight className="w-4 h-4 text-[#065f46]" />
             </Link>
@@ -612,7 +612,7 @@ export default function DashboardOverview() {
                 {/* Status Badge */}
                 <div className="bg-[#f8fafc] rounded-2xl p-4 flex items-center gap-4 pr-6 cursor-pointer hover:bg-slate-50 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-[#eefcf3] flex items-center justify-center shrink-0">
-                    <Droplets className="w-5 h-5 text-[#059669]" />
+                    <Droplets className="w-4 h-4 text-[#059669]" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[14px] font-bold text-slate-900">Within Normal Range</span>
