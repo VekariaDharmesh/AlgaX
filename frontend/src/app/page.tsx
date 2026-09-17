@@ -132,7 +132,7 @@ export default function DashboardOverview() {
             <div className="text-emerald-50 mt-2.5 text-base font-medium flex flex-wrap items-center gap-2">
               Here's what's happening at 
               <select 
-                className="bg-emerald-800/40 border border-emerald-400/30 outline-none text-white font-bold rounded-lg px-2 py-1 cursor-pointer hover:bg-emerald-700/50 transition-colors"
+                className="bg-transparent text-white font-bold border-b-2 border-emerald-400/70 hover:border-emerald-200 hover:text-emerald-100 cursor-pointer outline-none transition-all px-1 py-0.5 mx-0.5"
                 value={activePondId || ''}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -142,7 +142,7 @@ export default function DashboardOverview() {
                 }}
               >
                 {allPonds.map(p => (
-                  <option key={p.id} value={p.id} className="text-slate-800 font-medium">
+                  <option key={p.id} value={p.id} className="text-slate-900 bg-white font-medium">
                     {p.name}
                   </option>
                 ))}
