@@ -8,7 +8,7 @@ import { DEMO_CARBON_ACCOUNTING } from '@/lib/demo/carbon';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import Link from 'next/link';
 import Image from 'next/image';
-import { fetchPonds, fetchTelemetry, injectScenario, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies, fetchAnomalyExplanation } from '@/lib/api';
+import { fetchPonds, fetchTelemetry, fetchBiomassEstimates, fetchCarbonEstimates, fetchAnomalies } from '@/lib/api';
 import RealTimeWeatherWidget from '@/components/weather/RealTimeWeatherWidget';
 import { formatCo2, formatBiomass } from '@/lib/formatters';
 
