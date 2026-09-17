@@ -111,7 +111,7 @@ export function Sidebar() {
     <aside 
       className={`${
         isOpen ? 'w-72' : 'w-24'
-      } bg-[#182327] rounded-2xl border border-[#233137] shadow-xl flex flex-col h-full shrink-0 select-none overflow-hidden transition-all duration-300 ease-in-out`}
+      } bg-[#2B3B2D] rounded-2xl border border-[#233137] shadow-xl flex flex-col h-full shrink-0 select-none overflow-hidden transition-all duration-300 ease-in-out`}
     >
       {/* Brand Header */}
       <div className={`border-b border-[#233137] flex items-center transition-all ${
@@ -295,7 +295,7 @@ export function Sidebar() {
               <div className="w-9 h-9 rounded-full bg-[#223932] text-[#34d399] border border-[#2b4c41] flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                 DS
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22c55e] border-2 border-[#182327] rounded-full"></span>
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#22c55e] border-2 border-[#2B3B2D] rounded-full"></span>
             </div>
             {isOpen && (
               <div className="flex flex-col min-w-0">

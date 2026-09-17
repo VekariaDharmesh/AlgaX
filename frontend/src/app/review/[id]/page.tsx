@@ -152,7 +152,7 @@ export default function ReviewWorkspace() {
 
         {/* Center Content */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="w-full space-y-6">
             
             {activeTab === 'overview' && (
               <div className="space-y-6">

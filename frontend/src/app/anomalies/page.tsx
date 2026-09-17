@@ -83,7 +83,7 @@ export default function AnomaliesPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 relative">
+    <div className="w-full space-y-6 pb-12 relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-8 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-emerald-500/50 flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3">

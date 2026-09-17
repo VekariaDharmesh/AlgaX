@@ -127,7 +127,7 @@ export default function TelemetryPage() {
   const selectedFarmObj = farms.find((f) => f.id === selectedFarmId);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto min-h-screen">
+    <div className="p-6 space-y-6 w-full min-h-screen">
       {/* 1. Header & Filters */}
       <TelemetryHeader
         farms={farms}

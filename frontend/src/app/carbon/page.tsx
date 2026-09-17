@@ -198,7 +198,7 @@ export default function CarbonAccountingPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-16 p-4 sm:p-6 text-slate-800">
+    <div className="w-full space-y-6 pb-16 p-4 sm:p-6 text-slate-800">
       
       {/* 1. Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

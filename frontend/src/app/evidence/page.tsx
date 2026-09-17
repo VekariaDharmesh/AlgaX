@@ -84,7 +84,7 @@ export default function EvidencePage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-16 p-4 sm:p-6 text-slate-800">
+    <div className="w-full space-y-8 pb-16 p-4 sm:p-6 text-slate-800">
       
       {/* 1. Top Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">

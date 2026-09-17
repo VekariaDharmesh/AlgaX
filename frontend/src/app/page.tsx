@@ -113,7 +113,7 @@ export default function DashboardOverview() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-12">
       {/* Hero Banner */}
       <div className="relative rounded-3xl overflow-hidden min-h-[220px] bg-gradient-to-r from-[#113a29] via-[#164e35] to-[#1e5a3d] flex items-center border border-emerald-900/40 shadow-lg">
         {/* Subtle Ambient Radial Highlight */}

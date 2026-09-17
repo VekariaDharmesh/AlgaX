@@ -85,7 +85,7 @@ function FarmsPondsContent() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-16 p-4 sm:p-6 text-slate-800">
+    <div className="w-full space-y-8 pb-16 p-4 sm:p-6 text-slate-800">
       
       {/* 1. Header & Quick Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -230,6 +230,7 @@ function FarmsPondsContent() {
                   src={activeFarm.imageUrl} 
                   alt={activeFarm.name} 
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover opacity-90 brightness-[0.85]"
                   priority
                 />
@@ -355,6 +356,7 @@ function FarmsPondsContent() {
                       src={pond.imageUrl} 
                       alt={pond.name} 
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-90"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
@@ -475,6 +477,7 @@ function FarmsPondsContent() {
                         src={farm.imageUrl} 
                         alt={farm.name} 
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover opacity-90 brightness-[0.85] hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
@@ -635,6 +638,7 @@ function FarmsPondsContent() {
                       src={pond.imageUrl} 
                       alt={pond.name} 
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />

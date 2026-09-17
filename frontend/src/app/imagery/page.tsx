@@ -247,7 +247,7 @@ export default function ImageryWorkspace() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 text-black">
+    <div className="p-8 w-full space-y-8 text-black">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Imagery Ingestion</h1>
       </div>

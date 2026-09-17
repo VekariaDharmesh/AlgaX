@@ -45,12 +45,12 @@ export default function AnomalyDetailPage() {
   };
 
   if (loading) {
-    return <div className="max-w-5xl mx-auto p-6 text-center text-gray-500">Loading anomaly details...</div>;
+    return <div className="w-full p-6 text-center text-gray-500">Loading anomaly details...</div>;
   }
 
   if (!anomaly) {
     return (
-      <div className="max-w-5xl mx-auto p-6 text-center">
+      <div className="w-full p-6 text-center">
         <h2 className="text-xl font-bold text-gray-900">Anomaly Not Found</h2>
         <button onClick={() => router.back()} className="text-blue-600 mt-4 underline">Go Back</button>
       </div>
@@ -60,7 +60,7 @@ export default function AnomalyDetailPage() {
   const isCritical = anomaly.severity === 'CRITICAL';
   
   return (
-    <div className="max-w-4xl mx-auto pb-12 space-y-6">
+    <div className="w-full pb-12 space-y-6">
       <Link href="/anomalies" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-1" /> Back to Anomalies
       </Link>
