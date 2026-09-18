@@ -55,6 +55,12 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Calendar Date Range Picker State
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [startDate, setStartDate] = useState('2026-09-12');
+  const [endDate, setEndDate] = useState('2026-09-18');
+  const [activeDateRange, setActiveDateRange] = useState<string | null>(null);
+
   // Harvest Simulation State
   const [harvestWeight, setHarvestWeight] = useState<string>('450');
   const [harvestMethod, setHarvestMethod] = useState<string>('CENTRIFUGATION');
@@ -63,6 +69,30 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleApplyPresetDate = (presetName: string, start: string, end: string) => {
+    setStartDate(start);
+    setEndDate(end);
+    setActiveDateRange(`${presetName}`);
+    setIsCalendarOpen(false);
+    showToast(`Applied ${presetName} range: ${start} to ${end}`);
+  };
+
+  const handleApplyCustomDateRange = () => {
+    if (!startDate || !endDate) {
+      showToast('Please select both start and end dates.');
+      return;
+    }
+    setActiveDateRange(`${startDate} – ${endDate}`);
+    setIsCalendarOpen(false);
+    showToast(`Applied custom date range: ${startDate} to ${endDate}`);
+  };
+
+  const handleClearDateRange = () => {
+    setActiveDateRange(null);
+    setIsCalendarOpen(false);
+    showToast('Reset to real-time live telemetry streaming.');
   };
 
   // Search by exact ID, or name slug match
@@ -332,7 +362,7 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left (2 Cols): Live Sensor Data Section (Matches uploaded image media_1789745502017.png) */}
-        <div className="lg:col-span-2 bg-white border border-slate-200/90 rounded-3xl p-6 shadow-2xs space-y-5">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl border border-white/80 rounded-3xl p-6 shadow-sm space-y-5">
           
           {/* Section Header Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
@@ -378,14 +408,132 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
                 ))}
               </div>
 
-              {/* Calendar Icon Button */}
-              <button 
-                onClick={() => showToast('Calendar range picker active.')}
-                className="p-1.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs"
-                title="Select Date Range"
-              >
-                <Calendar className="w-4 h-4" />
-              </button>
+              {/* Interactive Calendar Icon Button & Range Popover */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className={`p-1.5 border rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 ${
+                    activeDateRange ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                  title="Select Date Range"
+                >
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  {activeDateRange ? (
+                    <span className="text-[11px] font-extrabold flex items-center gap-1">
+                      <span>{activeDateRange}</span>
+                      <X 
+                        className="w-3.5 h-3.5 text-slate-400 hover:text-slate-700 ml-0.5" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearDateRange();
+                        }}
+                      />
+                    </span>
+                  ) : null}
+                </button>
+
+                {/* Calendar Date Range Picker Popover */}
+                {isCalendarOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsCalendarOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 z-50 w-80 bg-white border border-slate-200 rounded-3xl shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 text-slate-800">
+                      
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <h4 className="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-emerald-600" />
+                          Select Telemetry Date Range
+                        </h4>
+                        <button onClick={() => setIsCalendarOpen(false)} className="text-slate-400 hover:text-slate-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Quick Presets</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button 
+                            onClick={() => handleApplyPresetDate('Today', '2026-09-18', '2026-09-18')}
+                            className="px-2.5 py-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 transition-colors text-left"
+                          >
+                            Today
+                          </button>
+                          <button 
+                            onClick={() => handleApplyPresetDate('Yesterday', '2026-09-17', '2026-09-17')}
+                            className="px-2.5 py-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 transition-colors text-left"
+                          >
+                            Yesterday
+                          </button>
+                          <button 
+                            onClick={() => handleApplyPresetDate('Last 7 Days', '2026-09-11', '2026-09-18')}
+                            className="px-2.5 py-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 transition-colors text-left"
+                          >
+                            Last 7 Days
+                          </button>
+                          <button 
+                            onClick={() => handleApplyPresetDate('Last 30 Days', '2026-08-19', '2026-09-18')}
+                            className="px-2.5 py-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 transition-colors text-left"
+                          >
+                            Last 30 Days
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Custom Range Inputs */}
+                      <div className="space-y-2 pt-1 border-t border-slate-100">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Custom Range</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-semibold text-slate-500 block mb-0.5">Start Date</label>
+                            <input 
+                              type="date" 
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold text-slate-500 block mb-0.5">End Date</label>
+                            <input 
+                              type="date" 
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        {activeDateRange ? (
+                          <button 
+                            onClick={handleClearDateRange}
+                            className="text-xs font-bold text-rose-600 hover:underline"
+                          >
+                            Reset to Live
+                          </button>
+                        ) : <div />}
+
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setIsCalendarOpen(false)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={handleApplyCustomDateRange}
+                            className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                          >
+                            Apply Range
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

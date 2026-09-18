@@ -20,9 +20,9 @@ export default function RootLayout({
       <body className="flex h-screen bg-white text-gray-900 font-sans antialiased overflow-hidden">
         <RoleProvider>
           <AnomalyProvider>
-            <div className="flex flex-col flex-1 overflow-hidden bg-white relative">
+            <div className="flex flex-col flex-1 overflow-hidden bg-slate-50/80 relative">
               <Header />
-              <main className="flex-1 overflow-y-auto bg-gray-50/40">
+              <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-slate-100/50 to-emerald-50/20">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 w-full">
                   <RoleGuard>{children}</RoleGuard>
                 </div>

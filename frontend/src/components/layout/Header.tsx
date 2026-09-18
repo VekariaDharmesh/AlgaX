@@ -115,7 +115,7 @@ export function Header() {
 
   return (
     <div className="p-3">
-      <header className="h-16 bg-white rounded-full border border-gray-200 flex items-center justify-between px-4 lg:px-6 shrink-0 relative z-30 shadow-sm">
+      <header className="h-16 bg-white/75 backdrop-blur-xl rounded-full border border-white/80 flex items-center justify-between px-4 lg:px-6 shrink-0 relative z-30 shadow-md shadow-slate-900/5">
       
       {/* LEFT: Logo & Navigation */}
       <div className="flex items-center gap-6 xl:gap-8">
