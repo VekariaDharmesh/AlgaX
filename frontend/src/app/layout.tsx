@@ -22,8 +22,10 @@ export default function RootLayout({
           <AnomalyProvider>
             <div className="flex flex-col flex-1 overflow-hidden bg-white relative">
               <Header />
-              <main className="flex-1 overflow-y-auto p-6 bg-gray-50/40">
-                <RoleGuard>{children}</RoleGuard>
+              <main className="flex-1 overflow-y-auto bg-gray-50/40">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 w-full">
+                  <RoleGuard>{children}</RoleGuard>
+                </div>
               </main>
             </div>
           </AnomalyProvider>

@@ -121,7 +121,7 @@ export function Header() {
       <div className="flex items-center gap-6 xl:gap-8">
         
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" prefetch={false} className="flex items-center gap-2">
           <div className="relative shrink-0">
             <svg className="w-8 h-8" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -155,6 +155,7 @@ export function Header() {
         <nav className="hidden lg:flex items-center gap-2">
           <Link 
             href="/"
+            prefetch={false}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-all ${
               pathname === '/' ? 'bg-emerald-50/80 text-emerald-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`}
@@ -178,6 +179,7 @@ export function Header() {
                       <Link 
                         key={j} 
                         href={item.href}
+                        prefetch={false}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
                           isActive ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-700 font-medium hover:bg-slate-50'
                         }`}
