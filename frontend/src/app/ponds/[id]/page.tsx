@@ -331,148 +331,435 @@ export default function PondDetail({ params }: { params: Promise<{ id: string }>
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left (2 Cols): Live Sensor Data Grid */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
-            <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-600" />
-                Live Sensor Data
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Streaming real-time from IoT multi-spectral probe array</p>
+        {/* Left (2 Cols): Live Sensor Data Section (Matches uploaded image media_1789745502017.png) */}
+        <div className="lg:col-span-2 bg-white border border-slate-200/90 rounded-3xl p-6 shadow-2xs space-y-5">
+          
+          {/* Section Header Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  Live Sensor Data
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  Streaming real-time from IoT multi-spectral probe array
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80 flex items-center gap-1.5">
+            {/* Right Controls: Live Badge + Timeframe Pills + Calendar Icon */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Live Badge */}
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50/90 px-3 py-1 rounded-full border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 Live
               </span>
 
-              {/* Timeframe Dropdown */}
-              <select 
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              {/* Segmented Timeframe Selector (1H, 6H, 24H, 7D) */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/70 text-xs font-bold">
+                {(['1H', '6H', '24H', '7D'] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => {
+                      setTimeframe(tf as any);
+                      showToast(`Sensor timeframe set to ${tf}`);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      timeframe === tf 
+                        ? 'bg-emerald-100 text-emerald-950 font-black shadow-2xs border border-emerald-300/80' 
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+
+              {/* Calendar Icon Button */}
+              <button 
+                onClick={() => showToast('Calendar range picker active.')}
+                className="p-1.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 text-xs font-bold transition-all shadow-2xs"
+                title="Select Date Range"
               >
-                <option value="1H">Last 1 Hour</option>
-                <option value="24H">Last 24 Hours</option>
-                <option value="7D">Last 7 Days</option>
-                <option value="30D">Last 30 Days</option>
-              </select>
+                <Calendar className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          {/* 6 Telemetry Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+          {/* 6 SENSOR CARDS GRID (3 Cols x 2 Rows) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
-            {/* Card 1: Biomass */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-emerald-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5 text-emerald-600" /> Biomass
-                </span>
+            {/* CARD 1: BIOMASS */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              {/* Top Row: Icon + Title & Top Right Status Pill */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Leaf className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">Biomass</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">g/L</span>
+                  </div>
+                </div>
+
+                {/* Status Pill Box */}
+                <button 
+                  onClick={() => showToast('Biomass sensor operating within nominal range.')}
+                  className="bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-900 px-2.5 py-1 rounded-xl border border-emerald-200/70 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Leaf className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Stable</span>
+                    <span className="text-[9px] text-emerald-700 font-medium block leading-tight">Normal range</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {pond.biomass.toFixed(2)} <span className="text-xs font-normal text-slate-400">g/L</span>
+
+              {/* Value + Trend Row */}
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{pond.biomass.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-slate-500">g/L</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/80 inline-flex items-center gap-1">
+                    <span>↗ 10.8%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-[10px] text-emerald-600 font-bold">↑ +{pond.dailyGrowthRate}%</span>
-                {/* Mini SVG Sparkline */}
-                <svg className="w-14 h-5 text-emerald-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 15 Q12 18 25 10 T50 3" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              {/* Card Footer */}
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening Biomass telemetry details for ${pond.name}...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 2: Temperature */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-amber-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <Thermometer className="w-3.5 h-3.5 text-amber-500" /> Temperature
-                </span>
+            {/* CARD 2: TEMPERATURE */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                    <Thermometer className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">Temperature</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">°C</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => showToast('Temperature kinetics within target envelope.')}
+                  className="bg-amber-50/80 hover:bg-amber-100/80 text-amber-900 px-2.5 py-1 rounded-xl border border-amber-200/70 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Thermometer className="w-3 h-3 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Within range</span>
+                    <span className="text-[9px] text-amber-700 font-medium block leading-tight">Optimal: 28.0°C</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {pond.temperature.toFixed(1)} <span className="text-xs font-normal text-slate-400">°C</span>
+
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{pond.temperature.toFixed(1)}</span>
+                  <span className="text-xs font-bold text-slate-500">°C</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-rose-200/80 inline-flex items-center gap-1">
+                    <span>↗ 0.4%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-medium">28.0°C optimum</span>
-                <svg className="w-14 h-5 text-amber-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 10 Q15 4 30 14 T50 8" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening Temperature telemetry details...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 3: pH Index */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-purple-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <Droplet className="w-3.5 h-3.5 text-purple-600" /> pH Index
-                </span>
+            {/* CARD 3: PH INDEX */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
+                    <Droplet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">pH Index</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">pH</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => showToast('pH Carbonate-Bicarbonate equilibrium ideal.')}
+                  className="bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-900 px-2.5 py-1 rounded-xl border border-emerald-200/70 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Droplet className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Ideal range</span>
+                    <span className="text-[9px] text-emerald-700 font-medium block leading-tight">7.8 – 8.4</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {pond.ph.toFixed(1)}
+
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{pond.ph.toFixed(1)}</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/80 inline-flex items-center gap-1">
+                    <span>↗ 0.1%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-medium">7.8 - 8.4 range</span>
-                <svg className="w-14 h-5 text-purple-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 12 Q10 8 25 15 T50 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening pH telemetry details...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 4: Dissolved O2 */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-blue-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-blue-500" /> Dissolved O₂
-                </span>
+            {/* CARD 4: DISSOLVED O2 */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                    <Droplets className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">Dissolved O₂</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">mg/L</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => showToast('Dissolved oxygen aeration healthy.')}
+                  className="bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-900 px-2.5 py-1 rounded-xl border border-emerald-200/70 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Droplets className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Healthy aeration</span>
+                    <span className="text-[9px] text-emerald-700 font-medium block leading-tight">Good range</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {pond.dissolvedOxygen.toFixed(1)} <span className="text-xs font-normal text-slate-400">mg/L</span>
+
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{pond.dissolvedOxygen.toFixed(1)}</span>
+                  <span className="text-xs font-bold text-slate-500">mg/L</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/80 inline-flex items-center gap-1">
+                    <span>↗ 3.2%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-[10px] text-emerald-600 font-bold">Healthy aeration</span>
-                <svg className="w-14 h-5 text-blue-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 16 Q15 6 30 12 T50 4" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening Dissolved Oxygen telemetry details...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 5: Turbidity */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-cyan-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5 text-cyan-600" /> Turbidity
-                </span>
+            {/* CARD 5: TURBIDITY */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center shrink-0">
+                    <Gauge className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">Turbidity</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">NTU</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => showToast('Turbidity optical density within normal range.')}
+                  className="bg-slate-100/90 hover:bg-slate-200/90 text-slate-800 px-2.5 py-1 rounded-xl border border-slate-200 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Gauge className="w-3 h-3 text-cyan-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Normal range</span>
+                    <span className="text-[9px] text-slate-500 font-medium block leading-tight">Optical density</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className="text-2xl font-black text-slate-900 mt-2">
-                {pond.turbidity} <span className="text-xs font-normal text-slate-400">NTU</span>
+
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{pond.turbidity}</span>
+                  <span className="text-xs font-bold text-slate-500">NTU</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-rose-200/80 inline-flex items-center gap-1">
+                    <span>↘ 6.1%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-medium">Optical density</span>
-                <svg className="w-14 h-5 text-cyan-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 14 Q12 8 28 16 T50 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening Turbidity telemetry details...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 6: Nitrogen (N) */}
-            <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 shadow-2xs hover:border-emerald-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                  <Leaf className="w-3.5 h-3.5 text-emerald-600" /> Nitrogen (N)
-                </span>
+            {/* CARD 6: NITROGEN (N) */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Leaf className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 leading-none">Nitrogen (N)</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">mg/L</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => showToast('Nitrogen nutrient quota adequate for growth.')}
+                  className="bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-900 px-2.5 py-1 rounded-xl border border-emerald-200/70 text-[10px] flex items-center gap-1.5 transition-colors text-left shrink-0"
+                >
+                  <Leaf className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-black block leading-tight">Adequate</span>
+                    <span className="text-[9px] text-emerald-700 font-medium block leading-tight">Good for growth</span>
+                  </div>
+                  <span className="text-slate-400 font-bold ml-0.5 text-[11px]">›</span>
+                </button>
               </div>
-              <div className={`text-2xl font-black mt-2 ${pond.nitrogen < 5 ? 'text-amber-600' : 'text-slate-900'}`}>
-                {pond.nitrogen.toFixed(1)} <span className="text-xs font-normal text-slate-400">mg/L</span>
+
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-3xl font-black tracking-tight ${pond.nitrogen < 5 ? 'text-amber-600' : 'text-slate-900'}`}>
+                    {pond.nitrogen.toFixed(1)}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">mg/L</span>
+                </div>
+                <div className="text-right">
+                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200/80 inline-flex items-center gap-1">
+                    <span>↗ 2.5%</span>
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">vs last hour</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center justify-between">
-                <span className={`text-[10px] font-bold ${pond.nitrogen < 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                  {pond.nitrogen < 5 ? 'Action required' : 'Adequate'}
-                </span>
-                <svg className="w-14 h-5 text-emerald-500" viewBox="0 0 50 20" fill="none">
-                  <path d="M0 18 Q15 12 30 6 T50 4" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Sensor Online</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span>03:15 AM, 12 Sep</span>
+                </div>
+
+                <button 
+                  onClick={() => showToast(`Opening Nitrogen telemetry details...`)}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 shadow-2xs flex items-center gap-1 transition-all"
+                >
+                  <BarChart2 className="w-3 h-3 text-slate-500" />
+                  <span>View Details</span>
+                  <span>›</span>
+                </button>
               </div>
             </div>
 
