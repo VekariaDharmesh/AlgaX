@@ -559,10 +559,10 @@ function FarmsPondsContent() {
                       Focus in Overview
                     </button>
                     <Link
-                      href={`/harvests`}
+                      href={`/farms/${farm.id}`}
                       className="font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
                     >
-                      Harvest Records <ArrowRight className="w-3.5 h-3.5" />
+                      View Facility Details <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
